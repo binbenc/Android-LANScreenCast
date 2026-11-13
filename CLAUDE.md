@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WirelessScreenCasting is an Android app (package `com.benchan.wireless.screencasting`) that is still at the Android Studio "Empty Views Activity" template stage: a single `:app` module with one `MainActivity` (View-based, `AppCompatActivity` + XML layout, edge-to-edge insets handling) and the default example tests. No screen-casting logic exists yet; update this file as the architecture takes shape.
 
+The product spec lives in `docs/prd/PRD-局域网投屏-v1.0.md` (Chinese; pain-point research in `docs/prd/research/`). Read it before designing features. Decisions already locked there (section 16) that affect code:
+
+- Single APK with sender/receiver dual mode; UI to be migrated to Compose (Compose for TV on the receiver).
+- Transport is WebRTC (host ICE candidates only, no STUN/TURN — the app must make zero internet connections); a custom "WSC" signaling protocol runs over WebSocket+TLS, discovered via mDNS `_wsc._tcp`.
+- Receiver also implements DLNA DMR and AirPlay (UxPlay via JNI, built in but off by default, behind a build switch).
+- minSdk is planned to move from 24 to 29; project license GPL-3.0; distribution GitHub + F-Droid (no Google Play Services dependencies).
+- No accounts, ads, analytics or crash-reporting SDKs.
+- Planned module split is in PRD section 11.1.
+
 ## Commands
 
 ```bash
