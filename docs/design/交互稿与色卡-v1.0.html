@@ -1,0 +1,1546 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>局域网投屏 · 交互稿与色卡 v1.0</title>
+<script>
+/* ============================================================
+   单一事实来源：所有颜色 Token 只在这里定义一次。
+   页面 CSS 变量、色卡色块、对比度表、Compose 代码片段都由它生成，
+   保证"文档里写的 HEX"与"画面里用的颜色"绝对一致。
+   字段：[token, M3 角色名, 用途, 浅色 HEX, 深色 HEX, 预览文字色 token, 分组]
+   ============================================================ */
+window.ROLES = [
+  ['primary','primary','主按钮、选中态、进度条、链接、品牌标识','#2F5A82','#A2C9F0','on-primary','主色'],
+  ['on-primary','onPrimary','主按钮上的文字与图标','#FFFFFF','#0A3050','primary','主色'],
+  ['primary-container','primaryContainer','设备头像底、选中卡片、强调区块','#D2E4FA','#234766','on-primary-container','主色'],
+  ['on-primary-container','onPrimaryContainer','primaryContainer 上的文字','#12344F','#D2E4FA','primary-container','主色'],
+  ['inverse-primary','inversePrimary','Snackbar 中的操作按钮','#A2C9F0','#2F5A82','inverse-surface','主色'],
+  ['secondary','secondary','次要强调、筛选标签','#535F6E','#BBC7D8','on-secondary','辅助色'],
+  ['on-secondary','onSecondary','secondary 上的文字','#FFFFFF','#25313E','secondary','辅助色'],
+  ['secondary-container','secondaryContainer','分段按钮选中、Tonal 按钮','#D7E3F4','#3B4856','on-secondary-container','辅助色'],
+  ['on-secondary-container','onSecondaryContainer','Tonal 按钮文字','#3B4856','#D7E3F4','secondary-container','辅助色'],
+  ['tertiary','tertiary','"可信 / 已加密"语义强调（盾牌、锁）','#3A646A','#A4CDD3','on-tertiary','第三色'],
+  ['on-tertiary','onTertiary','tertiary 上的文字','#FFFFFF','#02363C','tertiary','第三色'],
+  ['tertiary-container','tertiaryContainer','"已信任"标签底','#C0E9EF','#1F4C52','on-tertiary-container','第三色'],
+  ['on-tertiary-container','onTertiaryContainer','"已信任"标签文字','#1F4C52','#C0E9EF','tertiary-container','第三色'],
+  ['error','error','断开、失败、错误文字','#BA1A1A','#FFB4AB','on-error','错误'],
+  ['on-error','onError','error 上的文字','#FFFFFF','#690005','error','错误'],
+  ['error-container','errorContainer','停止投屏按钮、错误卡片','#FFDAD6','#93000A','on-error-container','错误'],
+  ['on-error-container','onErrorContainer','errorContainer 上的文字','#93000A','#FFDAD6','error-container','错误'],
+  ['surface','surface','页面底色','#F8F9FC','#111418','on-surface','表面'],
+  ['on-surface','onSurface','正文、标题；TV 焦点态底色（深色）','#191C20','#E1E2E8','surface','表面'],
+  ['surface-variant','surfaceVariant','输入框底、进度轨道','#DEE3EB','#42474E','on-surface-variant','表面'],
+  ['on-surface-variant','onSurfaceVariant','次要文字、说明、图标','#42474E','#C2C7CF','surface-variant','表面'],
+  ['surface-dim','surfaceDim','最暗表面','#D8DAE0','#111418','on-surface','表面'],
+  ['surface-bright','surfaceBright','最亮表面','#F8F9FC','#37393E','on-surface','表面'],
+  ['surface-container-lowest','surfaceContainerLowest','键盘按键、最低层卡片','#FFFFFF','#0C0E12','on-surface','表面容器'],
+  ['surface-container-low','surfaceContainerLow','卡片、底部弹层','#F2F3F7','#191C20','on-surface','表面容器'],
+  ['surface-container','surfaceContainer','导航栏、键盘面板','#ECEEF2','#1D2024','on-surface','表面容器'],
+  ['surface-container-high','surfaceContainerHigh','状态胶囊、头像底、骨架屏','#E6E8EC','#272A2F','on-surface','表面容器'],
+  ['surface-container-highest','surfaceContainerHighest','对话框、TV 未聚焦按钮','#E1E2E7','#32353A','on-surface','表面容器'],
+  ['outline','outline','输入框边框、开关轨道（需 ≥3:1）','#72777F','#8C9199','surface','描边'],
+  ['outline-variant','outlineVariant','分隔线（装饰性，不要求对比度）','#C2C7CF','#42474E','on-surface','描边'],
+  ['inverse-surface','inverseSurface','Snackbar 底','#2E3135','#E1E2E8','inverse-on-surface','反相'],
+  ['inverse-on-surface','inverseOnSurface','Snackbar 文字；TV 焦点态文字','#EFF0F5','#2E3135','inverse-surface','反相'],
+  ['scrim','scrim','遮罩（叠加透明度 32%~60%）','#000000','#000000','surface','反相']
+];
+/* 扩展语义色（M3 Extended Colors，按 color / onColor / container / onContainer 四件套） */
+window.EXT = [
+  ['success','success','连接成功、延迟极佳','#2E6B3C','#9AD7A2','on-success','语义'],
+  ['on-success','onSuccess','success 上的文字','#FFFFFF','#00391A','success','语义'],
+  ['success-container','successContainer','成功提示底','#B5F1BD','#135228','on-success-container','语义'],
+  ['on-success-container','onSuccessContainer','成功提示文字','#135228','#B5F1BD','success-container','语义'],
+  ['warning','warning','网络较差、重连中','#7A5900','#EFC04A','on-warning','语义'],
+  ['on-warning','onWarning','warning 上的文字','#FFFFFF','#402D00','warning','语义'],
+  ['warning-container','warningContainer','警告卡片底','#FFDEA3','#5C4300','on-warning-container','语义'],
+  ['on-warning-container','onWarningContainer','警告卡片文字','#5C4300','#FFDEA3','warning-container','语义'],
+  ['lat-1','latency.excellent','延迟 < 100 ms · 极佳','#2E6B3C','#9AD7A2','surface','延迟'],
+  ['lat-2','latency.good','延迟 100–150 ms · 良好','#536500','#BBD06F','surface','延迟'],
+  ['lat-3','latency.fair','延迟 150–250 ms · 一般','#7A5900','#EFC04A','surface','延迟'],
+  ['lat-4','latency.poor','延迟 > 250 ms · 较差','#BA1A1A','#FFB4AB','surface','延迟']
+];
+(function(){
+  var all = window.ROLES.concat(window.EXT);
+  function block(i){ return all.map(function(r){return '--'+r[0]+':'+r[i]+';';}).join(''); }
+  var L = block(3), D = block(4);
+  var css = ':root{'+L+'color-scheme:light}'
+    + ':root[data-theme=dark]{'+D+'color-scheme:dark}'
+    + '@media (prefers-color-scheme:dark){:root:not([data-theme=light]){'+D+'color-scheme:dark}}'
+    + '.theme-light{'+L+'color-scheme:light}'
+    + '.theme-dark{'+D+'color-scheme:dark}';
+  var s = document.createElement('style'); s.id = 'tokens'; s.textContent = css;
+  document.head.appendChild(s);
+  try { var t = localStorage.getItem('wsc-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch(e){}
+})();
+</script>
+<style>
+/* ---------- 基础 ---------- */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:72px}
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei",Roboto,"Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --anno:#B4547F;
+  --e1:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --e2:0 2px 4px -1px rgba(16,24,40,.06),0 4px 10px -2px rgba(16,24,40,.08);
+  --e3:0 4px 8px -2px rgba(16,24,40,.07),0 14px 28px -6px rgba(16,24,40,.12);
+  --e4:0 8px 16px -4px rgba(16,24,40,.08),0 28px 56px -14px rgba(16,24,40,.22);
+}
+:root[data-theme=dark],.theme-dark{--e1:0 0 0 1px rgba(255,255,255,.04);--e2:0 0 0 1px rgba(255,255,255,.05);--e3:0 0 0 1px rgba(255,255,255,.06),0 12px 28px -8px rgba(0,0,0,.6);--e4:0 0 0 1px rgba(255,255,255,.07),0 28px 56px -14px rgba(0,0,0,.7)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--e1:0 0 0 1px rgba(255,255,255,.04);--e2:0 0 0 1px rgba(255,255,255,.05);--e3:0 0 0 1px rgba(255,255,255,.06),0 12px 28px -8px rgba(0,0,0,.6);--e4:0 0 0 1px rgba(255,255,255,.07),0 28px 56px -14px rgba(0,0,0,.7)}}
+.theme-light{--e1:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);--e2:0 2px 4px -1px rgba(16,24,40,.06),0 4px 10px -2px rgba(16,24,40,.08);--e3:0 4px 8px -2px rgba(16,24,40,.07),0 14px 28px -6px rgba(16,24,40,.12);--e4:0 8px 16px -4px rgba(16,24,40,.08),0 28px 56px -14px rgba(16,24,40,.22)}
+body{font-family:var(--font);background:var(--surface);color:var(--on-surface);font-size:15px;line-height:1.65;overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.theme-light,.theme-dark{color:var(--on-surface)}
+a{color:var(--primary);text-underline-offset:3px}
+code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:6px}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+.ic.s16{width:16px;height:16px}.ic.s18{width:18px;height:18px}.ic.s20{width:20px;height:20px}.ic.s28{width:28px;height:28px}.ic.s32{width:32px;height:32px}.ic.s40{width:40px;height:40px}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- 文档骨架 ---------- */
+.wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,4vw,48px)}
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:saturate(1.2) blur(14px);-webkit-backdrop-filter:saturate(1.2) blur(14px);border-bottom:1px solid var(--outline-variant)}
+.topbar .wrap{display:flex;align-items:center;gap:16px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;white-space:nowrap}
+.brand .tile{width:32px;height:32px;border-radius:10px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center}
+.toc{flex:1;min-width:0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.toc::-webkit-scrollbar{display:none}
+.toc a{color:var(--on-surface-variant);text-decoration:none;font-size:13px;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.toc a:hover{background:var(--surface-container-high);color:var(--on-surface)}
+.themesw{display:flex;border:1px solid var(--outline-variant);border-radius:999px;padding:3px;gap:2px;flex:none}
+.themesw button{all:unset;cursor:pointer;width:34px;height:30px;display:grid;place-items:center;border-radius:999px;color:var(--on-surface-variant)}
+.themesw button[aria-pressed=true]{background:var(--secondary-container);color:var(--on-secondary-container)}
+.themesw button:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+@media (max-width:760px){.toc{display:none}.topbar .wrap{justify-content:space-between}}
+
+.hero{padding:clamp(48px,9vw,112px) 0 clamp(32px,5vw,64px)}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--on-surface-variant);font-weight:600}
+.hero h1{font-size:clamp(30px,5.2vw,52px);line-height:1.15;font-weight:600;letter-spacing:-.01em;margin:14px 0 18px;max-width:16em}
+.hero p.lead{font-size:clamp(15px,1.6vw,18px);color:var(--on-surface-variant);max-width:44em}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:5px 12px;border-radius:999px;border:1px solid var(--outline-variant);color:var(--on-surface-variant);white-space:nowrap}
+
+section.sec{padding:clamp(48px,7vw,96px) 0;border-top:1px solid var(--outline-variant)}
+.sec-h{display:grid;grid-template-columns:auto 1fr;gap:4px 20px;align-items:baseline;margin-bottom:clamp(24px,4vw,44px)}
+.sec-h .no{font-family:var(--mono);font-size:13px;color:var(--on-surface-variant);grid-row:span 2;padding-top:6px}
+.sec-h h2{font-size:clamp(22px,3vw,30px);font-weight:600;line-height:1.3}
+.sec-h p{color:var(--on-surface-variant);max-width:52em}
+h3.sub{font-size:17px;font-weight:600;margin:40px 0 14px;display:flex;align-items:center;gap:10px}
+h3.sub:first-child{margin-top:0}
+h3.sub small{font-weight:400;font-size:13px;color:var(--on-surface-variant)}
+.muted{color:var(--on-surface-variant)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px}
+.panel{background:var(--surface-container-low);border-radius:20px;padding:clamp(18px,2.4vw,28px)}
+.panel h4{font-size:15px;font-weight:600;margin-bottom:8px}
+.panel p,.panel li{font-size:14px;color:var(--on-surface-variant)}
+.panel ul{padding-left:1.1em}
+.panel li+li{margin-top:4px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--outline-variant);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--outline-variant);vertical-align:top}
+th{font-weight:600;font-size:12.5px;color:var(--on-surface-variant);background:var(--surface-container-low);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.kicker{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:1px 7px;border-radius:6px;background:var(--surface-container-high);color:var(--on-surface-variant)}
+
+/* ---------- 色卡 ---------- */
+.scheme{border-radius:24px;padding:clamp(16px,2.4vw,28px);background:var(--surface);border:1px solid var(--outline-variant)}
+.scheme>header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.scheme>header b{font-size:16px;font-weight:600}
+.sw-group{margin-top:18px}
+.sw-group>.gl{font-size:12px;color:var(--on-surface-variant);margin-bottom:8px;letter-spacing:.04em}
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.swc{border-radius:14px;padding:12px 12px 10px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid rgba(127,127,127,.14)}
+.swc .rn{font-size:12.5px;font-weight:600;line-height:1.3}
+.swc .hx{font-family:var(--mono);font-size:12px;opacity:.92;display:flex;justify-content:space-between;gap:6px}
+.swc .us{font-size:11px;line-height:1.4;opacity:.86;margin-top:4px}
+.brandhero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px}
+@media (max-width:860px){.brandhero{grid-template-columns:1fr}}
+.bigsw{border-radius:24px;min-height:260px;padding:28px;display:flex;flex-direction:column;justify-content:space-between;background:var(--primary);color:var(--on-primary)}
+.theme-light .bigsw,.bigsw.l{background:#2F5A82;color:#fff}
+.bigsw .nm{font-size:13px;letter-spacing:.12em;opacity:.8}
+.bigsw .hx{font-family:var(--mono);font-size:clamp(28px,4vw,40px);font-weight:500;letter-spacing:.02em}
+.ramp{display:flex;border-radius:12px;overflow:hidden;margin-top:18px;height:44px}
+.ramp span{flex:1;display:flex;align-items:flex-end;justify-content:center;font-family:var(--mono);font-size:10px;padding-bottom:4px}
+pre.code{font-family:var(--mono);font-size:12px;line-height:1.6;background:var(--surface-container-low);border-radius:16px;padding:18px 20px;overflow:auto;max-height:340px;color:var(--on-surface-variant);white-space:pre}
+
+/* 对比度 */
+.cr-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.cr-aaa{background:var(--success-container);color:var(--on-success-container)}
+.cr-aa{background:var(--primary-container);color:var(--on-primary-container)}
+.cr-lg{background:var(--warning-container);color:var(--on-warning-container)}
+.cr-no{background:var(--error-container);color:var(--on-error-container)}
+.cr-sample{display:inline-flex;align-items:center;justify-content:center;min-width:64px;height:30px;border-radius:8px;font-size:14px;font-weight:500;padding:0 10px;border:1px solid rgba(127,127,127,.18)}
+td.crv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}
+
+/* 延迟色阶 */
+.latscale{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+@media (max-width:560px){.latscale{grid-template-columns:repeat(2,1fr)}}
+.latscale>div{border-radius:14px;padding:14px;background:var(--surface-container-high)}
+.latscale .bar{height:6px;border-radius:3px;margin-bottom:12px}
+.latscale b{display:block;font-size:15px;font-weight:600}
+.latscale span{font-size:12.5px;color:var(--on-surface-variant)}
+
+/* 字体 */
+.type-row{display:grid;grid-template-columns:150px minmax(0,1fr) 160px;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--outline-variant)}
+.type-row:last-child{border-bottom:0}
+.type-row .tk{font-family:var(--mono);font-size:12px;color:var(--on-surface-variant)}
+.type-row .sp{font-size:12px;color:var(--on-surface-variant);font-family:var(--mono)}
+.type-row .sample{overflow-wrap:anywhere}
+@media (max-width:640px){.type-row{grid-template-columns:1fr}.type-row .sp{order:3}}
+
+/* 圆角 / 间距 / 高度 */
+.radius-row{display:flex;flex-wrap:wrap;gap:14px}
+.radius-row>div{width:96px;text-align:center;font-size:12px;color:var(--on-surface-variant)}
+.radius-row i{display:block;width:96px;height:72px;background:var(--primary-container);border:1.5px solid var(--primary);margin-bottom:8px}
+.space-row{display:flex;flex-direction:column;gap:8px}
+.space-row>div{display:grid;grid-template-columns:56px 1fr 180px;gap:12px;align-items:center;font-size:12.5px}
+.space-row i{display:block;height:14px;background:var(--tertiary-container);border-left:2px solid var(--tertiary);border-right:2px solid var(--tertiary)}
+.space-row .u{font-family:var(--mono);color:var(--on-surface-variant)}
+@media (max-width:560px){.space-row>div{grid-template-columns:44px 1fr}.space-row>div span:last-child{display:none}}
+.elev{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px}
+.elev>div{height:110px;border-radius:16px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;font-size:12.5px}
+.elev b{font-size:14px;font-weight:600}
+
+/* 图标 */
+.icgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.icgrid>div{border-radius:14px;background:var(--surface-container-low);padding:16px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:11.5px;color:var(--on-surface-variant);text-align:center}
+.icgrid .ic{color:var(--on-surface)}
+
+/* 流程 */
+.flow{display:flex;flex-direction:column}
+.stage{display:grid;grid-template-columns:44px minmax(0,1fr);gap:0 18px;position:relative}
+.stage .rail{display:flex;flex-direction:column;align-items:center}
+.stage .dot{width:36px;height:36px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;font-weight:600;font-size:14px;flex:none}
+.stage .line{flex:1;width:2px;background:var(--outline-variant);margin:6px 0}
+.stage:last-child .line{display:none}
+.stage .body{padding-bottom:30px;min-width:0}
+.stage h4{font-size:16px;font-weight:600;margin:5px 0 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lane{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.node{background:var(--surface-container-high);border-radius:12px;padding:8px 13px;font-size:13.5px;line-height:1.4}
+.node.k{background:var(--primary-container);color:var(--on-primary-container);font-weight:500}
+.node small{display:block;font-size:11.5px;opacity:.78}
+.arr{color:var(--outline);display:flex}
+.branches{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.br{display:flex;align-items:flex-start;gap:6px;border:1px dashed var(--outline);border-radius:12px;padding:7px 12px;font-size:12.5px;color:var(--on-surface-variant);line-height:1.45;max-width:100%}
+.br .ic{margin-top:1px}
+.br.ok{border-color:var(--success);color:var(--on-surface)}.br.ok .ic{color:var(--success)}
+.br.warn{border-color:var(--warning);color:var(--on-surface)}.br.warn .ic{color:var(--warning)}
+.br.err{border-color:var(--error);color:var(--on-surface)}.br.err .ic{color:var(--error)}
+.br.alt{border-color:var(--primary);color:var(--on-surface)}.br.alt .ic{color:var(--primary)}
+.pathsum{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:28px;padding:16px 18px;border-radius:16px;background:var(--surface-container-low);font-size:14px}
+
+/* ---------- 画板 ---------- */
+.boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,392px),1fr));gap:56px 32px}
+.board{min-width:0}
+.board.wide{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;align-items:start}
+@media (max-width:1100px){.board.wide{grid-template-columns:1fr}}
+.bh{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bh .id{font-family:var(--mono);font-size:12px;color:var(--on-surface-variant)}
+.bh b{font-size:16px;font-weight:600}
+.fit{width:100%;display:flex;justify-content:center;padding-bottom:12px}
+.note{margin-top:18px;font-size:13px;line-height:1.6}
+.board.wide .note{margin-top:0}
+.note .refs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.note dl{display:grid;grid-template-columns:42px 1fr;gap:6px 10px}
+.note dt{color:var(--on-surface-variant);font-size:12px;padding-top:1px}
+.note dd{color:var(--on-surface)}
+.note dd ul{padding-left:1em}
+.tagref{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:6px;border:1px solid var(--outline-variant);color:var(--on-surface-variant)}
+
+/* ---------- 手机框 ---------- */
+.phone{width:380px;flex:none;padding:10px;border-radius:48px;background:#0D0F12;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 0 0 1px rgba(0,0,0,.25),0 30px 60px -20px rgba(15,23,42,.35),0 18px 36px -18px rgba(15,23,42,.3);position:relative}
+.phone .scr{width:360px;height:780px;border-radius:38px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:var(--surface);color:var(--on-surface);font-size:14px;line-height:1.5}
+.phone.tall .scr{height:auto;min-height:780px}
+.sb{height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 26px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.sb .r{display:flex;align-items:center;gap:6px}
+.bat{width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative;opacity:.9}
+.bat::after{content:"";position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1px}
+.cam{position:absolute;top:11px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#0D0F12;z-index:5}
+.gb{height:22px;flex:none;display:grid;place-items:center}
+.gb::after{content:"";width:108px;height:4px;border-radius:2px;background:var(--on-surface);opacity:.35}
+.ab{height:64px;flex:none;display:flex;align-items:center;gap:4px;padding:0 4px}
+.ab .t{font-size:20px;line-height:28px;font-weight:500;padding-left:4px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab .t.pl{padding-left:12px}
+.ib{width:48px;height:48px;display:grid;place-items:center;border-radius:50%;color:var(--on-surface-variant);flex:none}
+.bd{flex:1;min-height:0;overflow:hidden;padding:0 16px;display:flex;flex-direction:column}
+.ft{flex:none;padding:12px 16px 8px}
+.t-hl{font-size:28px;line-height:36px;font-weight:600}
+.t-hs{font-size:24px;line-height:32px;font-weight:600}
+.t-tl{font-size:20px;line-height:28px;font-weight:500}
+.t-tm{font-size:16px;line-height:24px;font-weight:500}
+.t-bl{font-size:16px;line-height:24px}
+.t-bm{font-size:14px;line-height:22px}
+.t-bs{font-size:12px;line-height:18px}
+.t-ll{font-size:14px;line-height:20px;font-weight:500}
+.t-ls{font-size:12px;line-height:16px;font-weight:500}
+.mv{color:var(--on-surface-variant)}
+.pc{color:var(--primary)}
+.btn{height:48px;border-radius:24px;padding:0 22px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;letter-spacing:.01em;white-space:nowrap}
+.btn.blk{display:flex;width:100%}
+.btn.fill{background:var(--primary);color:var(--on-primary)}
+.btn.ton{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn.out{border:1px solid var(--outline);color:var(--primary)}
+.btn.txt{color:var(--primary);padding:0 12px}
+.btn.stop{background:var(--error-container);color:var(--on-error-container);height:56px;border-radius:28px;font-size:16px}
+.btn.sm{height:40px;border-radius:20px;padding:0 16px}
+.gl2{font-size:13px;font-weight:500;color:var(--primary);padding:20px 16px 6px}
+.lbl{font-size:13px;font-weight:500;color:var(--on-surface-variant);padding:18px 0 6px;display:flex;justify-content:space-between;align-items:center}
+.li{display:flex;align-items:center;gap:14px;padding:10px 0;min-height:72px}
+.li .av{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--surface-container-high);color:var(--on-surface-variant);flex:none}
+.li .av.p{background:var(--primary-container);color:var(--on-primary-container)}
+.li .tx{flex:1;min-width:0}
+.li .t1{font-size:16px;line-height:24px;font-weight:500;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.li .t2{font-size:13px;line-height:20px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .tr{color:var(--on-surface-variant);display:flex;align-items:center}
+.li.dis .t1,.li.dis .av{opacity:.5}
+.sli{display:flex;align-items:center;gap:16px;padding:12px 16px;min-height:64px}
+.sli .tx{flex:1;min-width:0}
+.sli .t1{font-size:16px;line-height:24px}
+.sli .t2{font-size:13px;line-height:19px;color:var(--on-surface-variant)}
+.sli .val{font-size:14px;color:var(--on-surface-variant);white-space:nowrap}
+.sli .lead{color:var(--on-surface-variant)}
+.sli.ind{padding-left:56px}
+.hr{height:1px;background:var(--outline-variant);margin:4px 16px}
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;line-height:16px;font-weight:500;padding:2px 7px;border-radius:6px;background:var(--surface-container-high);color:var(--on-surface-variant);white-space:nowrap}
+.tag.trust{background:var(--tertiary-container);color:var(--on-tertiary-container)}
+.tag.pr{background:var(--primary-container);color:var(--on-primary-container)}
+.tag.ol{background:transparent;border:1px solid var(--outline-variant)}
+.proto{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.04em;padding:1px 5px;border-radius:4px;border:1px solid var(--outline-variant);color:var(--on-surface-variant)}
+.card{background:var(--surface-container-low);border-radius:16px;padding:16px}
+.card.hi{background:var(--surface-container)}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--surface-container-highest);border:2px solid var(--outline);position:relative;flex:none}
+.sw::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:var(--outline);top:6px;left:6px}
+.sw.on{background:var(--primary);border-color:var(--primary)}
+.sw.on::after{width:24px;height:24px;top:2px;left:22px;background:var(--on-primary)}
+.seg{display:flex;border:1px solid var(--outline);border-radius:20px;overflow:hidden;height:40px}
+.seg span{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:500;border-left:1px solid var(--outline)}
+.seg span:first-child{border-left:0}
+.seg .on{background:var(--secondary-container);color:var(--on-secondary-container)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:rot .9s linear infinite;flex:none}
+.spin.l{width:24px;height:24px;border-width:2.5px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.sk{background:var(--surface-container-high);border-radius:6px;position:relative;overflow:hidden}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface) 55%,transparent),transparent);animation:shim 1.6s ease-in-out infinite}
+@keyframes shim{to{transform:translateX(100%)}}
+.capsule{display:inline-flex;align-items:center;gap:0;border-radius:999px;background:var(--surface-container-high);height:32px;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;overflow:hidden;white-space:nowrap}
+.capsule>span{display:flex;align-items:center;gap:6px;padding:0 12px;height:100%}
+.capsule>span+span{border-left:1px solid var(--outline-variant)}
+.capsule .d{width:8px;height:8px;border-radius:50%;flex:none}
+.pin{display:flex;gap:12px;justify-content:center}
+.pin span{width:56px;height:64px;border-radius:14px;border:1px solid var(--outline);display:grid;place-items:center;font-family:var(--mono);font-size:28px;font-weight:500;position:relative}
+.pin span.cur{border:2px solid var(--primary)}
+.pin span.cur::after{content:"";width:2px;height:28px;background:var(--primary);animation:blink 1s steps(1) infinite}
+.pin .sep{width:auto;border:0;color:var(--on-surface-variant);font-size:20px}
+.pin.six span{width:44px;height:56px;font-size:24px;border-radius:12px}
+.pin.six{gap:8px}
+.pin.eight span{width:32px;height:48px;font-size:20px;border-radius:10px}
+.pin.eight{gap:5px}
+@keyframes blink{50%{opacity:0}}
+.kb{flex:none;background:var(--surface-container);padding:8px 6px 4px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.kb span{height:46px;border-radius:10px;background:var(--surface-container-lowest);display:grid;place-items:center;font-size:22px;font-weight:400}
+.kb span.fn{background:transparent;font-size:14px;color:var(--on-surface-variant)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.32);z-index:3}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:4;background:var(--surface-container-low);border-radius:28px 28px 0 0;padding:10px 20px 0;box-shadow:var(--e4)}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--on-surface-variant);opacity:.4;margin:4px auto 18px}
+.dlg{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);z-index:4;background:var(--surface-container-high);border-radius:28px;padding:24px;box-shadow:var(--e4)}
+.snack{border-radius:8px;background:var(--inverse-surface);color:var(--inverse-on-surface);padding:12px 8px 12px 16px;display:flex;align-items:center;gap:8px;font-size:14px;box-shadow:var(--e3)}
+.snack b{color:var(--inverse-primary);font-weight:500;padding:0 8px}
+.lin{height:4px;border-radius:2px;background:var(--surface-variant);overflow:hidden}
+.lin i{display:block;height:100%;background:currentColor;border-radius:2px}
+.anno{outline:1.5px dashed var(--anno);outline-offset:4px;position:relative;border-radius:16px}
+.anno-b{position:absolute;top:-14px;right:10px;background:var(--anno);color:#fff;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;font-family:var(--mono);z-index:2}
+.row{display:flex;align-items:center}
+.gap4{gap:4px}.gap6{gap:6px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
+.mt4{margin-top:4px}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}.mt24{margin-top:24px}.mt32{margin-top:32px}
+.ctr{text-align:center}
+.sp{flex:1}
+.ill{display:grid;place-items:center}
+.iconTile{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:var(--primary-container);color:var(--on-primary-container)}
+.diag{display:flex;gap:12px;padding:12px 0;align-items:flex-start}
+.diag+.diag{border-top:1px solid var(--outline-variant)}
+.diag .st{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none}
+.diag .st.ok{background:var(--success-container);color:var(--on-success-container)}
+.diag .st.q{background:var(--warning-container);color:var(--on-warning-container)}
+.diag b{font-size:14px;font-weight:500;display:block;line-height:20px}
+.diag p{font-size:12.5px;line-height:18px;color:var(--on-surface-variant);margin-top:2px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:14px}
+.opt.on{background:var(--primary-container);color:var(--on-primary-container)}
+.radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--on-surface-variant);flex:none;margin-top:1px;display:grid;place-items:center}
+.opt.on .radio{border-color:var(--primary)}
+.opt.on .radio::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--primary)}
+.stat{background:var(--surface-container-low);border-radius:16px;padding:14px}
+.stat .k{font-size:12px;color:var(--on-surface-variant)}
+.stat .v{font-size:26px;line-height:34px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .v small{font-size:13px;font-weight:500;margin-left:2px;color:var(--on-surface-variant)}
+.stat .s{font-size:12px;color:var(--on-surface-variant);display:flex;align-items:center;gap:5px}
+.hist{display:flex;align-items:flex-end;gap:4px;height:96px;position:relative;padding-top:8px}
+.hist i{flex:1;border-radius:3px 3px 0 0}
+.hist-x{display:flex;justify-content:space-between;font-size:10.5px;color:var(--on-surface-variant);margin-top:6px;font-family:var(--mono)}
+.mode{flex:1;border-radius:16px;border:1px solid var(--outline-variant);padding:14px;position:relative;min-height:108px}
+.mode.on{border:2px solid var(--primary);background:var(--surface-container-low);padding:13px}
+.mode .ck{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center}
+.promise{display:flex;gap:14px;align-items:flex-start;padding:9px 0}
+.promise .pt{width:36px;height:36px;border-radius:12px;background:var(--surface-container-high);display:grid;place-items:center;color:var(--tertiary);flex:none}
+.promise b{display:block;font-size:15px;font-weight:500;line-height:22px}
+.promise span{font-size:12.5px;line-height:18px;color:var(--on-surface-variant)}
+.notif{border-radius:20px;background:var(--surface-container-high);padding:14px 16px;font-size:13px}
+.notif .h{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--on-surface-variant)}
+.notif .h i{width:20px;height:20px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center}
+.notif .acts{display:flex;gap:8px;margin-top:10px}
+.notif .acts span{font-size:13px;font-weight:500;color:var(--primary);padding:6px 12px;border-radius:16px;background:var(--surface-container-highest)}
+
+/* ---------- 电视框（960×540 dp 设计基准，1 CSS px = 1 dp） ---------- */
+.tv{width:984px;flex:none;padding:12px 12px 26px;border-radius:14px;background:#0B0C0E;box-shadow:0 0 0 1px rgba(255,255,255,.05) inset,0 40px 70px -30px rgba(15,23,42,.45);position:relative}
+.tv::after{content:"";position:absolute;left:50%;bottom:9px;width:56px;height:4px;margin-left:-28px;border-radius:2px;background:#24272B}
+.tv .scr{width:960px;height:540px;position:relative;overflow:hidden;background:var(--surface);color:var(--on-surface);font-size:18px;line-height:1.55;border-radius:3px}
+.safe{position:absolute;inset:27px 48px}
+.tbtn{height:48px;padding:0 24px;border-radius:24px;background:var(--surface-container-highest);color:var(--on-surface);display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:500;white-space:nowrap;transition:transform .15s cubic-bezier(.05,.7,.1,1)}
+.tbtn.icn{width:48px;padding:0;justify-content:center}
+.tbtn.pri{background:var(--primary-container);color:var(--on-primary-container)}
+.f{background:var(--on-surface)!important;color:var(--inverse-on-surface)!important;transform:scale(1.08);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--primary),0 0 32px 6px rgba(162,201,240,.32);position:relative;z-index:2}
+.tvcard{background:var(--surface-container-low);border-radius:24px}
+.tvdlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:540px;background:var(--surface-container-high);border-radius:28px;padding:36px 40px 32px;box-shadow:0 30px 80px rgba(0,0,0,.55);z-index:4;text-align:center}
+.tvpin{display:flex;gap:14px;justify-content:center;margin:22px 0 14px}
+.tvpin span{width:68px;height:80px;border-radius:16px;background:var(--surface-container-lowest);display:grid;place-items:center;font-family:var(--mono);font-size:44px;font-weight:500;color:var(--on-surface);border:1px solid var(--outline-variant)}
+.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.statpanel{position:absolute;top:27px;right:48px;width:320px;border-radius:24px;background:rgba(29,32,36,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:22px 24px 22px;z-index:3;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 24px 60px rgba(0,0,0,.5)}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:15px;line-height:22px;padding:6px 0}
+.kv span:first-child{color:var(--on-surface-variant)}
+.kv span:last-child{font-variant-numeric:tabular-nums;text-align:right}
+.breath{width:10px;height:10px;border-radius:50%;background:var(--success);box-shadow:0 0 0 0 rgba(154,215,162,.5);animation:breath 2.4s ease-in-out infinite}
+@keyframes breath{0%,100%{box-shadow:0 0 0 0 rgba(154,215,162,.45)}50%{box-shadow:0 0 0 8px rgba(154,215,162,0)}}
+
+/* 焦点规范演示 */
+.focusdemo{display:flex;flex-wrap:wrap;gap:36px;align-items:center;padding:36px 32px;border-radius:24px;background:var(--surface)}
+.focusdemo .cap{font-size:12px;color:var(--on-surface-variant);margin-top:14px;text-align:center}
+.fcard{width:180px;height:104px;border-radius:16px;background:var(--surface-container-high);padding:14px;display:flex;flex-direction:column;justify-content:space-between;font-size:15px}
+.fcard.ff{transform:scale(1.05);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--primary),0 0 32px 6px rgba(162,201,240,.32)}
+.pressed{transform:scale(1.02)!important;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--primary)!important}
+
+.qs{margin-top:8px}
+.qs li{margin:10px 0;padding-left:4px}
+.qs b{font-weight:600}
+footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size:13px;color:var(--on-surface-variant)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<!-- ==================== 图标 Sprite（线性 24 网格，1.75 描边，圆角端点） ==================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#33465A"/><stop offset="1" stop-color="#6F7F8C"/></linearGradient>
+  </defs>
+  <symbol id="i-mark" viewBox="0 0 24 24"><rect x="6.5" y="4" width="14" height="10.5" rx="2.2"/><rect x="3" y="9.5" width="6.5" height="10.5" rx="1.8" fill="currentColor" stroke="none"/><path d="M12.5 18.5h5"/></symbol>
+  <symbol id="i-tv" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8.5 20h7"/></symbol>
+  <symbol id="i-mirror" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8.5 20h7M9.5 11.5 12 9l2.5 2.5M12 9v5"/></symbol>
+  <symbol id="i-dlna" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10.5 8.5v5l4-2.5z"/><path d="M8.5 20h7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-tablet" viewBox="0 0 24 24"><rect x="4.5" y="3" width="15" height="18" rx="2.5"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-devices" viewBox="0 0 24 24"><rect x="2.5" y="5" width="13" height="10" rx="1.6"/><path d="M5.5 19h7"/><rect x="16.5" y="8" width="5" height="11" rx="1.4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2 19 6v5.2c0 4.3-2.9 7.9-7 9.6-4.1-1.7-7-5.3-7-9.6V6z"/><path d="m9 12 2.2 2.2L15.2 10"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.8 9.2a13.5 13.5 0 0 1 18.4 0M5.9 12.6a9 9 0 0 1 12.2 0M9 16a4.6 4.6 0 0 1 6 0"/><path d="M12 19.2h.01" stroke-width="2.6"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.2"/><rect x="14" y="4" width="6" height="6" rx="1.2"/><rect x="4" y="14" width="6" height="6" rx="1.2"/><path d="M14 14h2.5v2.5H14zM18.5 18.5H20V20M14 20h2M20 14v2"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M7 12h.01M10.3 12h.01M13.7 12h.01M17 12h.01" stroke-width="2.6"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3A4 4 0 0 0 13 5.34l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3A4 4 0 0 0 11 18.66l1-1"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5.5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.6 2.9 17.5A2 2 0 0 0 4.6 20.5h14.8a2 2 0 0 0 1.7-3L13.7 4.6a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 16.8h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.2"/><path d="M12 7.8h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.6"/><path d="M12 17h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2.2"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.8v4.4h3.2l4.8 4V5.8l-4.8 4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.5a8 8 0 0 1 0 11"/></symbol>
+  <symbol id="i-volx" viewBox="0 0 24 24"><path d="M4 9.8v4.4h3.2l4.8 4V5.8l-4.8 4z"/><path d="m16 10 4 4M20 10l-4 4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M6.5 16v-4M11 16V7M15.5 16v-6M20 16V9.5" /></symbol>
+  <symbol id="i-router" viewBox="0 0 24 24"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M10.5 16.5h.01" stroke-width="2.4"/><path d="M12 13V9.5M8.8 7.2a4.6 4.6 0 0 1 6.4 0M6.3 4.7a8.2 8.2 0 0 1 11.4 0"/></symbol>
+  <symbol id="i-noad" viewBox="0 0 24 24"><path d="M4 9.8v4.4h3.2l6.8 4.3V5.5L7.2 9.8z"/><path d="M17.5 9.5v5"/><path d="M3.5 3.5l17 17"/></symbol>
+  <symbol id="i-nouser" viewBox="0 0 24 24"><circle cx="11" cy="8" r="3.8"/><path d="M4 20a7.2 7.2 0 0 1 11.3-5.9"/><path d="M3.5 3.5l17 17"/></symbol>
+  <symbol id="i-offline" viewBox="0 0 24 24"><path d="M5.2 6.3A9 9 0 0 0 17.7 18.8M8.3 3.6A9 9 0 0 1 20.4 15.7"/><path d="M3 12h6M15 12h6M12 3c-1.2 1.4-2.1 3-2.6 4.6M12 21c1.2-1.4 2.1-3 2.6-4.6"/><path d="M3.5 3.5l17 17"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3.5v7.5M7 6.5a7.5 7.5 0 1 0 10 0"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4.5M8 8.5l4-4 4 4M5 13.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14 8 3 3"/></symbol>
+  <symbol id="i-game" viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="10.5" rx="5.2"/><path d="M7.5 10.2v4M5.5 12.2h4"/><path d="M15.5 11h.01M17.8 13.4h.01" stroke-width="2.6"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.2 17a8.2 8.2 0 1 1 15.6 0"/><path d="m12 15 3.6-4.6"/><path d="M12 15h.01" stroke-width="3"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4v3.5H8M12 8.5V12l2.6 1.6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.8v1.6M12 19.6v1.6M2.8 12h1.6M19.6 12h1.6M5.5 5.5l1.1 1.1M17.4 17.4l1.1 1.1M5.5 18.5l1.1-1.1M17.4 6.6l1.1-1.1"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1z"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h15M4.5 17h15"/></symbol>
+  <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7.5" y="2.5" width="9" height="19" rx="4.5"/><circle cx="12" cy="8.5" r="2"/><path d="M12 14.5h.01M12 17.5h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6.5v11M15 6.5v11"/></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 3.5h10M7 20.5h10M8 3.5v3.2a4 4 0 0 0 1.6 3.2L12 12l2.4-2.1A4 4 0 0 0 16 6.7V3.5M8 20.5v-3.2a4 4 0 0 1 1.6-3.2L12 12l2.4 2.1a4 4 0 0 1 1.6 3.2v3.2"/></symbol>
+  <symbol id="scene" viewBox="0 0 960 432" preserveAspectRatio="xMidYMid slice">
+    <rect width="960" height="432" fill="url(#sky)"/>
+    <circle cx="690" cy="150" r="46" fill="#E4D6B5" opacity=".75"/>
+    <path d="M0 270 140 190 260 250 400 160 560 240 700 180 830 230 960 190V432H0z" fill="#566B7B"/>
+    <path d="M0 320 170 250 320 300 470 235 640 300 790 255 960 300V432H0z" fill="#3F5363"/>
+    <path d="M0 370 210 320 420 360 600 318 780 362 960 330V432H0z" fill="#2A3946"/>
+    <path d="M0 410 260 380 520 405 760 382 960 400V432H0z" fill="#1C2731"/>
+  </symbol>
+</svg>
+
+<!-- ==================== 顶栏 ==================== -->
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="tile"><svg class="ic s20"><use href="#i-mark"/></svg></span><span>交互稿与色卡 <span class="muted" style="font-weight:400">v1.0</span></span></div>
+    <nav class="toc" aria-label="目录">
+      <a href="#principle">设计推导</a><a href="#color">色卡</a><a href="#semantic">语义色</a><a href="#contrast">对比度</a><a href="#type">字体</a><a href="#shape">圆角间距</a><a href="#focus">TV 焦点</a><a href="#icons">图标</a><a href="#flow">主流程</a><a href="#sender">发送端</a><a href="#receiver">接收端</a><a href="#questions">待确认</a>
+    </nav>
+    <div class="themesw" role="group" aria-label="主题">
+      <button type="button" data-t="auto" title="跟随系统" aria-label="跟随系统"><svg class="ic s18"><use href="#i-auto"/></svg></button>
+      <button type="button" data-t="light" title="浅色" aria-label="浅色"><svg class="ic s18"><use href="#i-sun"/></svg></button>
+      <button type="button" data-t="dark" title="深色" aria-label="深色"><svg class="ic s18"><use href="#i-moon"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="wrap hero">
+  <div class="eyebrow">Interaction Spec · Color System</div>
+  <h1>安静地把画面送到大屏 —— 局域网投屏交互稿与色卡</h1>
+  <p class="lead">基于《PRD-局域网投屏-v1.0》。覆盖手机发送端 13 个画面、TV 接收端 5 个画面、主流程与完整 Material 3 色彩体系。所有颜色由同一份 Token 生成，对比度为页面内实时计算（WCAG 2.x 相对亮度公式），可直接映射到 Compose <code>ColorScheme</code>。</p>
+  <div class="meta">
+    <span class="chip">PRD v1.0 · 2026-11-14</span>
+    <span class="chip">Jetpack Compose · Material 3</span>
+    <span class="chip">Compose for TV</span>
+    <span class="chip">手机 360 dp / TV 960×540 dp，1 CSS px = 1 dp</span>
+    <span class="chip">产品名 “局域投屏” 为占位（PRD Q6）</span>
+  </div>
+</div>
+
+<!-- ==================== 01 设计推导 ==================== -->
+<section class="sec" id="principle"><div class="wrap">
+  <div class="sec-h"><span class="no">01</span><h2>设计推导：从第一性原理出发</h2><p>投屏工具的本质只有一句话：<b>让大屏出现我手机上的画面，并且我随时能让它停下</b>。界面的每个元素都必须服务于这句话，否则就是噪音。</p></div>
+
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:24%">行业惯例（隐性假设）</th><th style="width:38%">底层事实</th><th>推导出的设计</th></tr></thead>
+    <tbody>
+      <tr><td>首页是功能宫格、推荐位</td><td>用户打开 App 只为一件事；选项越多决策越慢（Hick：T ∝ log₂(n+1)）</td><td>首页即设备列表，唯一主操作 = 点设备。可信设备 3 次点击完成投屏</td></tr>
+      <tr><td>搜不到设备 = 一直转圈</td><td>组播失败是网络拓扑问题，等待不会自愈；用户分不清“还在找”和“找不到”</td><td>T+3s 给替代路径（扫码 / 投屏码），T+10s 给网络诊断；每个状态都有出口</td></tr>
+      <tr><td>安全 = 每次都弹确认</td><td>威胁来自“陌生 + 不在场”；对熟悉设备反复确认只会训练出习惯性点击</td><td>首次 PIN 证明在场，之后可信设备免确认；TV 确认弹窗默认焦点在“拒绝”</td></tr>
+      <tr><td>品牌色越鲜艳越好</td><td>投屏期间注意力在内容上，UI 只是过渡；大屏高彩度 UI 会与内容争夺注意并造成眩光</td><td>低彩度单一主色相 + 中性灰阶；语义色只在状态<em>变化</em>时出现</td></tr>
+      <tr><td>延迟、码率是工程信息，不给用户看</td><td>“卡不卡”是主观感受，没有数字就无法判断该怪网络还是怪设备，也不知道该调什么</td><td>状态胶囊显示 ms 数值 + 色阶 + 文字等级（三重编码，色弱可用）</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="grid2 mt24">
+    <div class="panel">
+      <h4>不可违背的基础约束</h4>
+      <ul>
+        <li><b>认知</b>：工作记忆约 4±1 个组块 → 每屏 1 个主操作、≤2 个次操作。</li>
+        <li><b>设备</b>：手机 360 dp 宽、触控目标 ≥48 dp；TV 960×540 dp、观看距离约 3 m、只有方向键 / 确定 / 返回 / 菜单。</li>
+        <li><b>业务</b>：北极星 = 60 秒内首次投屏成功率 ≥90%；最大流失点是“搜不到”。</li>
+        <li><b>平台</b>：Android 14+ 每次会话重新授权录屏；不申请定位 → 不能显示 Wi‑Fi 名称；不申请悬浮窗。</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>投屏中，界面在任何时刻必须回答 4 个问题</h4>
+      <ul>
+        <li><b>连着谁？</b> 设备名 + 协议 + 加密状态</li>
+        <li><b>连得好吗？</b> 延迟 ms + 色阶等级 + 码率</li>
+        <li><b>出问题怎么办？</b> 原因 + 系统已经在做什么 + 用户能做什么</li>
+        <li><b>怎么停？</b> App 内 / 通知 / 快捷图块，三处同一个动作</li>
+      </ul>
+      <p class="mt12">四条品牌形容词落地为可检查的规则：<b>安静</b> = 单主色相、无渐变装饰；<b>可信</b> = 承诺写可验证的事实；<b>克制</b> = 语义色只表达状态；<b>专业</b> = 数字用等宽数字并带单位。</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ==================== 02 色卡 ==================== -->
+<section class="sec" id="color"><div class="wrap">
+  <div class="sec-h"><span class="no">02</span><h2>品牌主色与 Material 3 色彩角色</h2><p>主色 + 两个辅助色相 + 中性灰。表面色带极轻的主色倾向（蓝灰），让整个界面有统一的“温度”而不显得廉价纯灰。</p></div>
+
+  <div class="brandhero">
+    <div class="bigsw l theme-light" style="background:#2F5A82;color:#fff">
+      <div><div class="nm">BRAND PRIMARY · 港湾蓝 HARBOR BLUE</div><div class="hx mt8">#2F5A82</div><div class="mt4" style="opacity:.8;font-size:13px">HSL 209° · 47% · 35%　深色模式 #A2C9F0</div></div>
+      <div class="ramp" id="ramp"></div>
+    </div>
+    <div class="panel">
+      <h4>为什么是这个颜色</h4>
+      <ul>
+        <li><b>可信</b>：蓝色相是跨文化研究中与“可靠、安全”关联最稳定的色相，也是系统级工具（设置、网络）惯用色相，用户不需要重新学习它的含义。</li>
+        <li><b>安静</b>：饱和度压到 47%、明度 35%，去掉“营销蓝”的亮度刺激；与乐播类产品常见的高饱和红 / 橙形成气质上的反差。冷色在视觉上“后退”，不抢投屏内容的注意力。</li>
+        <li><b>科技</b>：色相落在 209°（偏青的蓝），带一点“信号 / 通讯”的联想，又避开 230°+ 的紫蓝与霓虹感。</li>
+        <li><b>省色值</b>：在白底上对比度约 7.2:1（AAA），同一个颜色既能做按钮底色也能直接做文字链接，减少需要维护的 Token 数量。</li>
+        <li><b>TV 深色</b>：深色模式取同色相高明度 <code>#A2C9F0</code>，在大面积深底上只承担焦点光环与强调，避免大屏眩光。</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub mt32">完整色彩角色 <small>每个色块：上方为角色名（用其 on- 色书写），下方为 HEX 与该组合的实测对比度</small></h3>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))">
+    <div class="scheme theme-light" id="sch-light"><header><b>浅色 Light</b><span class="muted" style="font-size:13px">手机 / 平板默认跟随系统</span></header></div>
+    <div class="scheme theme-dark" id="sch-dark"><header><b>深色 Dark</b><span class="muted" style="font-size:13px">TV 接收端固定使用</span></header></div>
+  </div>
+
+  <h3 class="sub mt32">Compose 映射 <small>由同一份 Token 自动生成，可直接粘进 <code>ui/theme/Color.kt</code></small></h3>
+  <pre class="code" id="kt"></pre>
+</div></section>
+
+<!-- ==================== 03 语义色 ==================== -->
+<section class="sec" id="semantic"><div class="wrap">
+  <div class="sec-h"><span class="no">03</span><h2>语义色与延迟色阶</h2><p>M3 只内置 error，成功与警告以 Extended Colors 四件套补齐。“信息”不新增色相，直接复用 primary 系 —— 色相总数越少，每个颜色携带的含义越确定（信息熵更低）。</p></div>
+
+  <div class="grid2" id="semgrid"></div>
+
+  <h3 class="sub mt32">延迟色阶 <small>阈值来自 PRD 1.3：100 ms = 游戏模式目标 / Nielsen 0.1 s 阈值；150 ms = 中位数目标；250 ms = P95 上限</small></h3>
+  <div class="latscale theme-light" style="padding:14px;border-radius:20px;background:var(--surface)" id="lat-l"></div>
+  <div class="latscale theme-dark mt8" style="padding:14px;border-radius:20px;background:var(--surface)" id="lat-d"></div>
+  <p class="muted mt12" style="font-size:13px">颜色永远不单独表达含义（WCAG 1.4.1）：胶囊同时显示数值、色点与等级文字。“良好”选橄榄绿而非第二种蓝，使四级在色相上单调过渡（绿 → 黄绿 → 琥珀 → 红），即使红绿色弱也能靠明度与文字区分。</p>
+
+  <h3 class="sub mt32">状态胶囊组件 <small>发送端投屏页 / 通知副标题共用；高 32 dp，内边距 12 dp，分段以 1 dp outlineVariant 分隔</small></h3>
+  <div class="grid2">
+    <div class="theme-light" style="background:var(--surface);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start" id="caps-l"></div>
+    <div class="theme-dark" style="background:var(--surface);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start" id="caps-d"></div>
+  </div>
+</div></section>
+
+<!-- ==================== 04 对比度 ==================== -->
+<section class="sec" id="contrast"><div class="wrap">
+  <div class="sec-h"><span class="no">04</span><h2>对比度校验</h2><p>按 WCAG 2.x 相对亮度公式在页面加载时逐对计算（非估算）。阈值：正文 ≥4.5:1（AA）、≥7:1（AAA）；大字（≥18.66 px 粗体 / 24 px）与图形边界 ≥3:1。分隔线属装饰性元素，不在要求之列。</p></div>
+  <div class="tbl-wrap"><table id="crtable">
+    <thead><tr><th>前景 / 背景</th><th>用途</th><th>类型</th><th>浅色示例</th><th>浅色</th><th>深色示例</th><th>深色</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <p class="muted mt12" style="font-size:13px">评级：<span class="cr-badge cr-aaa">AAA</span> ≥7　<span class="cr-badge cr-aa">AA</span> ≥4.5　<span class="cr-badge cr-lg">大字/图形</span> ≥3　<span class="cr-badge cr-no">不达标</span> &lt;3（或正文 &lt;4.5）。TV 焦点规范要求“焦点态 vs 非焦点态底色”≥3:1，对应 WCAG 2.2 · 2.4.13 Focus Appearance（AAA）。</p>
+</div></section>
+
+<!-- ==================== 05 字体 ==================== -->
+<section class="sec" id="type"><div class="wrap">
+  <div class="sec-h"><span class="no">05</span><h2>字体层级</h2><p>不打包字体：系统字体在 Android 上即 Roboto + Noto Sans CJK，零体积、跟随系统字号放大（≤200%，PRD 9.4），也符合 F‑Droid 的精简诉求。数字一律开启等宽数字（<code>fontFeatureSettings = "tnum"</code>），延迟跳动时不抖动。</p></div>
+
+  <div class="panel" style="margin-bottom:20px">
+    <h4>TV 字号如何推导（视角等效）</h4>
+    <p>手机：1 dp ≈ 0.16 mm，阅读距离约 30 cm → 视角 ≈ 0.00053 rad。55 英寸电视：960 dp 铺满约 1.21 m 宽，1 dp ≈ 1.26 mm，观看距离约 3 m → 视角 ≈ 0.00042 rad。<b>TV 上同样的 dp 看起来只有手机的 0.79 倍，因此 TV 字号 ≈ 手机 × 1.27</b>：手机正文 14 sp → TV 18 sp；手机标题 16 → TV 20~22。TV 最小字号 14 sp（仅用于辅助标签）。</p>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h4>手机 / 平板（sp）</h4>
+      <div id="type-phone"></div>
+    </div>
+    <div class="panel theme-dark" style="background:var(--surface-container-low)">
+      <h4>TV（sp，设计基准 960×540 dp）</h4>
+      <div id="type-tv"></div>
+    </div>
+  </div>
+  <div class="panel mt20">
+    <h4>字体栈与排印规则</h4>
+    <p><code style="font-size:12px">-apple-system, "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", Roboto, sans-serif</code>（仅本文档预览用；App 内使用 <code>FontFamily.Default</code>）。等宽：<code style="font-size:12px">ui-monospace, "Roboto Mono", monospace</code>，用于 IP、投屏码、PIN。</p>
+    <ul class="mt8">
+      <li>中文字重只用 400 / 500 / 600 三档：CJK 字形笔画密，700 在小字号会糊成一团。</li>
+      <li>中文正文行高 1.5~1.6（比拉丁文 M3 默认更松），CJK 方块字需要更多行间呼吸。</li>
+      <li>中文不加字距（letter-spacing 0）；PIN / 投屏码加 0.08em 并按 3+5 分组，降低短时记忆负荷（Miller 分块）。</li>
+      <li>数值与单位间加窄空格：<span class="num">68 ms</span>、<span class="num">7.6 Mbps</span>。</li>
+    </ul>
+  </div>
+</div></section>
+
+<!-- ==================== 06 圆角 间距 高度 ==================== -->
+<section class="sec" id="shape"><div class="wrap">
+  <div class="sec-h"><span class="no">06</span><h2>圆角 · 间距 · 高度层级</h2><p>圆角随组件尺寸递增（视觉上保持相同“柔和度”）；间距基于 4 dp 网格；高度以表面色阶表达，阴影只在浅色模式作为辅助。</p></div>
+  <div class="grid2">
+    <div class="panel">
+      <h4>圆角 Shape</h4>
+      <div class="radius-row mt12">
+        <div><i style="border-radius:4px"></i>XS 4<br>标签角标</div>
+        <div><i style="border-radius:8px"></i>S 8<br>Snackbar</div>
+        <div><i style="border-radius:12px"></i>M 12–14<br>输入框 / 头像</div>
+        <div><i style="border-radius:16px"></i>L 16<br>卡片 / TV 卡片</div>
+        <div><i style="border-radius:28px"></i>XL 28<br>对话框 / 底部弹层</div>
+        <div><i style="border-radius:36px"></i>Full<br>按钮 / 胶囊</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h4>间距 Spacing（dp）</h4>
+      <div class="space-row mt12">
+        <div><span class="u">4</span><i style="width:4px"></i><span class="muted">图标与文字最小间隙</span></div>
+        <div><span class="u">8</span><i style="width:8px"></i><span class="muted">同组元素</span></div>
+        <div><span class="u">12</span><i style="width:12px"></i><span class="muted">按钮之间</span></div>
+        <div><span class="u">16</span><i style="width:16px"></i><span class="muted">手机页边距 / 卡片内边距</span></div>
+        <div><span class="u">24</span><i style="width:24px"></i><span class="muted">区块之间 / 平板页边距</span></div>
+        <div><span class="u">32</span><i style="width:32px"></i><span class="muted">TV 组件间</span></div>
+        <div><span class="u">48</span><i style="width:48px"></i><span class="muted">TV 水平安全区（5%）</span></div>
+        <div><span class="u">64</span><i style="width:64px"></i><span class="muted">大段留白</span></div>
+      </div>
+      <p class="mt12">TV 过扫描安全区：水平 48 dp、垂直 27 dp（各 5%），所有可聚焦元素与文字不得越界。</p>
+    </div>
+  </div>
+  <h3 class="sub mt32">高度层级 Elevation <small>左：浅色（色阶 + 阴影）　右：深色（只用色阶 + 发丝描边，深底上阴影不可见）</small></h3>
+  <div class="grid2">
+    <div class="elev theme-light" style="background:var(--surface);padding:22px;border-radius:20px" id="elev-l"></div>
+    <div class="elev theme-dark" style="background:var(--surface);padding:22px;border-radius:20px" id="elev-d"></div>
+  </div>
+</div></section>
+
+<!-- ==================== 07 TV 焦点态 ==================== -->
+<section class="sec" id="focus"><div class="wrap">
+  <div class="sec-h"><span class="no">07</span><h2>TV 焦点态规范</h2><p>遥控器没有指针，“焦点在哪”是用户唯一的位置感。焦点必须在 3 米外、余光里也能被立即定位，因此采用<b>四重冗余编码</b>：反相填充（亮度）、缩放（尺寸）、外环（轮廓）、光晕（面积）。</p></div>
+  <div class="focusdemo theme-dark">
+    <div><span class="tbtn">默认</span><div class="cap">默认<br>surfaceContainerHighest</div></div>
+    <div><span class="tbtn f">聚焦</span><div class="cap">聚焦 · scale 1.08<br>onSurface 底 + 2 dp 环</div></div>
+    <div><span class="tbtn f pressed">按下</span><div class="cap">按下 · scale 1.02<br>去光晕，保留外环</div></div>
+    <div><span class="tbtn" style="opacity:.38">不可用</span><div class="cap">不可用 · 38%<br>不可获得焦点</div></div>
+    <div><div class="fcard"><svg class="ic s28"><use href="#i-tv"/></svg><span>客厅电视</span></div><div class="cap">卡片默认</div></div>
+    <div><div class="fcard ff"><svg class="ic s28"><use href="#i-tv"/></svg><span>客厅电视</span></div><div class="cap">卡片聚焦 · scale 1.05<br>大面积元素缩放更小</div></div>
+  </div>
+  <div class="tbl-wrap mt20"><table>
+    <thead><tr><th>参数</th><th>按钮 / Chip</th><th>卡片 / 大图块</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td>缩放</td><td>1.08</td><td>1.05</td><td>人眼感知的是边缘的绝对位移：小元素需要更大比例；相邻间距须 ≥ (scale−1) × 尺寸，避免放大后重叠</td></tr>
+      <tr><td>填充</td><td colspan="2">onSurface <code>#E1E2E8</code> 底 + inverseOnSurface <code>#2E3135</code> 字</td><td>深底上亮度反转是最强的前注意特征；焦点 / 非焦点底色对比约 12:1</td></tr>
+      <tr><td>外环</td><td colspan="2">3 dp surface 间隙 + 2 dp primary <code>#A2C9F0</code> 环</td><td>当元素本身是浅色（如二维码卡）时，反相失效，靠外环兜底</td></tr>
+      <tr><td>光晕</td><td colspan="2">0 0 32 dp 6 dp，primary @ 32%</td><td>增大焦点的视觉面积，余光可捕捉；按下时移除光晕作为“已确认”反馈</td></tr>
+      <tr><td>动效</td><td colspan="2">150 ms，cubic-bezier(.05,.7,.1,1)（M3 emphasized-decelerate）</td><td>&lt;200 ms 感知为即时；减速曲线让焦点“落定”，系统“减少动画”开启时直接切换</td></tr>
+      <tr><td>初始焦点</td><td colspan="2">每个页面必须声明默认焦点；返回时恢复上次焦点</td><td>避免“按了方向键没反应”的失控感；敏感操作（允许投屏）不放默认焦点</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<!-- ==================== 08 图标 ==================== -->
+<section class="sec" id="icons"><div class="wrap">
+  <div class="sec-h"><span class="no">08</span><h2>图标风格</h2><p>线性、圆角端点、1.75 描边（≈ Material Symbols Rounded weight 400），手机 24 dp / TV 32 dp。建议直接使用 Material Symbols Rounded（Apache‑2.0，与 GPL‑3.0 兼容）。以下为本稿使用的图标与语义。</p></div>
+  <div class="icgrid" id="icgrid"></div>
+  <div class="grid2 mt20">
+    <div class="panel"><h4>规则</h4><ul>
+      <li>状态图标必须配文字（图标是识别加速器，不是信息本身）。</li>
+      <li>“可信 / 加密”统一用 tertiary 色的盾牌与锁，与“连接成功”的绿色分离，避免把“已信任”误读为“已连接”。</li>
+      <li>协议区分用文字标签 <span class="proto">WSC</span> <span class="proto">DLNA</span> + 不同图标（屏幕箭头 / 播放三角），不依赖颜色。</li>
+    </ul></div>
+    <div class="panel"><h4>合规红线</h4><ul>
+      <li><b>禁止</b>出现苹果标志、AirPlay 三角形图标及“AirPlay”字样；统一使用通用“多设备”图标，文案写“兼容 Apple 设备（非官方）”。</li>
+      <li>不使用 Google Cast 图标表示投屏（避免暗示 Cast 协议）。</li>
+      <li>品牌标志（占位）：一大一小两块屏幕的叠放，小屏实心 = 发送端，大屏线框 = 接收端。</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<!-- ==================== 09 主流程 ==================== -->
+<section class="sec" id="flow"><div class="wrap">
+  <div class="sec-h"><span class="no">09</span><h2>主流程：发现 → 配对 → 授权 → 投屏 → 断线重连 → 结束</h2><p>实线节点为主路径，虚线为分支出口（绿 = 恢复，琥珀 = 降级，红 = 终止，蓝 = 替代路径）。每个分支都必须有出口，不允许“死胡同”状态。</p></div>
+  <div class="pathsum"><b>最短路径（可信设备）：</b><span class="node">点设备</span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">说明卡“继续”</span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">系统弹窗“开始”</span><span class="muted">= 3 次点击；勾选“下次不再提示”后为 2 次</span></div>
+  <div class="flow">
+    <div class="stage"><div class="rail"><span class="dot">1</span><span class="line"></span></div><div class="body">
+      <h4>发现 <span class="tagref">F03</span><span class="tagref">F04</span><span class="tagref">F11</span></h4>
+      <div class="lane"><span class="node">打开 App</span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node k">并行搜索<small>mDNS · SSDP · 最近设备直连 IP</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">设备列表<small>屏 02 → 03</small></span></div>
+      <div class="branches">
+        <span class="br alt"><svg class="ic s16"><use href="#i-qr"/></svg>T+3s 无结果：显示“扫码 / 投屏码 / 手动 IP”（搜索继续）</span>
+        <span class="br warn"><svg class="ic s16"><use href="#i-router"/></svg>T+10s 无结果：网络诊断（同网段 / AP 隔离 / 访客网络）屏 04</span>
+        <span class="br ok"><svg class="ic s16"><use href="#i-qr"/></svg>扫码：同时完成配对，跳过 PIN，直达授权</span>
+      </div>
+    </div></div>
+    <div class="stage"><div class="rail"><span class="dot">2</span><span class="line"></span></div><div class="body">
+      <h4>配对 <span class="tagref">F05</span><span class="tagref">8.4</span></h4>
+      <div class="lane"><span class="node">是可信设备？</span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node k">否：PAIR_REQ<small>TV 弹窗显示 4 位 PIN · 屏 12</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">手机输入 PIN<small>屏 05A · 30 s 超时</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">写入可信列表</span></div>
+      <div class="branches">
+        <span class="br ok"><svg class="ic s16"><use href="#i-shield"/></svg>是：跳过本阶段（“每次都确认”策略下仍走 TV 确认）</span>
+        <span class="br err"><svg class="ic s16"><use href="#i-close"/></svg>TV 拒绝 / 30 s 超时 → “对方拒绝了投屏请求” → 回列表</span>
+        <span class="br warn"><svg class="ic s16"><use href="#i-alert"/></svg>PIN 错误 → 清空重输（次数上限待定，见问题 Q8）</span>
+        <span class="br err"><svg class="ic s16"><use href="#i-info"/></svg>协议版本不兼容 → “对方版本过旧，请升级接收端”</span>
+      </div>
+    </div></div>
+    <div class="stage"><div class="rail"><span class="dot">3</span><span class="line"></span></div><div class="body">
+      <h4>授权 <span class="tagref">S-01</span><span class="tagref">S-03</span></h4>
+      <div class="lane"><span class="node">说明卡<small>屏 06 · 建议“整个屏幕”</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node k">系统录屏授权<small>MediaProjection</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">启动前台服务<small>mediaProjection 类型</small></span></div>
+      <div class="branches">
+        <span class="br err"><svg class="ic s16"><use href="#i-close"/></svg>拒绝录屏 → “需要允许录屏才能镜像” + [重试] [改用推送（V1）]</span>
+        <span class="br warn"><svg class="ic s16"><use href="#i-volx"/></svg>拒绝录音 → 只投画面，胶囊显示“无声音”，TV 显示角标</span>
+      </div>
+    </div></div>
+    <div class="stage"><div class="rail"><span class="dot">4</span><span class="line"></span></div><div class="body">
+      <h4>投屏 <span class="tagref">F01</span><span class="tagref">F10</span><span class="tagref">R-03</span></h4>
+      <div class="lane"><span class="node">WebRTC 会话<small>host 候选 · DTLS-SRTP</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">首帧 ≤ 2 s</span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node k">投屏中<small>屏 07 / 13 · 胶囊 + 通知 + 图块</small></span></div>
+      <div class="branches">
+        <span class="br warn"><svg class="ic s16"><use href="#i-gauge"/></svg>网络变差 → 自动降为“流畅” + Snackbar“已切换为流畅 [撤销]”</span>
+        <span class="br alt"><svg class="ic s16"><use href="#i-lock"/></svg>受保护内容 → TV 提示改用推送 · 屏 15</span>
+        <span class="br alt"><svg class="ic s16"><use href="#i-phone"/></svg>单应用共享且该应用退后台 → TV 占位“发送端已切换应用”（S-02）</span>
+      </div>
+    </div></div>
+    <div class="stage"><div class="rail"><span class="dot">5</span><span class="line"></span></div><div class="body">
+      <h4>断线重连 <span class="tagref">F07</span><span class="tagref">8.4</span></h4>
+      <div class="lane"><span class="node">信令 / ICE 断开</span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node k">保留录屏会话<small>不停 MediaProjection</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">指数退避重连<small>0.5 → 1 → 2 s… 最长 30 s · 屏 08A / 14</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">ICE 重启 + 请求关键帧</span></div>
+      <div class="branches">
+        <span class="br ok"><svg class="ic s16"><use href="#i-refresh"/></svg>30 s 内恢复 → 回到 ④，无需重新授权（目标 ≤3 s 出画面）</span>
+        <span class="br err"><svg class="ic s16"><use href="#i-close"/></svg>超过 30 s → “连接已断开” 屏 08B；TV 回待机；重新连接需重新授权（14+）</span>
+      </div>
+    </div></div>
+    <div class="stage"><div class="rail"><span class="dot">6</span><span class="line"></span></div><div class="body">
+      <h4>结束 <span class="tagref">S-07</span><span class="tagref">F25</span></h4>
+      <div class="lane"><span class="node">App 内 / 通知 / 快捷图块“停止”<small>TV：连按两次返回</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node">1 s 内释放<small>PeerConnection · 编码器 · 前台服务</small></span><span class="arr"><svg class="ic s16"><use href="#i-chev"/></svg></span><span class="node k">写入本机投屏报告<small>屏 10 · 只存本地</small></span></div>
+    </div></div>
+  </div>
+</div></section>
+
+<!-- ==================== 10 发送端 ==================== -->
+<section class="sec" id="sender"><div class="wrap">
+  <div class="sec-h"><span class="no">10</span><h2>发送端交互稿（手机）</h2><p>画面跟随页面右上角的浅 / 深色切换。紫红虚线框 = 标注层，不属于界面。所有可点击区域 ≥48 dp；文字支持 200% 放大（列表项高度随内容增长，不固定行高）。</p></div>
+  <div class="boards">
+
+    <!-- 01 首次引导 -->
+    <article class="board">
+      <div class="bh"><span class="id">01</span><b>首次引导 · 承诺 + 模式选择</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="首次引导界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="bd" style="padding-top:28px">
+          <div class="iconTile"><svg class="ic s28"><use href="#i-mark"/></svg></div>
+          <div class="t-hl mt20">把手机画面，<br>安静地送到大屏</div>
+          <div class="t-bm mv mt4">局域网直连 · GPL‑3.0 开源，代码可审计</div>
+          <div class="mt16">
+            <div class="promise"><span class="pt"><svg class="ic s20"><use href="#i-noad"/></svg></span><div><b>没有广告，永久免费</b><span>不接入任何广告、统计、崩溃上报 SDK</span></div></div>
+            <div class="promise"><span class="pt"><svg class="ic s20"><use href="#i-nouser"/></svg></span><div><b>不需要账号</b><span>打开即用，不索要手机号</span></div></div>
+            <div class="promise"><span class="pt"><svg class="ic s20"><use href="#i-offline"/></svg></span><div><b>不连接互联网</b><span>画面只在你家的局域网内加密传输</span></div></div>
+          </div>
+          <div class="t-ls mv mt16">这台设备用来</div>
+          <div class="row gap12 mt8">
+            <div class="mode on"><span class="ck"><svg class="ic s16"><use href="#i-check"/></svg></span><svg class="ic pc"><use href="#i-phone"/></svg><div class="t-tm mt8">投屏到别处</div><div class="t-bs mv">发送端 · 本机推荐</div></div>
+            <div class="mode"><svg class="ic mv"><use href="#i-tv"/></svg><div class="t-tm mt8">接收投屏</div><div class="t-bs mv">把本机当作屏幕</div></div>
+          </div>
+        </div>
+        <div class="ft"><span class="btn fill blk">开始使用</span><div class="t-bs mv ctr mt8">电视还没装接收端？<span class="pc" style="font-weight:500">获取安装方法</span></div></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 6.1</span><span class="tagref">决策 #5</span><span class="tagref">L4 / L6 / L7</span></div><dl>
+        <dt>触发</dt><dd>首次启动，仅出现一次。模式按设备类型预选（手机 / 平板 = 发送，TV 直接进入屏 11）。</dd>
+        <dt>规则</dt><dd><ul><li>承诺写可验证的事实（“不接入广告 SDK”），不写形容词（“纯净”）。</li><li>本页<b>不申请任何权限</b>：权限推迟到用时，首屏零防御心理。</li><li>模式卡是单选，整卡可点（≥108 dp 高）。</li></ul></dd>
+        <dt>出口</dt><dd>开始使用 → 02；选“接收投屏” → 本机待机页；“获取安装方法” → 接收端安装说明页。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 02 搜索中 -->
+    <article class="board">
+      <div class="bh"><span class="id">02</span><b>设备搜索中 · 骨架 + 3 秒兜底</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="设备搜索中界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="t pl">投屏</span><span class="ib"><svg class="ic"><use href="#i-tune"/></svg></span></div>
+        <div class="bd">
+          <div class="row gap8 t-bm mv" style="padding:4px 0 2px"><span class="spin pc"></span><span>正在搜索同一网段的设备</span><span class="sp"></span><span class="num">已发现 0</span></div>
+          <div class="lbl">附近设备</div>
+          <div class="li"><span class="sk" style="width:44px;height:44px;border-radius:14px"></span><div class="tx"><div class="sk" style="width:46%;height:14px"></div><div class="sk mt8" style="width:72%;height:11px"></div></div></div>
+          <div class="li"><span class="sk" style="width:44px;height:44px;border-radius:14px"></span><div class="tx"><div class="sk" style="width:38%;height:14px"></div><div class="sk mt8" style="width:64%;height:11px"></div></div></div>
+          <div class="li"><span class="sk" style="width:44px;height:44px;border-radius:14px"></span><div class="tx"><div class="sk" style="width:52%;height:14px"></div><div class="sk mt8" style="width:58%;height:11px"></div></div></div>
+          <div class="card anno mt24"><span class="anno-b">T+3s 淡入</span>
+            <div class="t-tm">没看到你的电视？</div>
+            <div class="t-bs mv mt4">路由器可能拦截了自动发现。可以直接连接：</div>
+            <div class="row gap8 mt12"><span class="btn ton sm" style="flex:1"><svg class="ic s18"><use href="#i-qr"/></svg>扫码连接</span><span class="btn ton sm" style="flex:1"><svg class="ic s18"><use href="#i-code"/></svg>输入投屏码</span></div>
+            <div class="ctr mt8"><span class="btn txt sm">手动输入 IP 地址</span></div>
+          </div>
+        </div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F03</span><span class="tagref">F04</span><span class="tagref">PRD 10 搜索中</span></div><dl>
+        <dt>触发</dt><dd>进入首页即并行启动 mDNS + SSDP + 最近设备直连。</dd>
+        <dt>规则</dt><dd><ul><li>骨架固定 3 行，与真实列表项同高，设备出现时原位替换，<b>不发生布局跳动</b>。</li><li>T+3s 兜底卡淡入（200 ms），搜索不停止；设备出现后兜底卡下沉到列表底部。</li><li>计数实时更新，TalkBack 以 polite 播报“已发现 n 台”。</li></ul></dd>
+        <dt>出口</dt><dd>发现设备 → 03；T+10s 仍为 0 → 04；扫码 → 相机（仅此时申请 CAMERA）；投屏码 → 05B。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 03 设备列表 -->
+    <article class="board">
+      <div class="bh"><span class="id">03</span><b>设备列表 · 协议与可信标识</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="设备列表界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="t pl">投屏</span><span class="ib"><svg class="ic"><use href="#i-tune"/></svg></span></div>
+        <div class="bd">
+          <div class="row gap8 t-bm mv" style="padding:4px 0 2px"><span class="spin" style="width:12px;height:12px;border-width:1.5px"></span><span>已发现 4 台 · 仍在搜索</span></div>
+          <div class="lbl">最近使用</div>
+          <div class="li"><span class="av p"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">客厅电视 <span class="tag trust"><svg class="ic" style="width:12px;height:12px"><use href="#i-shield"/></svg>已信任</span></div><div class="t2"><span class="proto">WSC</span> 镜像 · 上次 2 小时前</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+          <div class="lbl">附近设备</div>
+          <div class="li"><span class="av"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">书房盒子 <span class="tag ol">新设备</span></div><div class="t2"><span class="proto">WSC</span> 镜像 · 首次连接需输入 PIN</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+          <div class="li"><span class="av"><svg class="ic"><use href="#i-tablet"/></svg></span><div class="tx"><div class="t1">小张的平板 <span class="tag trust"><svg class="ic" style="width:12px;height:12px"><use href="#i-shield"/></svg>已信任</span></div><div class="t2"><span class="proto">WSC</span> 镜像 · 192.168.1.40</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+          <div class="li dis"><span class="av"><svg class="ic"><use href="#i-dlna"/></svg></span><div class="tx"><div class="t1">卧室电视</div><div class="t2"><span class="proto">DLNA</span> 仅支持推送视频 · 下个版本开放</div></div><span class="tr"><svg class="ic s20"><use href="#i-info"/></svg></span></div>
+        </div>
+        <div class="ft" style="border-top:1px solid var(--outline-variant);padding-top:8px">
+          <div class="row" style="justify-content:space-between"><span class="btn txt"><svg class="ic s18"><use href="#i-qr"/></svg>扫码</span><span class="btn txt"><svg class="ic s18"><use href="#i-code"/></svg>投屏码</span><span class="btn txt"><svg class="ic s18"><use href="#i-link"/></svg>IP</span></div>
+          <div class="row gap6 t-bs mv" style="justify-content:center;padding:2px 0 4px"><svg class="ic s16" style="color:var(--tertiary)"><use href="#i-lock"/></svg>所有连接均端到端加密</div>
+        </div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F03</span><span class="tagref">F05</span><span class="tagref">8.4 最近设备</span></div><dl>
+        <dt>规则</dt><dd><ul><li>排序：最近使用（按时间）→ 可信 → 新设备 → 不可用。最常用的设备永远在拇指热区第一位。</li><li>协议用<b>图标 + 等宽文字标签</b>双重区分：WSC = 屏幕箭头，DLNA = 播放三角。</li><li>“已信任”用 tertiary 盾牌，区别于“已连接”的绿色。</li><li>DLNA 设备在 MVP 置灰但可点（显示原因），见问题 Q4。</li></ul></dd>
+        <dt>出口</dt><dd>可信设备 → 06 说明卡；新设备 → 05A；长按 → 设备详情（移除信任 / 重命名）。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 04 没找到 + 诊断 -->
+    <article class="board">
+      <div class="bh"><span class="id">04</span><b>没找到设备 · 网络诊断</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="没找到设备与网络诊断界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="t pl">投屏</span><span class="ib"><svg class="ic"><use href="#i-refresh"/></svg></span></div>
+        <div class="bd">
+          <div class="ill" style="height:96px"><svg viewBox="0 0 160 96" width="160" height="96" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="color:var(--outline)"><rect x="70" y="18" width="78" height="50" rx="6"/><path d="M98 80h22"/><rect x="14" y="36" width="26" height="46" rx="5" style="color:var(--primary)" stroke="var(--primary)"/><path d="M46 52c6-6 12-6 18 0" stroke-dasharray="2 5"/><path d="M42 44c10-10 22-10 32 0" stroke-dasharray="2 5"/><path d="M104 38a5 5 0 1 1 7 5c-2 1-3 2-3 4M108 54h.01" stroke-width="2"/></svg></div>
+          <div class="t-hs ctr mt8">没有发现设备</div>
+          <div class="t-bm mv ctr mt4">已搜索 10 秒。多半是网络设置导致的，<br>可以按下面检查：</div>
+          <div class="card mt16" style="padding:4px 14px">
+            <div class="diag"><span class="st ok"><svg class="ic s16"><use href="#i-check"/></svg></span><div><b>手机已连接 Wi‑Fi</b><p>本机地址 <span class="mono">192.168.1.23</span>，电视应为 <span class="mono">192.168.1.x</span></p></div></div>
+            <div class="diag"><span class="st q"><svg class="ic s16"><use href="#i-help"/></svg></span><div><b>电视和手机连的是同一个路由器吗？</b><p>双频路由的 2.4G 与 5G 有时互不相通</p></div></div>
+            <div class="diag"><span class="st q"><svg class="ic s16"><use href="#i-help"/></svg></span><div><b>路由器是否开启了“AP 隔离”？</b><p>也叫无线隔离 / 客户端隔离 · <span class="pc">如何检查</span></p></div></div>
+            <div class="diag"><span class="st q"><svg class="ic s16"><use href="#i-help"/></svg></span><div><b>是否连接了“访客网络”？</b><p>访客网络通常禁止设备互访，请换到主网络</p></div></div>
+          </div>
+        </div>
+        <div class="ft"><div class="row gap8"><span class="btn fill" style="flex:1"><svg class="ic s18"><use href="#i-qr"/></svg>扫码连接</span><span class="btn ton" style="flex:1">输入投屏码</span></div><div class="t-bs mv ctr mt8">电视还没装接收端？<span class="pc" style="font-weight:500">获取安装方法</span></div></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F11</span><span class="tagref">PRD 10 没找到</span><span class="tagref">8.5 不读 SSID</span></div><dl>
+        <dt>规则</dt><dd><ul><li>诊断分“已确认”（绿勾）和“需你确认”（琥珀问号）两类，<b>不假装能检测无法检测的事</b>。</li><li>不申请定位权限 → 只显示网段，不显示 Wi‑Fi 名称。</li><li>主操作从“重新搜索”改为“扫码连接”：扫码绕开组播，是成功率最高的路径。</li><li>搜索在后台继续，发现设备时自动回到 03。</li></ul></dd>
+        <dt>出口</dt><dd>扫码 / 投屏码 → 配对；刷新 → 02；“如何检查” → 图文帮助页。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 05A PIN -->
+    <article class="board">
+      <div class="bh"><span class="id">05A</span><b>输入 PIN 配对</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="输入 PIN 配对界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">连接 书房盒子</span></div>
+        <div class="bd" style="align-items:center">
+          <div class="iconTile mt16"><svg class="ic s28"><use href="#i-tv"/></svg></div>
+          <div class="t-tl ctr mt16">输入电视上显示的 PIN</div>
+          <div class="t-bm mv ctr mt4">用于确认你本人就在电视前。<br>只有第一次连接需要。</div>
+          <div class="pin mt24"><span>4</span><span>7</span><span class="cur"></span><span></span></div>
+          <div class="row gap8 t-bs mv mt20"><span class="spin" style="width:12px;height:12px;border-width:1.5px"></span>等待 书房盒子 响应 · <span class="num">26</span> 秒</div>
+          <div class="t-bs mt8" style="color:var(--error);visibility:hidden">PIN 不正确，请再试一次</div>
+        </div>
+        <div class="kb"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="fn">取消</span><span>0</span><span class="fn">⌫</span></div>
+        <div class="gb" style="background:var(--surface-container)"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F05</span><span class="tagref">8.4 配对流程</span><span class="tagref">PRD 10 等待确认</span></div><dl>
+        <dt>规则</dt><dd><ul><li>4 格独立框，数字键盘自动弹出；输满第 4 位<b>自动提交</b>，无需确认按钮。</li><li>错误：格子抖动 1 次（120 ms ×2）+ error 文案，清空并聚焦第 1 格。</li><li>倒计时与 TV 弹窗同步（30 s）；剩余 10 s 时文字转为 warning 色。</li><li>使用 <code>autofill</code> 关闭、<code>KeyboardType.NumberPassword</code>。</li></ul></dd>
+        <dt>出口</dt><dd>成功 → 06；TV 拒绝 / 超时 → Snackbar“对方拒绝了投屏请求”并回 03。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 05B 投屏码 -->
+    <article class="board">
+      <div class="bh"><span class="id">05B</span><b>输入投屏码</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="输入投屏码界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">输入投屏码</span></div>
+        <div class="bd" style="align-items:center">
+          <div class="t-bm mv ctr mt24">在电视待机页上可以看到 8 位投屏码</div>
+          <div class="pin eight mt24"><span>1</span><span>2</span><span>8</span><span class="sep">·</span><span>4</span><span>3</span><span class="cur"></span><span></span><span></span></div>
+          <div class="card mt24" style="width:100%;display:flex;gap:12px;align-items:center;padding:12px 14px">
+            <svg class="ic s20 mv"><use href="#i-router"/></svg>
+            <div class="t-bs mv" style="flex:1">将连接 <span class="mono" style="color:var(--on-surface);font-size:13px">192.168.1.128</span><br>前三位是电视地址的最后一段</div>
+          </div>
+          <div class="mt16"><span class="btn txt sm">改为手动输入 IP 地址</span></div>
+        </div>
+        <div class="kb"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="fn">取消</span><span>0</span><span class="fn">⌫</span></div>
+        <div class="gb" style="background:var(--surface-container)"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F04</span><span class="tagref">8.4 投屏码</span></div><dl>
+        <dt>规则</dt><dd><ul><li>3+5 分组显示，与 TV 端“128 43709”的排版一一对应，降低转抄错误。</li><li>输入前 3 位即实时显示解析出的 IP —— 让“码”的含义透明，用户出错时能自己发现网段不对。</li><li>非 /24 网段时提示“请改用扫码”。</li><li>后 5 位为一次性 PIN（PRD v1.1 决策 #19），输满即连接，<b>不再要求 4 位 PIN</b>；输错 3 次后该设备 60 秒内不能再发起。</li></ul></dd>
+        <dt>出口</dt><dd>成功 → 06；无响应 5 s → “找不到 192.168.1.128”+ 诊断入口。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 06 授权说明卡 -->
+    <article class="board">
+      <div class="bh"><span class="id">06</span><b>录屏授权前说明卡</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="录屏授权前说明卡"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="t pl">投屏</span><span class="ib"><svg class="ic"><use href="#i-tune"/></svg></span></div>
+        <div class="bd"><div class="lbl">最近使用</div><div class="li"><span class="av p"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">客厅电视</div><div class="t2">WSC 镜像</div></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="t-tl">开始镜像前，还有一步</div>
+          <div class="t-bm mv mt4">系统会询问是否允许录屏，请选择：</div>
+          <div class="mt12" style="border:1px solid var(--outline-variant);border-radius:16px;padding:6px">
+            <div class="opt on"><span class="radio"></span><div><div class="t-ll">共享整个屏幕 <span class="tag pr" style="background:var(--primary);color:var(--on-primary);margin-left:4px">推荐</span></div><div class="t-bs" style="opacity:.85">切换 App 时电视画面不中断</div></div></div>
+            <div class="opt"><span class="radio"></span><div><div class="t-ll">共享单个应用</div><div class="t-bs mv">离开该应用后，电视会显示占位画面</div></div></div>
+          </div>
+          <div class="row gap12 mt16"><svg class="ic s20" style="color:var(--tertiary)"><use href="#i-lock"/></svg><div class="t-bm">画面加密传输，只发送到 <b style="font-weight:500">客厅电视</b></div></div>
+          <div class="row gap12 mt12"><svg class="ic s20 mv"><use href="#i-vol"/></svg><div style="flex:1"><div class="t-bm">同时投送声音</div><div class="t-bs mv">只捕获手机播放的声音，不录麦克风</div></div><span class="sw on"></span></div>
+          <div class="row gap8 mt20" style="justify-content:flex-end"><span class="btn txt">取消</span><span class="btn fill">继续</span></div>
+          <div class="row gap8 t-bs mv" style="padding:6px 0 4px"><span style="width:18px;height:18px;border:2px solid var(--on-surface-variant);border-radius:4px"></span>下次不再提示</div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">S-01</span><span class="tagref">S-02</span><span class="tagref">S-03</span><span class="tagref">PRD 6.1 授权录屏</span></div><dl>
+        <dt>规则</dt><dd><ul><li>用“预演”降低系统弹窗的陌生感：卡片里的选项措辞与系统弹窗一致，用户到系统弹窗时只需“认出来”而不是“读懂”（再认 &lt; 回忆）。</li><li>声音开关首次打开时才申请 RECORD_AUDIO，申请前文案已说明用途。</li><li>Android 14+ 每次会话都需授权，故提供“下次不再提示”。</li></ul></dd>
+        <dt>出口</dt><dd>继续 → 系统授权 → 07；系统拒绝 → “需要允许录屏才能镜像”[重试]；取消 → 03。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 07 投屏中 -->
+    <article class="board">
+      <div class="bh"><span class="id">07</span><b>投屏中 · 状态胶囊 + 画质档位</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="投屏中界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏中</span></div>
+        <div class="bd">
+          <div class="card" style="border-radius:24px;padding:20px">
+            <div class="row gap12"><span class="iconTile" style="width:48px;height:48px;border-radius:14px"><svg class="ic"><use href="#i-tv"/></svg></span><div style="flex:1;min-width:0"><div class="t-tm">客厅电视</div><div class="row gap4 t-bs mv"><svg class="ic" style="width:14px;height:14px;color:var(--tertiary)"><use href="#i-lock"/></svg>已加密 · <span class="proto">WSC</span></div></div><span class="row gap6 t-ls" style="color:var(--success)"><span class="breath" style="width:8px;height:8px"></span>投屏中</span></div>
+            <div class="num mt16" style="font-size:40px;line-height:48px;font-weight:500;letter-spacing:.01em">00:12:48</div>
+            <div class="capsule mt12"><span><i class="d" style="background:var(--lat-1)"></i>68 ms<b style="color:var(--lat-1);font-weight:500">极佳</b></span><span>7.6 Mbps</span><span>1080p30</span></div>
+          </div>
+          <div class="lbl" style="padding-top:22px">画质</div>
+          <div class="seg"><span>流畅</span><span class="on"><svg class="ic s16"><use href="#i-check"/></svg>均衡</span><span>高清</span><span><svg class="ic s16"><use href="#i-game"/></svg>游戏</span></div>
+          <div class="t-bs mv mt8">1080p · 30 帧 · 最高 8 Mbps，适合日常镜像</div>
+          <div class="row gap12 mt16"><div style="flex:1"><div class="t-bm">自动调节</div><div class="t-bs mv">网络变差时自动降为“流畅”</div></div><span class="sw on"></span></div>
+          <div class="row gap12 mt16"><div style="flex:1"><div class="t-bm">声音</div><div class="t-bs mv">在电视上播放手机的声音</div></div><span class="sw on"></span></div>
+        </div>
+        <div class="ft"><span class="btn stop blk"><svg class="ic s20"><use href="#i-stop"/></svg>停止投屏</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F01</span><span class="tagref">F10</span><span class="tagref">F18</span><span class="tagref">S-07</span></div><dl>
+        <dt>规则</dt><dd><ul><li>胶囊每 1 s 刷新，数值等宽不抖动；等级文字只在跨档时变化（加 1 s 滞后，防止 99/101 ms 来回闪）。</li><li>分段按钮视觉 40 dp，触控区扩展到 48 dp；切档即时生效（DataChannel SET_QUALITY）。</li><li>停止按钮用 errorContainer：表达“终止”而不制造警报感；位于拇指热区。</li><li>悬浮胶囊需悬浮窗权限，与 8.5 冲突 → 胶囊放 App 内 + 通知（见问题 Q1）。</li></ul></dd>
+        <dt>出口</dt><dd>停止 → 1 s 内释放 → 03；网络变差 → Snackbar；断线 → 08A。</dd>
+      </dl>
+      <div class="notif mt16" aria-label="通知示意"><div class="h"><i><svg class="ic" style="width:12px;height:12px"><use href="#i-mark"/></svg></i>局域投屏 · 现在</div><div class="t-ll mt8" style="color:var(--on-surface)">正在投屏到 客厅电视</div><div class="t-bs mv num">延迟 68 ms · 7.6 Mbps · 均衡</div><div class="acts"><span>停止</span><span>切换为流畅</span></div></div>
+      <div class="snack mt12"><span style="flex:1">网络较差，已切换为“流畅”</span><b>撤销</b></div>
+      </div>
+    </article>
+
+    <!-- 08A 重连中 -->
+    <article class="board">
+      <div class="bh"><span class="id">08A</span><b>断线重连中</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="断线重连中界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:31</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏中</span></div>
+        <div class="bd">
+          <div class="card" style="border-radius:24px;padding:20px;background:var(--warning-container);color:var(--on-warning-container)">
+            <div class="row gap12"><span class="spin l" style="color:var(--warning)"></span><div class="t-tm">正在重连（第 3 次）</div></div>
+            <div class="t-bm mt12">网络中断了一下。录屏没有停止，恢复后会自动继续，不需要重新授权。</div>
+            <div class="lin mt16" style="color:var(--warning);background:color-mix(in srgb,var(--on-warning-container) 14%,transparent)"><i style="width:23%"></i></div>
+            <div class="row t-bs mt8 num"><span>已等待 7 秒</span><span class="sp"></span><span>最长 30 秒</span></div>
+          </div>
+          <div class="card mt16" style="padding:16px 18px">
+            <div class="row gap12"><span class="iconTile" style="width:40px;height:40px;border-radius:12px;background:var(--surface-container-high);color:var(--on-surface-variant)"><svg class="ic s20"><use href="#i-tv"/></svg></span><div style="flex:1"><div class="t-ll">客厅电视</div><div class="t-bs mv">电视正保留最后一帧画面</div></div></div>
+            <div class="capsule mt12" style="opacity:.7"><span><i class="d" style="background:var(--outline)"></i>— ms</span><span>已暂停</span></div>
+          </div>
+          <div class="t-bs mv mt16 row gap8"><svg class="ic s16"><use href="#i-info"/></svg>下一次尝试：<span class="num">2</span> 秒后</div>
+        </div>
+        <div class="ft"><span class="btn out blk" style="height:56px;border-radius:28px;font-size:16px;color:var(--error);border-color:var(--outline)"><svg class="ic s20"><use href="#i-stop"/></svg>停止投屏</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F07</span><span class="tagref">8.4 断线重连</span><span class="tagref">PRD 10 断线重连</span></div><dl>
+        <dt>触发</dt><dd>信令或 ICE 断开；前 1 s 内静默（避免瞬断闪烁），超过 1 s 才切换到本状态。</dd>
+        <dt>规则</dt><dd><ul><li>文案三段式：发生了什么 → 系统在做什么 → 你不需要做什么。</li><li>进度条按 30 s 上限线性推进，给出可预期的“终点”，降低等待焦虑。</li><li>通知同步改为“正在重连…”，停止仍可用。</li></ul></dd>
+        <dt>出口</dt><dd>恢复 → 07（Snackbar“已恢复”）；30 s 超时 → 08B；停止 → 03。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 08B 重连失败 -->
+    <article class="board">
+      <div class="bh"><span class="id">08B</span><b>重连失败</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="重连失败界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:31</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-close"/></svg></span><span class="t"></span></div>
+        <div class="bd" style="align-items:center">
+          <div class="iconTile mt32" style="background:var(--error-container);color:var(--on-error-container)"><svg class="ic s28"><use href="#i-close"/></svg></div>
+          <div class="t-hs ctr mt20">连接已断开</div>
+          <div class="t-bm mv ctr mt4">30 秒内没能重新连上 客厅电视</div>
+          <div class="card mt24" style="width:100%">
+            <div class="t-ls mv">可能的原因</div>
+            <div class="t-bm mt8">· 电视已关机，或退出了接收页面<br>· 手机或电视切换到了其他 Wi‑Fi<br>· 路由器重启</div>
+          </div>
+        </div>
+        <div class="ft">
+          <span class="btn fill blk"><svg class="ic s18"><use href="#i-refresh"/></svg>重新连接</span>
+          <div class="t-bs mv ctr mt8">系统要求重新允许一次录屏（Android 14 起）</div>
+          <div class="row gap8 mt12"><span class="btn ton" style="flex:1">返回设备列表</span><span class="btn txt">网络诊断</span></div>
+        </div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F07</span><span class="tagref">PRD 10 重连失败</span></div><dl>
+        <dt>规则</dt><dd><ul><li>失败页用 errorContainer 图标而非整页红色：失败是结果，不是危险。</li><li>提前告知“需要再授权一次”，避免用户以为重连出错。</li><li>重新连接跳过 06 说明卡（用户刚经历过），直达系统授权（见问题 Q11）。</li><li>本次断线写入投屏报告。</li></ul></dd>
+        <dt>出口</dt><dd>重新连接 → 系统授权 → 07；返回 → 03；网络诊断 → 04 诊断卡。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 09A 设置 -->
+    <article class="board">
+      <div class="bh"><span class="id">09A</span><b>设置（长截图）</b></div>
+      <div class="fit"><div class="phone tall" role="img" aria-label="设置页长截图"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">设置</span></div>
+        <div class="gl2">本机</div>
+        <div class="sli"><div class="tx"><div class="t1">设备名</div><div class="t2">小张的 Pixel 8</div></div><svg class="ic s20 mv"><use href="#i-edit"/></svg></div>
+        <div class="sli"><div class="tx"><div class="t1">默认模式</div><div class="t2">发送端（投屏到别处）</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="hr"></div>
+        <div class="gl2">投屏</div>
+        <div class="sli"><div class="tx"><div class="t1">画质档位</div><div class="t2">自动 · 网络变差时自动降档</div></div><span class="val">自动</span></div>
+        <div class="sli"><div class="tx"><div class="t1">声音</div><div class="t2">只捕获手机播放的声音</div></div><span class="sw on"></span></div>
+        <div class="sli"><div class="tx"><div class="t1">连接策略</div><div class="t2">已信任的设备免确认</div></div><span class="val">信任免确认</span></div>
+        <div class="sli"><div class="tx"><div class="t1">可信设备</div><div class="t2">3 台 · 可逐个移除</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="hr"></div>
+        <div class="gl2">接收（本机作为屏幕时）</div>
+        <div class="sli"><div class="tx"><div class="t1">DLNA 接收</div><div class="t2">视频 App 的“投屏”按钮可以选择本机</div></div><span class="sw on"></span></div>
+        <div class="sli ind"><div class="tx"><div class="t1">陌生设备需确认</div><div class="t2">防止邻居或酒店住客误投</div></div><span class="sw on"></span></div>
+        <div class="sli"><div class="tx"><div class="t1">兼容 Apple 设备（非官方）</div><div class="t2">开启后 iPhone、iPad 可用系统“屏幕镜像”连接本机</div></div><span class="sw"></span></div>
+        <div style="margin:0 16px 8px;padding:10px 12px;border-radius:12px;background:var(--surface-container);display:flex;gap:10px"><svg class="ic s16 mv" style="margin-top:2px"><use href="#i-info"/></svg><div class="t-bs mv">基于社区开源实现，与 Apple Inc. 无关，未获其授权或认证；系统更新后可能暂时失效；不支持受版权保护的视频。</div></div>
+        <div class="sli"><div class="tx"><div class="t1">开机自启</div><div class="t2">开机后在后台等待投屏，会略微增加耗电</div></div><span class="sw"></span></div>
+        <div class="hr"></div>
+        <div class="gl2">诊断</div>
+        <div class="sli"><span class="lead"><svg class="ic"><use href="#i-chart"/></svg></span><div class="tx"><div class="t1">投屏报告</div><div class="t2">最近 30 天成功率 94% · 平均延迟 72 ms</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="sli"><span class="lead"><svg class="ic"><use href="#i-router"/></svg></span><div class="tx"><div class="t1">网络诊断</div><div class="t2">检查网段、组播与路由器设置</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="sli"><span class="lead"><svg class="ic"><use href="#i-export"/></svg></span><div class="tx"><div class="t1">导出本地日志</div><div class="t2">导出前可以先查看内容，用于提交 issue</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="hr"></div>
+        <div class="gl2">关于</div>
+        <div class="sli"><span class="lead"><svg class="ic" style="color:var(--tertiary)"><use href="#i-shield"/></svg></span><div class="tx"><div class="t1">隐私</div><div class="t2">本应用不访问互联网，不上报任何数据；加密始终开启</div></div></div>
+        <div class="sli"><div class="tx"><div class="t1">开源许可</div><div class="t2">GPL‑3.0 · 版本 1.0.0</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div style="height:16px"></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.6</span><span class="tagref">F15 / R-08</span><span class="tagref">F25</span><span class="tagref">决策 #14 / #15</span></div><dl>
+        <dt>规则</dt><dd><ul><li>按“发送 → 接收 → 诊断 → 关于”的任务频率排序；接收相关项在 TV 端置顶。</li><li>每个开关都有一句“开了会怎样”的副标题，不写“启用 xx 功能”这类同义反复。</li><li>非官方声明<b>常驻显示</b>在开关下方，而不只在开启时弹一次。</li><li>加密不提供开关，只在“隐私”中陈述（决策 #15）。</li></ul></dd>
+        <dt>出口</dt><dd>打开 Apple 兼容 → 09B；投屏报告 → 10；画质 / 连接策略 → 单选对话框。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 09B Apple 兼容确认 -->
+    <article class="board">
+      <div class="bh"><span class="id">09B</span><b>开启“兼容 Apple 设备”确认</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="开启兼容 Apple 设备确认对话框"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">设置</span></div>
+        <div class="gl2">接收（本机作为屏幕时）</div>
+        <div class="sli"><div class="tx"><div class="t1">DLNA 接收</div></div><span class="sw on"></span></div>
+        <div class="sli"><div class="tx"><div class="t1">兼容 Apple 设备（非官方）</div></div><span class="sw"></span></div>
+        <div class="scrim"></div>
+        <div class="dlg">
+          <div class="ctr" style="color:var(--secondary)"><svg class="ic" style="margin:0 auto"><use href="#i-devices"/></svg></div>
+          <div class="t-hs ctr mt16" style="font-size:22px;line-height:30px">开启兼容 Apple 设备？</div>
+          <div class="t-bm mv mt12">开启后，本机会出现在 iPhone、iPad 的“屏幕镜像”列表中。</div>
+          <div class="t-bs mv mt12" style="line-height:20px">· 这是非官方的兼容实现，与 Apple Inc. 无关，未经其授权或认证<br>· iOS 更新后可能暂时无法使用<br>· 不支持受版权保护（DRM）的视频</div>
+          <div class="row gap12 mt16" style="padding:10px 12px;border-radius:12px;background:var(--surface-container-highest)"><div style="flex:1"><div class="t-ll">连接时要求输入 PIN</div><div class="t-bs mv">推荐，防止他人误连</div></div><span class="sw on"></span></div>
+          <div class="row gap8 mt20" style="justify-content:flex-end"><span class="btn txt">取消</span><span class="btn txt" style="font-weight:600">开启</span></div>
+        </div>
+        <div class="sp"></div><div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F15</span><span class="tagref">R-08</span><span class="tagref">PRD 12 AirPlay 合规</span></div><dl>
+        <dt>规则</dt><dd><ul><li>全程不出现“AirPlay”字样与苹果标志，用通用“多设备”图标。</li><li>M3 对话框：两个文字按钮，确认在右；风险说明为列表，可扫读。</li><li>PIN 默认开启（安全默认值，见问题 Q7）。</li><li>开启后才注册 <code>_airplay._tcp</code> / <code>_raop._tcp</code>。</li></ul></dd>
+        <dt>出口</dt><dd>开启 → 开关变为开 + Snackbar“iPhone 现在可以找到本机”；取消 → 保持关闭。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 10 投屏报告 -->
+    <article class="board">
+      <div class="bh"><span class="id">10</span><b>本机投屏报告</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="本机投屏报告界面"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏报告</span><span class="ib"><svg class="ic"><use href="#i-export"/></svg></span></div>
+        <div class="bd">
+          <div class="row gap8"><span class="tag" style="height:32px;padding:0 12px;font-size:13px;border-radius:8px;background:var(--secondary-container);color:var(--on-secondary-container)"><svg class="ic s16"><use href="#i-check"/></svg>最近 30 天</span><span class="tag ol" style="height:32px;padding:0 12px;font-size:13px;border-radius:8px;border-color:var(--outline)">全部</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" class="mt12">
+            <div class="stat"><div class="k">投屏成功率</div><div class="v">94<small>%</small></div><div class="s num">32 / 34 次</div></div>
+            <div class="stat"><div class="k">断线次数</div><div class="v">3<small>次</small></div><div class="s">其中 2 次自动恢复</div></div>
+            <div class="stat"><div class="k">平均延迟</div><div class="v">72<small>ms</small></div><div class="s"><i class="d" style="width:8px;height:8px;border-radius:50%;background:var(--lat-1)"></i>极佳</div></div>
+            <div class="stat"><div class="k">P95 延迟</div><div class="v">138<small>ms</small></div><div class="s"><i style="width:8px;height:8px;border-radius:50%;background:var(--lat-2)"></i>良好</div></div>
+          </div>
+          <div class="card mt8" style="padding:14px 14px 10px">
+            <div class="row"><span class="t-ll">延迟分布</span><span class="sp"></span><span class="t-bs mv">单位 ms</span></div>
+            <div class="hist mt8" id="hist"></div>
+            <div class="hist-x"><span>40</span><span>100</span><span>150</span><span>250</span><span>320</span></div>
+          </div>
+          <div class="lbl" style="padding-top:12px">常用设备</div>
+          <div class="row gap12" style="padding:6px 0"><svg class="ic s20 mv"><use href="#i-tv"/></svg><span class="t-bm" style="flex:1">客厅电视</span><span class="t-bs mv num">22 次 · 64 ms</span></div>
+          <div class="row gap12" style="padding:6px 0"><svg class="ic s20 mv"><use href="#i-tv"/></svg><span class="t-bm" style="flex:1">书房盒子</span><span class="t-bs mv num">10 次 · 91 ms</span></div>
+        </div>
+        <div class="ft" style="padding-top:6px"><div class="row gap8 t-bs mv"><svg class="ic s16" style="color:var(--tertiary)"><use href="#i-lock"/></svg><span style="flex:1">数据只保存在本机，不会上传</span><span class="btn txt sm" style="padding:0 8px">清除记录</span></div></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F25</span><span class="tagref">PRD 14</span><span class="tagref">决策 #12</span></div><dl>
+        <dt>规则</dt><dd><ul><li>四个核心数字用 2×2 网格，大号等宽数字 + 小号单位，一眼可比。</li><li>直方图按延迟色阶着色，阈值刻度与胶囊一致，建立统一心智模型。</li><li>“只保存在本机”陈述置于底部常驻，回应“报告=上报”的疑虑。</li><li>统计口径：成功 = 60 s 内出首帧。</li></ul></dd>
+        <dt>出口</dt><dd>导出（右上）→ 日志预览页 → 系统分享；清除 → 二次确认对话框。</dd>
+      </dl></div>
+    </article>
+
+  </div>
+</div></section>
+
+<!-- ==================== 11 接收端 ==================== -->
+<section class="sec" id="receiver"><div class="wrap">
+  <div class="sec-h"><span class="no">11</span><h2>接收端交互稿（TV，16:9）</h2><p>TV 固定使用深色方案（不随页面切换）：大屏在暗环境中的亮背景会造成眩光与烧屏风险。设计基准 960×540 dp，虚线外为 5% 过扫描区。焦点态以反相填充 + 缩放 + 外环 + 光晕表示。</p></div>
+  <div class="boards">
+
+    <!-- 11 待机 -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">11</span><b>待机页 · 等待投屏</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 待机页"><div class="scr">
+        <div class="safe">
+          <div class="row" style="height:48px"><span class="row gap12" style="color:var(--on-surface-variant);font-size:16px"><span class="iconTile" style="width:36px;height:36px;border-radius:11px"><svg class="ic s20"><use href="#i-mark"/></svg></span>局域投屏</span><span class="sp"></span><span style="font-size:14px;color:var(--on-surface-variant);margin-right:20px">无广告 · 无账号 · 不连接互联网</span><span class="tbtn icn"><svg class="ic"><use href="#i-tune"/></svg></span></div>
+          <div style="display:grid;grid-template-columns:1fr 316px;gap:48px;margin-top:22px">
+            <div>
+              <div class="row gap12" style="font-size:16px;color:var(--success)"><span class="breath"></span>等待投屏</div>
+              <div style="font-size:48px;line-height:58px;font-weight:600;margin-top:8px">客厅电视</div>
+              <div style="font-size:18px;color:var(--on-surface-variant);margin-top:16px">手机与电视连接同一个路由器后：</div>
+              <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;font-size:18px">
+                <div class="row gap12"><span style="width:28px;height:28px;border-radius:50%;background:var(--surface-container-high);display:grid;place-items:center;font-size:14px;flex:none">1</span>手机打开本应用，选择「客厅电视」</div>
+                <div class="row gap12"><span style="width:28px;height:28px;border-radius:50%;background:var(--surface-container-high);display:grid;place-items:center;font-size:14px;flex:none">2</span>搜不到时，扫描右侧二维码或输入投屏码</div>
+              </div>
+              <div class="row gap16" style="margin-top:28px;padding:16px 18px 16px 20px;border-radius:20px;background:var(--surface-container)">
+                <svg class="ic s32" style="color:var(--secondary)"><use href="#i-devices"/></svg>
+                <div style="flex:1"><div style="font-size:17px;font-weight:500">iPhone / iPad 用户</div><div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">在设置中开启“兼容 Apple 设备”后，<br>用系统「屏幕镜像」即可连接</div></div>
+                <span class="tbtn f">去开启</span>
+              </div>
+            </div>
+            <div class="tvcard" style="padding:22px 24px;text-align:center">
+              <div style="width:184px;height:184px;margin:0 auto;background:#fff;border-radius:14px;padding:8px"><svg class="qr" data-seed="7" viewBox="0 0 29 29" width="168" height="168" shape-rendering="crispEdges"></svg></div>
+              <div style="font-size:14px;color:var(--on-surface-variant);margin-top:10px">扫码连接 · 免输入 PIN</div>
+              <div style="height:1px;background:var(--outline-variant);margin:16px 0 12px"></div>
+              <div style="font-size:14px;color:var(--on-surface-variant)">投屏码</div>
+              <div class="mono" style="font-size:40px;line-height:48px;font-weight:500;letter-spacing:.08em">128 43709</div>
+              <div class="mono" style="font-size:14px;color:var(--on-surface-variant);margin-top:2px">192.168.1.128 : 8443</div>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;inset:27px 48px;border:1px dashed rgba(180,84,127,.55);pointer-events:none;border-radius:4px"></div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">R-01</span><span class="tagref">F04</span><span class="tagref">F08</span><span class="tagref">PRD 10 AirPlay 未开启</span></div><dl>
+        <dt>布局</dt><dd>左侧 = 身份与步骤（读），右侧 = 连接凭据（扫 / 抄）。二维码固定白底深码，不随主题反相，保证识别率。</dd>
+        <dt>焦点</dt><dd><ul><li>页面只有 2 个可聚焦元素（去开启、设置），默认焦点在“去开启”（仅 Apple 兼容关闭时显示该卡；开启后卡片消失，默认焦点移到设置）。</li><li>投屏码 3+5 分组、0.08em 字距，3 m 外可抄写。</li></ul></dd>
+        <dt>防烧屏</dt><dd>10 分钟无操作进入屏保：仅保留设备名 + 投屏码，每 60 s 移动位置（见问题 Q10）。</dd>
+        <dt>出口</dt><dd>收到请求 → 12；可信设备直连 → 13；去开启 → TV 设置（同 09B 对话框）。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 12 投屏请求确认 -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">12</span><b>投屏请求确认 · PIN</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 投屏请求确认弹窗"><div class="scr">
+        <div class="safe" style="filter:blur(3px) brightness(.55)">
+          <div style="font-size:48px;font-weight:600;margin-top:110px">客厅电视</div>
+          <div style="position:absolute;right:0;top:70px;width:316px;height:380px" class="tvcard"></div>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:3"></div>
+        <div class="tvdlg">
+          <div style="width:56px;height:56px;border-radius:18px;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;margin:0 auto"><svg class="ic s28"><use href="#i-phone"/></svg></div>
+          <div style="font-size:26px;line-height:34px;font-weight:600;margin-top:16px">小张的 Pixel 8 请求投屏</div>
+          <div style="font-size:15px;color:var(--on-surface-variant);margin-top:6px"><span style="color:var(--warning)">首次连接</span> · <span class="mono">192.168.1.23</span> · WSC 镜像</div>
+          <div class="tvpin"><span>4</span><span>7</span><span>0</span><span>2</span></div>
+          <div style="font-size:16px;color:var(--on-surface-variant)">请在手机上输入此 PIN。配对后这台手机下次可直接投屏。</div>
+          <div class="row gap16" style="justify-content:center;margin-top:26px"><span class="tbtn f" style="min-width:150px;justify-content:center">拒绝</span><span class="tbtn pri" style="min-width:150px;justify-content:center"><svg class="ic s20"><use href="#i-check"/></svg>允许</span></div>
+          <div class="num" style="font-size:14px;color:var(--on-surface-variant);margin-top:18px">28 秒后自动拒绝</div>
+        </div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F05</span><span class="tagref">8.4 配对</span><span class="tagref">R-09</span><span class="tagref">L13</span></div><dl>
+        <dt>焦点</dt><dd><b>默认焦点在“拒绝”</b>：遥控器“确定”是高频习惯动作，安全默认值应让误按的后果可逆（拒绝后可重发，允许则不可撤回）。</dd>
+        <dt>规则</dt><dd><ul><li>PIN 用 44 sp 等宽数字 + 独立格子，3 m 外可读。</li><li>“允许”= TV 端同意；会话仍需手机端 PIN 校验成功才建立（在场 + 同意，见问题 Q2）。</li><li>30 s 倒计时，与手机同步；DLNA 陌生设备推送沿用此弹窗（无 PIN 区域）。</li><li>已有会话时新请求弹出相同弹窗，标题改为“…请求替换当前投屏”。</li></ul></dd>
+        <dt>出口</dt><dd>手机 PIN 正确 → 13；拒绝 / 超时 → 11；返回键 = 拒绝。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 13 播放中 + 统计 -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">13</span><b>镜像播放中 · 菜单键统计浮层</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 镜像播放中与统计浮层"><div class="scr" style="background:#000">
+        <svg class="scene" viewBox="0 0 960 432" style="top:54px;height:432px"><use href="#scene" width="960" height="432"/></svg>
+        <div style="position:absolute;left:48px;top:476px;font-size:12px;color:rgba(255,255,255,.4)">发送端横屏 20:9 → 等比显示，上下留黑边（R-03）</div>
+        <div class="statpanel">
+          <div class="row"><span style="font-size:20px;font-weight:600">投屏统计</span><span class="sp"></span><span class="row gap6" style="font-size:13px;color:var(--on-surface-variant)"><svg class="ic s16"><use href="#i-menu"/></svg>菜单键收起</span></div>
+          <div style="margin-top:12px">
+            <div class="kv"><span>来源</span><span>小张的 Pixel 8</span></div>
+            <div class="kv"><span>协议</span><span class="row gap6" style="justify-content:flex-end"><svg class="ic s16" style="color:var(--tertiary)"><use href="#i-lock"/></svg>WSC · 已加密</span></div>
+            <div class="kv"><span>分辨率</span><span>1920 × 1080 · 30 fps</span></div>
+            <div class="kv"><span>码率</span><span>7.6 Mbps</span></div>
+            <div class="kv"><span>端到端延迟</span><span class="row gap6" style="justify-content:flex-end"><i style="width:8px;height:8px;border-radius:50%;background:var(--lat-1)"></i>68 ms 极佳</span></div>
+            <div class="kv"><span>丢帧</span><span>0.2 %</span></div>
+            <div class="kv"><span>解码</span><span>硬件 · H.264</span></div>
+          </div>
+          <svg viewBox="0 0 272 40" width="272" height="40" style="margin-top:8px;display:block" fill="none"><path d="M0 30h272" stroke="rgba(255,255,255,.12)" stroke-dasharray="3 4"/><polyline points="0,26 17,24 34,27 51,23 68,25 85,22 102,26 119,18 136,24 153,25 170,21 187,24 204,26 221,23 238,25 255,24 272,25" stroke="#9AD7A2" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          <div class="row" style="font-size:11px;color:var(--on-surface-variant);margin-top:2px"><span>最近 60 秒</span><span class="sp"></span><span>虚线 = 100 ms</span></div>
+          <div class="row gap12" style="margin-top:16px"><span class="tbtn" style="flex:1;justify-content:center;height:44px;font-size:15px">断开投屏</span><span class="tbtn f" style="flex:1;justify-content:center;height:44px;font-size:15px">关闭</span></div>
+        </div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F01</span><span class="tagref">R-03</span><span class="tagref">PRD 10 投屏中</span><span class="tagref">PRD 6.2 退出</span></div><dl>
+        <dt>默认</dt><dd>全屏画面、零 UI。首帧出现时右下角淡出提示 3 s：“按菜单键查看连接信息 · 连按两次返回断开”。</dd>
+        <dt>浮层</dt><dd><ul><li>菜单键开关；靠右上安全区，最多遮挡 1/3 画面，背景 90% 不透明 + 模糊，保证文字对比度不受画面影响。</li><li>默认焦点“关闭”（安全），“断开投屏”需主动移动焦点。</li><li>8 s 无操作自动收起。</li></ul></dd>
+        <dt>退出</dt><dd>返回键 1 次 → 底部 Toast“再按一次返回键断开投屏”（2 s 窗口）；2 次 → 断开回 11。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 14 重连中 -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">14</span><b>重连中 · 保留最后一帧</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 重连中"><div class="scr" style="background:#000">
+        <svg class="scene" viewBox="0 0 960 432" style="top:54px;height:432px;filter:grayscale(.55) brightness(.5)"><use href="#scene" width="960" height="432"/></svg>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:18px;padding:20px 32px 20px 26px;border-radius:999px;background:rgba(39,42,47,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 0 0 1px rgba(255,255,255,.07)">
+          <span class="spin l" style="color:var(--warning);width:28px;height:28px"></span>
+          <div><div style="font-size:22px;font-weight:600">正在重连…</div><div style="font-size:15px;color:var(--on-surface-variant)">小张的 Pixel 8 · 第 2 次 · 最长等待 30 秒</div></div>
+        </div>
+        <div style="position:absolute;left:48px;bottom:27px;font-size:14px;color:rgba(225,226,232,.55)" class="row gap8"><svg class="ic s16"><use href="#i-pause"/></svg>画面为断开前的最后一帧</div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F07</span><span class="tagref">PRD 6.2 播放中</span><span class="tagref">PRD 10 断线重连</span></div><dl>
+        <dt>规则</dt><dd><ul><li>保留最后一帧并降饱和 / 降亮度到 50%：既传达“暂停”，又保留上下文，避免黑屏让人以为电视坏了。</li><li>状态胶囊居中，22 sp 标题，3 m 可读。</li><li>无可聚焦元素；返回键 ×2 仍可断开。</li></ul></dd>
+        <dt>出口</dt><dd>恢复 → 13（胶囊淡出 200 ms，无额外提示）；30 s 超时 → 11 待机，并短暂显示“小张的 Pixel 8 已断开”。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 15 受保护内容 -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">15</span><b>受保护内容提示</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 受保护内容提示"><div class="scr" style="background:#050607">
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;text-align:center">
+          <div style="width:64px;height:64px;border-radius:20px;background:var(--surface-container-high);color:var(--on-surface-variant);display:grid;place-items:center;margin:0 auto"><svg class="ic s32"><use href="#i-lock"/></svg></div>
+          <div style="font-size:26px;line-height:34px;font-weight:600;margin-top:20px">该内容受版权保护，无法镜像</div>
+          <div style="font-size:17px;line-height:27px;color:var(--on-surface-variant);margin-top:10px">这是视频应用的保护设置，不是连接故障。<br>投屏仍在进行，手机切换到其他画面即可恢复。</div>
+          <div class="row gap12" style="margin-top:22px;padding:16px 20px;border-radius:20px;background:var(--surface-container);text-align:left">
+            <svg class="ic s28" style="color:var(--primary)"><use href="#i-dlna"/></svg>
+            <div style="font-size:16px;line-height:24px"><b style="font-weight:500">建议改用推送</b><br><span style="color:var(--on-surface-variant);font-size:15px">在视频 App 里点「投屏」按钮，选择「客厅电视」，原画质播放、手机可锁屏</span></div>
+          </div>
+          <div style="margin-top:26px"><span class="tbtn f" style="min-width:160px;justify-content:center">知道了</span></div>
+        </div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">S-08</span><span class="tagref">PRD 4.2</span><span class="tagref">PRD 10 受保护内容</span></div><dl>
+        <dt>规则</dt><dd><ul><li>先排除“故障”归因（“不是连接故障”），再给替代路径 —— 用户最怕的是不知道该怪谁。</li><li>推送建议指向 DLNA（MVP 已支持 DMR 接收），不出现任何“绕过”字样。</li><li>“知道了”后仅收起提示，会话保持；检测到正常画面时自动消失。</li></ul></dd>
+        <dt>触发</dt><dd>检测机制待技术确认（黑帧推断存在误判风险，见问题 Q3）。</dd>
+      </dl></div>
+    </article>
+
+  </div>
+</div></section>
+
+<!-- ==================== 12 待确认 ==================== -->
+<section class="sec" id="questions"><div class="wrap">
+  <div class="sec-h"><span class="no">12</span><h2>需要产品确认的问题</h2><p>以下为本稿基于假设给出方案、但需要产品负责人拍板的点。每条附带本稿的默认做法。</p></div>
+  <div class="grid2">
+    <div class="panel"><ol class="qs">
+      <li><b>Q1 悬浮状态胶囊与“不申请悬浮窗”冲突。</b>PRD 6.1 要求悬浮胶囊，8.5 明确不申请悬浮窗。本稿：胶囊放在 App 内 + 通知副标题实时显示延迟 / 码率，快捷图块副标题显示“投屏中”。</li>
+      <li><b>Q2 TV“允许”与 PIN 是否重复。</b>本稿：WSC 路径需“TV 允许 + 手机 PIN”双条件；也可简化为“手机输对 PIN 即视为同意”，TV 只保留“拒绝”。后者少一步但少一道同意。</li>
+      <li><b>Q3 受保护内容如何检测。</b>FLAG_SECURE 内容在发送端采集为黑帧，系统不通知；黑帧推断可能把真正的黑场视频误判。建议技术评审确定阈值，否则文案改为“画面可能受保护”。</li>
+      <li><b>Q4 MVP 发送端列表是否显示 DLNA 设备。</b>DMC 推送在 V1。本稿：显示但置灰并说明“下个版本开放”，便于验证需求；也可完全隐藏以减少噪音。</li>
+      <li><b>Q5 “游戏”档位是否进 MVP。</b>8.6 列出 4 档，但 F18 游戏模式在 V1。本稿：分段按钮保留 4 档，MVP 阶段“游戏”可先映射为 720p60 不做抖动缓冲专项优化。</li>
+      <li><b>Q6 【已决策，PRD v1.1 #19】投屏码改为 8 位（3 位 IP + 5 位 PIN），免二次 PIN。</b>原问题：本稿：投屏码等同扫码，免二次 PIN；但 3 位 PIN 仅 1000 种组合，需配合 TV 端限次（建议 5 次错误后刷新投屏码）。另：IP 末段 &lt;100 时投屏码是否补零（如 023）。</li>
+    </ol></div>
+    <div class="panel"><ol class="qs" start="7">
+      <li><b>Q7 兼容 Apple 设备的 PIN 默认开还是关。</b>本稿默认开（安全默认值，对应酒店误投痛点 L13），代价是 iPhone 每次连接需输入。</li>
+      <li><b>Q8 PIN 错误次数上限与锁定策略。</b>建议 3 次错误后 TV 自动拒绝该请求，同一设备 60 s 内不可再次发起。</li>
+      <li><b>Q9 产品正式名称与图标（PRD Q6）。</b>本稿使用占位名“局域投屏”与“双屏叠放”占位标志。</li>
+      <li><b>Q10 屏保内容。</b>屏保是否继续显示投屏码（方便随时投）还是只显示设备名（更安全、更省电）。本稿：设备名 + 投屏码，每 60 s 移位。</li>
+      <li><b>Q11 重连失败后“重新连接”是否跳过说明卡。</b>本稿跳过，直达系统授权（用户刚经历过完整流程）。</li>
+      <li><b>Q12 接收端安装包分发。</b>PRD 写“扫码下载接收端”，但电视通常不能扫码，且零外联前提下手机不应拉取网络资源。建议：由手机在局域网内临时提供本机 APK（单 APK 双模式，安装包本身就是接收端），电视浏览器 / U 盘安装；需技术评估。</li>
+      <li><b>Q13 TV 默认焦点。</b>PRD 6.2 将确认弹窗默认焦点交由交互评审，本稿结论为“拒绝”，请确认。</li>
+    </ol></div>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">交互稿与色卡 v1.0 · 基于 PRD-局域网投屏-v1.0 · 单文件、离线可用、无外部依赖。颜色均由文件顶部 <code>ROLES / EXT</code> Token 生成。</div></footer>
+
+<script>
+(function(){
+  var ROLES = window.ROLES, EXT = window.EXT, ALL = ROLES.concat(EXT);
+  var MAP = {}; ALL.forEach(function(r){ MAP[r[0]] = r; });
+  function hex(tk, dark){ return MAP[tk][dark ? 4 : 3]; }
+
+  /* ---------- WCAG 2.x 对比度 ---------- */
+  function lum(h){
+    var n = parseInt(h.slice(1),16);
+    var c = [(n>>16)&255,(n>>8)&255,n&255].map(function(v){ v/=255; return v<=0.04045 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); });
+    return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+  }
+  function cr(a,b){ var x=lum(a), y=lum(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); }
+  function grade(v,type){
+    if(type==='ui'||type==='large') return v>=3 ? ['cr-aaa','通过 ≥3'] : ['cr-no','不达标'];
+    if(v>=7) return ['cr-aaa','AAA']; if(v>=4.5) return ['cr-aa','AA']; if(v>=3) return ['cr-lg','仅大字']; return ['cr-no','不达标'];
+  }
+
+  /* ---------- 主题切换 ---------- */
+  var root = document.documentElement;
+  var btns = document.querySelectorAll('.themesw button');
+  function cur(){ return root.getAttribute('data-theme') || 'auto'; }
+  function sync(){ btns.forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.t === cur())); }); }
+  btns.forEach(function(b){ b.addEventListener('click', function(){
+    var t = b.dataset.t;
+    if(t==='auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
+    try{ localStorage.setItem('wsc-theme', t); }catch(e){}
+    sync();
+  }); });
+  sync();
+
+  /* ---------- 主色色阶 ---------- */
+  var ramp = ['#001B33','#0A3050','#234766','#2F5A82','#4E7398','#6C8EB4','#88A9CF','#A2C9F0','#D2E4FA','#E9F1FD'];
+  var tones = ['10','20','30','37','50','60','70','80','90','95'];
+  document.getElementById('ramp').innerHTML = ramp.map(function(h,i){ return '<span style="background:'+h+';color:'+(lum(h)>0.3?'#12344F':'#fff')+'">'+tones[i]+'</span>'; }).join('');
+
+  /* ---------- 色块 ---------- */
+  function swatches(el, dark){
+    var groups = {};
+    ALL.forEach(function(r){ if(r[6]==='延迟') return; (groups[r[6]] = groups[r[6]] || []).push(r); });
+    var html = '';
+    Object.keys(groups).forEach(function(g){
+      html += '<div class="sw-group"><div class="gl">'+g+'</div><div class="sw-grid">';
+      groups[g].forEach(function(r){
+        var bg = r[dark?4:3], fg = hex(r[5], dark), v = cr(fg,bg);
+        html += '<div class="swc" style="background:'+bg+';color:'+fg+'"><div><div class="rn">'+r[1]+'</div><div class="us">'+r[2]+'</div></div><div class="hx"><span>'+bg+'</span><span>'+v.toFixed(2)+':1</span></div></div>';
+      });
+      html += '</div></div>';
+    });
+    el.insertAdjacentHTML('beforeend', html);
+  }
+  swatches(document.getElementById('sch-light'), false);
+  swatches(document.getElementById('sch-dark'), true);
+
+  /* ---------- Compose 代码 ---------- */
+  function camel(s){ return s.replace(/-([a-z])/g,function(_,c){return c.toUpperCase();}); }
+  var kt = '// 由交互稿 Token 自动生成 —— ui/theme/Color.kt\npackage com.benchan.wireless.screencasting.ui.theme\n\nimport androidx.compose.ui.graphics.Color\n\n';
+  ['light','dark'].forEach(function(s,i){
+    kt += '// ---- '+(i?'Dark':'Light')+' ----\n';
+    ALL.forEach(function(r){ if(r[0]==='scrim'&&i) return; kt += 'val '+camel(r[0])+(i?'Dark':'Light')+' = Color(0xFF'+r[3+i].slice(1)+')\n'; });
+    kt += '\n';
+  });
+  kt += '// 用法：lightColorScheme(primary = primaryLight, onPrimary = onPrimaryLight, ... )\n// success / warning / latency 通过 CompositionLocal 提供 ExtendedColors。';
+  document.getElementById('kt').textContent = kt;
+
+  /* ---------- 语义色卡片 ---------- */
+  var sem = [
+    ['success','连接成功 / 延迟良好','投屏中徽标、恢复成功 Snackbar、诊断“已确认”'],
+    ['warning','警告 / 网络较差','重连中卡片、自动降档提示、诊断“需确认”'],
+    ['error','错误 / 断开','连接已断开、PIN 错误、停止按钮（container）'],
+    ['primary','信息','中性提示、链接、说明卡；不新增色相']
+  ];
+  document.getElementById('semgrid').innerHTML = sem.map(function(s){
+    var k = s[0], c = k+'-container', oc = 'on-'+k+'-container';
+    function row(d){ return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
+      + '<div style="background:'+hex(k,d)+';color:'+hex('on-'+k,d)+';border-radius:12px;padding:10px 12px;font-size:12px"><b style="font-weight:600">'+k+'</b><br><span class="mono">'+hex(k,d)+'</span></div>'
+      + '<div style="background:'+hex(c,d)+';color:'+hex(oc,d)+';border-radius:12px;padding:10px 12px;font-size:12px"><b style="font-weight:600">'+c+'</b><br><span class="mono">'+hex(c,d)+'</span></div></div>'; }
+    return '<div class="panel"><h4>'+s[1]+'</h4><p style="margin-bottom:12px">'+s[2]+'</p><div class="muted" style="font-size:11.5px;margin-bottom:4px">浅色</div>'+row(false)+'<div class="muted" style="font-size:11.5px;margin:10px 0 4px">深色</div>'+row(true)+'</div>';
+  }).join('');
+
+  /* ---------- 延迟色阶 ---------- */
+  var lat = [['lat-1','极佳','< 100 ms'],['lat-2','良好','100 – 150 ms'],['lat-3','一般','150 – 250 ms'],['lat-4','较差','> 250 ms']];
+  function latHtml(d){ return lat.map(function(l){ var h=hex(l[0],d), bg=hex('surface-container-high',d);
+    return '<div><div class="bar" style="background:'+h+'"></div><b style="color:'+h+'">'+l[1]+'</b><span class="num">'+l[2]+'</span><div class="mono" style="font-size:11px;color:var(--on-surface-variant);margin-top:6px">'+h+' · '+cr(h,bg).toFixed(2)+':1</div></div>'; }).join(''); }
+  document.getElementById('lat-l').innerHTML = latHtml(false);
+  document.getElementById('lat-d').innerHTML = latHtml(true);
+
+  /* ---------- 胶囊 ---------- */
+  var caps = '<span class="capsule"><span><i class="d" style="background:var(--lat-1)"></i>68 ms<b style="color:var(--lat-1);font-weight:500">极佳</b></span><span>7.6 Mbps</span></span>'
+    + '<span class="capsule"><span><i class="d" style="background:var(--lat-2)"></i>128 ms<b style="color:var(--lat-2);font-weight:500">良好</b></span><span>7.2 Mbps</span></span>'
+    + '<span class="capsule"><span><i class="d" style="background:var(--lat-3)"></i>196 ms<b style="color:var(--lat-3);font-weight:500">一般</b></span><span>3.8 Mbps</span></span>'
+    + '<span class="capsule"><span><i class="d" style="background:var(--lat-4)"></i>312 ms<b style="color:var(--lat-4);font-weight:500">较差</b></span><span>1.9 Mbps</span></span>'
+    + '<span class="capsule"><span><i class="d" style="background:var(--lat-1)"></i>72 ms</span><span><svg class="ic s16"><use href="#i-volx"/></svg>无声音</span></span>'
+    + '<span class="capsule"><span><span class="spin" style="width:12px;height:12px;border-width:1.5px;color:var(--warning)"></span>重连中</span><span>第 3 次</span></span>';
+  document.getElementById('caps-l').innerHTML = caps;
+  document.getElementById('caps-d').innerHTML = caps;
+
+  /* ---------- 对比度表 ---------- */
+  var PAIRS = [
+    ['on-surface','surface','正文、标题','text'],
+    ['on-surface-variant','surface','次要文字、说明','text'],
+    ['on-surface-variant','surface-container-high','卡片 / 胶囊内次要文字','text'],
+    ['primary','surface','文字按钮、链接','text'],
+    ['on-primary','primary','主按钮','text'],
+    ['on-primary-container','primary-container','选中项、设备头像','text'],
+    ['on-secondary-container','secondary-container','分段按钮选中、Tonal 按钮','text'],
+    ['on-tertiary-container','tertiary-container','“已信任”标签','text'],
+    ['tertiary','surface','锁 / 盾牌图标','ui'],
+    ['error','surface','错误文字','text'],
+    ['on-error-container','error-container','停止投屏按钮','text'],
+    ['success','surface-container-low','“投屏中”状态文字','text'],
+    ['on-success-container','success-container','成功提示','text'],
+    ['warning','surface-container-low','警告文字','text'],
+    ['on-warning-container','warning-container','重连中卡片','text'],
+    ['lat-1','surface-container-high','胶囊 · 极佳','text'],
+    ['lat-2','surface-container-high','胶囊 · 良好','text'],
+    ['lat-3','surface-container-high','胶囊 · 一般','text'],
+    ['lat-4','surface-container-high','胶囊 · 较差','text'],
+    ['inverse-on-surface','inverse-surface','Snackbar 文字','text'],
+    ['inverse-primary','inverse-surface','Snackbar 操作按钮','text'],
+    ['outline','surface','输入框边框、开关轨道','ui'],
+    ['outline','surface-container-low','卡片内输入框边框','ui'],
+    ['on-surface','surface-container-highest','TV 未聚焦按钮文字','text'],
+    ['inverse-on-surface','on-surface','TV 聚焦按钮文字（反相）','text'],
+    ['on-surface','surface-container-highest','TV 焦点底 vs 非焦点底（2.4.13）','ui'],
+    ['primary','surface','TV 焦点外环 vs 背景','ui']
+  ];
+  var tb = document.querySelector('#crtable tbody');
+  tb.innerHTML = PAIRS.map(function(p){
+    function cell(d){ var f=hex(p[0],d), b=hex(p[1],d), v=cr(f,b), g=grade(v,p[3]);
+      var sample = p[3]==='ui' ? '<span class="cr-sample" style="background:'+b+';color:'+f+'"><span style="width:26px;height:14px;border:2px solid '+f+';border-radius:7px;display:inline-block"></span></span>' : '<span class="cr-sample" style="background:'+b+';color:'+f+'">Aa 文字</span>';
+      return '<td>'+sample+'</td><td class="crv">'+v.toFixed(2)+':1 <span class="cr-badge '+g[0]+'">'+g[1]+'</span></td>'; }
+    return '<tr><td><code style="font-size:12px">'+p[0]+'</code><br><span class="muted" style="font-size:12px">on '+p[1]+'</span></td><td>'+p[2]+'</td><td>'+(p[3]==='ui'?'图形 ≥3':'正文 ≥4.5')+'</td>'+cell(false)+cell(true)+'</tr>';
+  }).join('');
+
+  /* ---------- 字体层级 ---------- */
+  var tp = [
+    ['headlineLarge','28 / 36','600','把手机画面送到大屏','引导页标题'],
+    ['headlineSmall','24 / 32','600','没有发现设备','状态页标题'],
+    ['titleLarge','20 / 28','500','投屏中','顶栏标题、弹层标题'],
+    ['titleMedium','16 / 24','500','客厅电视','列表主文字、卡片标题'],
+    ['bodyLarge','16 / 24','400','开启后会在后台等待投屏','设置项标题'],
+    ['bodyMedium','14 / 22','400','只捕获手机播放的声音，不录麦克风','正文、说明'],
+    ['bodySmall','12 / 18','400','WSC 镜像 · 192.168.1.128','辅助信息（最小正文）'],
+    ['labelLarge','14 / 20','500','停止投屏','按钮'],
+    ['labelSmall','11 / 16','500','已信任','标签角标（仅 2~4 字）'],
+    ['displayNumber','40 / 48','500 tnum','00:12:48','计时 / 统计大数字']
+  ];
+  var tt = [
+    ['displayMedium','48 / 58','600','客厅电视','待机页设备名'],
+    ['displayPin','44 / 52','500 mono','4 7 0 2','PIN、投屏码'],
+    ['headlineSmall','26 / 34','600','小张的 Pixel 8 请求投屏','对话框标题'],
+    ['titleLarge','22 / 30','600','正在重连…','状态标题'],
+    ['bodyLarge','18 / 28','400','手机打开本应用，选择「客厅电视」','正文（TV 最小正文 16）'],
+    ['labelLarge','16 / 22','500','允许','按钮'],
+    ['bodySmall','14 / 20','400','192.168.1.128 : 8443','辅助信息（TV 最小 14）']
+  ];
+  function trow(a){ var s=a[1].split(' / '); var w=a[2].split(' ')[0]; var mono=a[2].indexOf('mono')>-1||a[2].indexOf('tnum')>-1;
+    return '<div class="type-row"><div><div style="font-weight:600;font-size:13px">'+a[0]+'</div><div class="tk">'+a[1]+' · '+a[2]+'</div></div><div class="sample" style="font-size:'+s[0]+'px;line-height:'+s[1]+'px;font-weight:'+w+';'+(mono?'font-family:var(--mono);font-variant-numeric:tabular-nums;':'')+'">'+a[3]+'</div><div class="sp">'+a[4]+'</div></div>'; }
+  document.getElementById('type-phone').innerHTML = tp.map(trow).join('');
+  document.getElementById('type-tv').innerHTML = tt.map(trow).join('');
+
+  /* ---------- 高度层级 ---------- */
+  var ev = [['Level 0','surface','无','页面底'],['Level 1','surface-container-low','e1','卡片'],['Level 2','surface-container','e2','导航 / 键盘'],['Level 3','surface-container-high','e3','菜单 / 胶囊'],['Level 4','surface-container-highest','e4','对话框 / 弹层']];
+  function evHtml(){ return ev.map(function(e){ return '<div style="background:var(--'+e[1]+');box-shadow:'+(e[2]==='无'?'none':'var(--'+e[2]+')')+'"><b>'+e[0]+'</b><span class="muted">'+e[1]+'<br>'+e[3]+'</span></div>'; }).join(''); }
+  document.getElementById('elev-l').innerHTML = evHtml();
+  document.getElementById('elev-d').innerHTML = evHtml();
+
+  /* ---------- 图标网格 ---------- */
+  var icons = [['mark','品牌标志（占位）'],['mirror','WSC 镜像设备'],['dlna','DLNA 设备'],['tv','电视'],['phone','手机'],['tablet','平板'],['devices','兼容 Apple 设备'],['shield','已信任'],['lock','已加密'],['wifi','Wi‑Fi'],['router','网络诊断'],['qr','扫码'],['code','投屏码'],['link','手动 IP'],['tune','设置'],['gauge','画质'],['game','游戏档'],['vol','声音'],['volx','无声音'],['refresh','重连 / 刷新'],['stop','停止'],['chart','投屏报告'],['export','导出日志'],['noad','无广告'],['nouser','无账号'],['offline','不联网'],['alert','警告'],['info','信息'],['help','需确认'],['menu','菜单键']];
+  document.getElementById('icgrid').innerHTML = icons.map(function(i){ return '<div><svg class="ic"><use href="#i-'+i[0]+'"/></svg><span>'+i[1]+'</span></div>'; }).join('');
+
+  /* ---------- 延迟直方图 ---------- */
+  var hv = [[45,14],[55,32],[65,58],[75,74],[85,52],[95,38],[110,30],[125,22],[140,14],[165,9],[190,6],[230,3],[280,2],[320,1]];
+  document.getElementById('hist').innerHTML = hv.map(function(b){ var t=b[0]<100?'lat-1':b[0]<150?'lat-2':b[0]<250?'lat-3':'lat-4'; return '<i style="height:'+Math.max(4,b[1])+'%;background:var(--'+t+')"></i>'; }).join('');
+
+  /* ---------- 示意二维码（非真实编码，仅示意） ---------- */
+  document.querySelectorAll('svg.qr').forEach(function(svg){
+    var N=25, Q=2, s=+svg.dataset.seed||1, m=[], i, j;
+    function rnd(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }
+    for(i=0;i<N;i++){ m.push(new Array(N).fill(-1)); }
+    function finder(x,y){ for(var a=-1;a<8;a++)for(var b=-1;b<8;b++){ var X=x+a,Y=y+b; if(X<0||Y<0||X>=N||Y>=N) continue;
+      var on=(a>=0&&a<=6&&(b===0||b===6))||(b>=0&&b<=6&&(a===0||a===6))||(a>=2&&a<=4&&b>=2&&b<=4); m[Y][X]=on?1:0; } }
+    finder(0,0); finder(N-7,0); finder(0,N-7);
+    for(i=8;i<N-8;i++){ m[6][i]=i%2?0:1; m[i][6]=i%2?0:1; }
+    for(i=-2;i<=2;i++)for(j=-2;j<=2;j++){ var ax=18+i, ay=18+j; m[ay][ax]=(Math.max(Math.abs(i),Math.abs(j))!==1)?1:0; }
+    var d='';
+    for(i=0;i<N;i++)for(j=0;j<N;j++){ var v=m[i][j]; if(v===-1) v=rnd()>0.52?1:0; if(v) d+='M'+(j+Q)+' '+(i+Q)+'h1v1h-1z'; }
+    svg.innerHTML='<rect width="29" height="29" fill="#fff"/><path d="'+d+'" fill="#111418"/>';
+  });
+
+  /* ---------- 画板等比缩放（窄屏不横向溢出） ---------- */
+  var fits = document.querySelectorAll('.fit');
+  function fit(){
+    fits.forEach(function(f){
+      var d = f.firstElementChild; if(!d) return;
+      var avail = f.clientWidth;
+      if (f._w === avail) return;          /* 只响应宽度变化，避免缩放改变高度后循环触发 */
+      f._w = avail;
+      d.style.zoom = 1;
+      var w = d.offsetWidth;
+      d.style.zoom = w > avail ? (avail / w).toFixed(4) : 1;
+    });
+  }
+  fit();
+  if('ResizeObserver' in window){ var ro = new ResizeObserver(function(){ requestAnimationFrame(fit); }); fits.forEach(function(f){ ro.observe(f); }); }
+  else window.addEventListener('resize', fit);
+})();
+</script>
+</body>
+</html>

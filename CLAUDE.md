@@ -13,7 +13,7 @@ The product spec lives in `docs/prd/PRD-局域网投屏-v1.0.md` (Chinese; pain-
 - Receiver also implements DLNA DMR and AirPlay (UxPlay via JNI, built in but off by default, behind a build switch).
 - minSdk is planned to move from 24 to 29; project license GPL-3.0; distribution GitHub + F-Droid (no Google Play Services dependencies).
 - No accounts, ads, analytics or crash-reporting SDKs.
-- Planned module split is in PRD section 11.1.
+- Planned module split is in PRD section 11.1; the technical design (libwebrtc fork, audio-capture patch, SPAKE2 pairing, self-built DLNA, UxPlay build) is in `docs/tech/技术方案-v1.0.md`, and the UI spec/color tokens are in `docs/design/交互稿与色卡-v1.0.html`.
 
 ## Commands
 
