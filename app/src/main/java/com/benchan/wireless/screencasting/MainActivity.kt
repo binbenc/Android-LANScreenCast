@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -112,7 +113,9 @@ class MainActivity : ComponentActivity() {
         val defaultMode = if (isTv) AppMode.RECEIVER else AppMode.SENDER
         val mode = s.mode ?: defaultMode
         val forceSender = quickCast || deepLink != null || senderOverride
-        val start = if (!s.onboardingDone && !isTv && !forceSender) "onboarding" else "home"
+        // 起始页只在首次组合时决定：引导页里写入 onboardingDone 后若再改 startDestination，NavHost 会重建图、
+        // 首页被销毁重建，接收端监听的引用计数随之抖动（E8）
+        val start = remember { if (!s.onboardingDone && !isTv && !forceSender) "onboarding" else "home" }
         val version = BuildConfig.VERSION_NAME
 
         fun go(dest: SettingsDestination) = nav.navigate(
@@ -147,8 +150,9 @@ class MainActivity : ComponentActivity() {
                         scope.launch {
                             settingsRepository.setMode(m)
                             settingsRepository.setOnboardingDone()
+                            // 模式写入后再进首页：避免先按默认模式显示发送端、再切到接收端（E8）
+                            nav.navigate("home") { popUpTo("onboarding") { inclusive = true } }
                         }
-                        nav.navigate("home") { popUpTo("onboarding") { inclusive = true } }
                     },
                     onInstallHelp = { nav.navigate("install") },
                 )

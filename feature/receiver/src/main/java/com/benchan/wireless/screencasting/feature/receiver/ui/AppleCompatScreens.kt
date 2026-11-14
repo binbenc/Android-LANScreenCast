@@ -85,6 +85,7 @@ internal fun AppleCompatPlayback(
         onDisplay(true)
         onDispose { onDisplay(false) }
     }
+    ImmersiveSystemBars()
     DoubleBackToDisconnect("再按一次返回键断开", onDisconnect)
     val tag = rememberSourceTagState()
     Box(Modifier.fillMaxSize().showSourceTagOnKeys(tag)) {

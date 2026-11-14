@@ -42,6 +42,7 @@ internal object SenderCopy {
         ConnectFailure.QR_PAIR_TIMEOUT -> "扫码配对没有回应：请确认电视停留在“等待投屏”页面后重新扫码"
         ConnectFailure.CODE_PAIR_TIMEOUT -> "投屏码配对没有回应：请核对电视上的投屏码后重试，或改用扫码连接"
         ConnectFailure.FIRST_FRAME_TIMEOUT -> "画面一直传不过去：路由器可能限制了设备间的视频传输，可以试试网络诊断"
+        ConnectFailure.MEDIA_BLOCKED -> "画面传输被路由器阻断：手机和电视能互相找到，但视频数据过不去（可能开启了 AP 隔离或连的是访客网络），可以试试网络诊断"
         ConnectFailure.LOST -> "与 $n 的连接中断了，请重试"
         ConnectFailure.UNREACHABLE, null -> "连不上 $n：请确认电视已打开“等待投屏”页面，并且和手机连同一个路由器"
     }

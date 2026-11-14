@@ -8,7 +8,6 @@ import com.benchan.wireless.screencasting.core.data.settings.AppMode
 import com.benchan.wireless.screencasting.core.data.settings.SettingsRepository
 import com.benchan.wireless.screencasting.core.data.settings.effectiveMode
 import com.benchan.wireless.screencasting.core.ui.util.DeviceKind
-import com.benchan.wireless.screencasting.feature.receiver.session.ReceiverController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,9 +26,6 @@ class BootReceiver : BroadcastReceiver() {
     @Inject
     lateinit var settings: SettingsRepository
 
-    @Inject
-    lateinit var controller: ReceiverController
-
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val pending = goAsync()
@@ -39,7 +35,8 @@ class BootReceiver : BroadcastReceiver() {
                 // 只在接收端模式下启动后台监听（P2）
                 if (s.bootStart && s.effectiveMode(DeviceKind.isTv(context)) == AppMode.RECEIVER) {
                     WscLog.i("BootReceiver", "boot start enabled: starting discovery listener")
-                    controller.startBackgroundListening()
+                    // 以前台服务承载后台监听，否则进程很快被回收（E2）
+                    BackgroundListenService.start(context)
                 }
             } finally {
                 pending.finish()

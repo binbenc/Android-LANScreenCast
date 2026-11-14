@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -93,6 +96,7 @@ internal fun PlaybackScreen(
     val rootFocus = remember { FocusRequester() }
     val isTv = LocalIsTv.current
     val c = MaterialTheme.colorScheme
+    ImmersiveSystemBars()
 
     LaunchedEffect(session.firstFrame) {
         if (session.firstFrame) {
@@ -153,7 +157,8 @@ internal fun PlaybackScreen(
         VideoSurface(eglContext, attach, detach)
 
         // 14：重连中，最后一帧降亮度到 50% + 居中胶囊
-        if (session.reconnecting) {
+        // 首帧前不显示“重连 / 最后一帧”（从未有过画面，E3）
+        if (session.reconnecting && session.firstFrame) {
             Box(Modifier.fillMaxSize().background(c.scrim.copy(alpha = ScrimAlpha.Text)), contentAlignment = Alignment.Center) {
                 Column(
                     Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f), RoundedCornerShape(28.dp)).padding(horizontal = 32.dp, vertical = 20.dp),
@@ -166,7 +171,7 @@ internal fun PlaybackScreen(
                     }
                     Text("${session.peerName} · 第 ${session.reconnectAttempt.coerceAtLeast(1)} 次 · 最长等待 30 秒", style = MaterialTheme.typography.bodyMedium)
                 }
-                Text("画面为断开前的最后一帧", Modifier.align(Alignment.BottomCenter).padding(32.dp), style = MaterialTheme.typography.bodySmall, color = c.onScrim)
+                Text("画面为断开前的最后一帧", Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(32.dp), style = MaterialTheme.typography.bodySmall, color = c.onScrim)
             }
         } else if (!session.firstFrame) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {

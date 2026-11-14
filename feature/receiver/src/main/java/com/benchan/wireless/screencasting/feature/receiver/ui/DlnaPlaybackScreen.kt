@@ -49,6 +49,7 @@ internal fun DlnaPlaybackScreen(playback: DlnaPlayback, player: Player?, onStop:
             Toast.makeText(context, "再按一次返回键停止播放", Toast.LENGTH_SHORT).show()
         }
     }
+    ImmersiveSystemBars()
     val tag = rememberSourceTagState()
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim).showSourceTagOnKeys(tag)) {
         if (player != null) {

@@ -25,6 +25,9 @@ class ReceiverCopyTest {
         assertEquals("哔哩哔哩", ReceiverCopy.dlnaPeerLabel("Dalvik/2.1.0 (Linux; Android 14) BiliBili/7.50"))
         assertEquals("爱奇艺", ReceiverCopy.dlnaPeerLabel("IQIYI-Android/15.1"))
         assertEquals("Kodi", ReceiverCopy.dlnaPeerLabel("Kodi/20.2 (Linux; Android 11)"))
+        // 未知产品名（工具 / 库）一律用通用描述（E7）
+        assertEquals(ReceiverCopy.DLNA_UNKNOWN_APP, ReceiverCopy.dlnaPeerLabel("curl/8.5.0"))
+        assertEquals(ReceiverCopy.DLNA_UNKNOWN_APP, ReceiverCopy.dlnaPeerLabel("SomeTool/1.0"))
     }
 
     @Test

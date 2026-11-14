@@ -77,6 +77,8 @@ enum class ConnectFailure {
     CODE_PAIR_TIMEOUT,
     /** 已授权录屏，但 60 秒内媒体没有连通（多为路由器拦截 UDP）。 */
     FIRST_FRAME_TIMEOUT,
+    /** 首帧前 ICE 失败且重试用尽：信令通、媒体不通（AP 隔离 / 访客网络 / 防火墙拦截 UDP）。 */
+    MEDIA_BLOCKED,
     /** 认证完成前信令断开。 */
     LOST,
 }

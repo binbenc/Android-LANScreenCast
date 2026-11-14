@@ -13,4 +13,9 @@
     <string name="receiver_alert_playback_channel_desc">本应用不在前台时开始播放，用此通知打开播放画面，不响铃</string>
     <string name="receiver_alert_playback_title">%1$s 正在投屏到本机</string>
     <string name="receiver_alert_playback_text">点按打开播放画面</string>
+    <string name="receiver_bg_channel_name">后台等待投屏</string>
+    <string name="receiver_bg_channel_desc">开机自启后在后台等待投屏时的常驻通知（系统要求，用于保持后台运行）</string>
+    <string name="receiver_bg_title">正在后台等待投屏</string>
+    <string name="receiver_bg_text">手机可以直接找到本机；点按打开应用</string>
+    <string name="receiver_bg_stop">停止</string>
 </resources>

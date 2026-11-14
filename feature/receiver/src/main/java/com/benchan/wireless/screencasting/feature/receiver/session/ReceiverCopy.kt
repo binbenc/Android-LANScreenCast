@@ -26,17 +26,13 @@ internal object ReceiverCopy {
     }
 
     /**
-     * DLNA 推送方的可读名称（C3）。User-Agent 第一个词常常是 “Linux/…” “Dalvik/…” “okhttp/…” 之类的系统 / 库名，
-     * 直接显示会变成 “Linux 请求投屏”；能识别的常见视频 App 显示 App 名，否则显示通用描述。
+     * DLNA 推送方的可读名称（C3 / E7）。只有已知的视频 App 显示 App 名；其余（“Linux/…”“Dalvik/…”“okhttp/…”“curl/…”
+     * 之类的系统 / 库 / 工具名）一律显示通用描述，IP 在副标题里。
      */
     fun dlnaPeerLabel(userAgent: String?): String {
-        val ua = userAgent?.trim().orEmpty()
-        if (ua.isEmpty()) return DLNA_UNKNOWN_APP
-        val lower = ua.lowercase()
-        KNOWN_APPS.firstOrNull { (keys, _) -> keys.any { it in lower } }?.let { return it.second }
-        val first = ua.substringBefore('/').substringBefore(' ').trim()
-        val generic = first.isEmpty() || first.length > 24 || first.lowercase() in GENERIC_AGENTS || !first.any { it.isLetter() }
-        return if (generic) DLNA_UNKNOWN_APP else first
+        val lower = userAgent?.trim()?.lowercase().orEmpty()
+        if (lower.isEmpty()) return DLNA_UNKNOWN_APP
+        return KNOWN_APPS.firstOrNull { (keys, _) -> keys.any { it in lower } }?.second ?: DLNA_UNKNOWN_APP
     }
 
     /** 发送端协议版本不兼容时待机页的提示（C4）。 */
@@ -49,11 +45,6 @@ internal object ReceiverCopy {
         }
     }
 
-    private val GENERIC_AGENTS = setOf(
-        "linux", "dalvik", "okhttp", "upnp", "android", "java", "mozilla", "apache-httpclient", "cfnetwork",
-        "darwin", "dlna", "dlnadoc", "libupnp", "portable", "intel", "platinum", "cling", "http", "unknown",
-    )
-
     private val KNOWN_APPS: List<Pair<List<String>, String>> = listOf(
         listOf("bilibili") to "哔哩哔哩",
         listOf("iqiyi", "qiyi") to "爱奇艺",
@@ -61,6 +52,8 @@ internal object ReceiverCopy {
         listOf("youku") to "优酷",
         listOf("mgtv", "hunantv", "imgo") to "芒果TV",
         listOf("vlc") to "VLC",
+        listOf("kodi") to "Kodi",
+        listOf("youtube") to "YouTube",
         listOf("bubbleupnp") to "BubbleUPnP",
     )
 }

@@ -287,7 +287,7 @@ Kano 分类：基本型 = 没有就不满意；期望型 = 越好越满意；兴
 | R-02 解码 | WebRTC 硬件解码器优先 | 启动时检测解码能力，在 SDP 协商中只声明本机能硬解的编码格式 |
 | R-03 渲染 | SurfaceViewRenderer；等比显示，留黑边 | 通过 WebRTC 字段试验和自建补丁把接收端缓冲压到最小（Android 端没有 `jitterBufferTarget` 接口），游戏模式取下限，具体值 M0 实测确定 |
 | R-04 音频 | WebRTC 内置音频播放，依靠 RTCP SR 时间戳做音画同步 | 偏差符合 1.3 的目标 |
-| R-05 前台服务 | 正在接收时使用 `mediaPlayback` 类型 | 待机监听只在 App 前台时开启。开机自启默认关闭、可以在设置中开启（决策 #14）。Android 15 起禁止从 BOOT_COMPLETED 广播启动 mediaPlayback 等类型的前台服务（细节待验证），开机自启时只启动发现服务，播放时再升级为前台服务 |
+| R-05 前台服务 | 正在接收时使用 `mediaPlayback` 类型 | 待机监听只在 App 前台时开启。开机自启默认关闭、可以在设置中开启（决策 #14）。Android 15 起禁止从 BOOT_COMPLETED 广播启动 mediaPlayback 等类型的前台服务（细节待验证），开机自启时以 connectedDevice 类型前台服务承载发现与监听（常驻低优先级通知，模拟器验证发现无前台服务时进程约 100 秒被回收），播放时再启动 mediaPlayback 前台服务 |
 | R-06 TV 适配 | 声明 Leanback 启动入口、`touchscreen required=false`、banner 图 | 在 Android TV 10+ 和主流国产电视系统上可以安装和启动（品牌清单待实测） |
 | R-07 DLNA DMR | 实现 AVTransport、RenderingControl、ConnectionManager | 可以接收第三方视频 App 的投屏；播放器用 Media3 ExoPlayer；支持暂停、拖动进度、调音量；陌生设备推送默认需要确认 |
 | R-08 AirPlay 接收 | 镜像、RAOP 音频、视频网址（HLS） | 默认关闭，在设置中开启后才注册 `_airplay._tcp` 和 `_raop._tcp` 服务；可以设置 AirPlay PIN；不支持 FairPlay 视频 DRM 内容 |
@@ -380,6 +380,7 @@ Kano 分类：基本型 = 没有就不满意；期望型 = 越好越满意；兴
 | CAMERA | 发送 | 扫二维码（如果内置扫码） | 只在点击"扫码"时申请 |
 | WAKE_LOCK | 发送 | 镜像其他 App 时保持亮屏（配合决策 #17 锁屏停投） | 安装时（普通权限） |
 | RECEIVE_BOOT_COMPLETED | 接收 | 开机自启（默认关闭） | 安装时声明；只在用户开启后才实际生效 |
+| FOREGROUND_SERVICE_CONNECTED_DEVICE | 接收 | 开机自启后的后台监听以 connectedDevice 类型前台服务运行（常驻低优先级通知“正在后台等待投屏”+“停止”），否则进程约 100 秒后被系统回收；Android 15 起开机广播不能启动 mediaPlayback 类型，connectedDevice 不受限，所需的 CHANGE_WIFI_MULTICAST_STATE 已声明 | 安装时（普通权限）；仅在用户开启开机自启且为接收端模式时启动 |
 | USE_FULL_SCREEN_INTENT | 接收 | 开机自启后 App 不在前台时，有设备请求投屏 / 开始播放，用全屏通知把确认或播放界面拉到前台（不申请悬浮窗）；同时需要通知权限 POST_NOTIFICATIONS | 安装时声明；仅在用户开启开机自启后使用；Android 14+ 系统不允许时退化为普通通知 |
 | 无障碍服务（BIND_ACCESSIBILITY_SERVICE） | 发送 | V2 反向控制 | 只在用户开启反向控制时，引导到系统设置里手动开启 |
 | **明确不申请** | — | 定位、通讯录、电话、存储、悬浮窗、FOREGROUND_SERVICE_MICROPHONE（内录声音走补丁方案，不打开麦克风） | — |
@@ -525,7 +526,7 @@ Kano 分类：基本型 = 没有就不满意；期望型 = 越好越满意；兴
 | 内录声音受限 | 只能捕获部分类型的声音；App 可以禁止被捕获；需要 RECORD_AUDIO | 确定会发生 | 没声音时说明原因，不静默失败 |
 | 电视兼容 | 国产电视系统可能禁止侧载、后台查杀、解码延迟大；部分老电视是 Android 9 以下，不在 minSdk 29 支持范围内（决策 #18：接受，不单独出旧版本接收端） | 高 | 写进 FAQ；V1 用 DLNA 推送（电视不用装 App）+ PC 接收端作为替代；维护一份分品牌的兼容表 |
 | 锁屏停止投屏 | Android 15 QPR1 起锁屏由系统停止 MediaProjection | 确定会发生 | 见 8.4 锁屏停投；引导看剧用推送模式（决策 #17） |
-| 开机自启限制 | Android 15 限制从开机广播启动某些类型的前台服务 | 中 | 默认关闭；开启时只启动发现服务 |
+| 开机自启限制 | Android 15 限制从开机广播启动某些类型的前台服务 | 中 | 默认关闭；开启时以 connectedDevice 类型前台服务（不在受限类型中）承载发现与监听，常驻通知 |
 | 无障碍服务滥用（V2） | 反向控制依赖无障碍服务，权限敏感 | 中 | 只在投屏会话中生效；每次会话由发送端二次确认；会话结束立即停止注入事件；代码开源可审计 |
 | 被当作偷窥工具滥用 | 录屏和投屏可能被滥用 | 低 | 状态栏常驻提示 + 接收端可见的确认流程 |
 

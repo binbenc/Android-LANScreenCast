@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat
 import com.benchan.wireless.screencasting.core.common.Hex
 import com.benchan.wireless.screencasting.core.common.Ids
 import com.benchan.wireless.screencasting.core.common.Base64Url
+import com.benchan.wireless.screencasting.core.common.SessionEndGuard
 import com.benchan.wireless.screencasting.core.common.WscLog
 import com.benchan.wireless.screencasting.core.data.devices.RecentDevice
 import com.benchan.wireless.screencasting.core.data.devices.RecentDevicesStore
@@ -130,6 +131,11 @@ class SenderController @Inject constructor(
     private var captureGrantedAt = 0L
     private var firstMediaAt = 0L
     private var lastAutoDowngradeFrom: QualityProfile? = null
+    private val endGuard = SessionEndGuard()
+    private var sessionGen = 0L
+
+    /** 首帧前（从未连通过）ICE 失败后已做的 ICE restart 次数（E3）。 */
+    private var preMediaIceRestarts = 0
 
     /** 用户选中一台设备（列表 / 扫码 / 投屏码 / 手动 IP / Tile）。 */
     fun connect(newTarget: CastTarget) = scope.launch {
@@ -138,6 +144,7 @@ class SenderController @Inject constructor(
             return@launch
         }
         resetSession()
+        sessionGen = endGuard.begin()
         target = newTarget
         connectStartedAt = System.currentTimeMillis()
         _state.value = SenderState.Connecting(newTarget)
@@ -413,32 +420,40 @@ class SenderController @Inject constructor(
             !hasMicPermission -> AudioState.NO_PERMISSION
             else -> AudioState.ON
         }
-        val session = SenderRtcSession(serviceContext, rtcEngine, data, profile, audio, rtcListener)
+        val session = SenderRtcSession(serviceContext, rtcEngine, data, profile, audio, rtcListener(sessionGen))
         rtc = session
         session.start()
         // 首帧超时：60 秒还没有连上媒体就判定失败（交互稿 10 统计口径）
         armTimeout(FIRST_MEDIA_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP, failure = ConnectFailure.FIRST_FRAME_TIMEOUT) }
     }
 
-    private val rtcListener = object : SenderRtcSession.Listener {
+    /**
+     * 每个会话一个监听器，回调按会话代号过滤：会话结束后迟到的回调（例如用户点停止后系统再报“录屏已停止”）
+     * 不能再改状态、覆盖结束页（E4）。
+     */
+    private fun rtcListener(gen: Long) = object : SenderRtcSession.Listener {
+        private fun onCurrent(block: suspend () -> Unit) {
+            scope.launch { if (endGuard.isCurrent(gen)) block() }
+        }
+
         override fun onLocalOffer(sdp: String, iceRestart: Boolean) {
-            scope.launch { send(Offer(sdp, iceRestart)) }
+            onCurrent { send(Offer(sdp, iceRestart)) }
         }
 
         override fun onLocalIceCandidate(candidate: String, sdpMid: String?, sdpMLineIndex: Int) {
-            scope.launch { send(IceCandidate(candidate, sdpMid, sdpMLineIndex)) }
+            onCurrent { send(IceCandidate(candidate, sdpMid, sdpMLineIndex)) }
         }
 
         override fun onMediaState(state: MediaState) {
-            scope.launch { onMedia(state) }
+            onCurrent { onMedia(state) }
         }
 
         override fun onFirstConnected() {
-            scope.launch { if (firstMediaAt == 0L) firstMediaAt = System.currentTimeMillis() }
+            onCurrent { if (firstMediaAt == 0L) firstMediaAt = System.currentTimeMillis() }
         }
 
         override fun onProjectionStopped(reason: ProjectionStopReason) {
-            scope.launch {
+            onCurrent {
                 if (reason == ProjectionStopReason.SCREEN_LOCKED) {
                     end(EndReason.SCREEN_LOCKED, ByeReason.SCREEN_LOCKED)
                 } else {
@@ -448,19 +463,19 @@ class SenderController @Inject constructor(
         }
 
         override fun onStats(stats: SenderStatsSnapshot, latencyMs: Int?) {
-            scope.launch { onRtcStats(stats, latencyMs) }
+            onCurrent { onRtcStats(stats, latencyMs) }
         }
 
         override fun onQualityChanged(profile: QualityProfile, byRemote: Boolean) {
-            scope.launch {
+            onCurrent {
                 this@SenderController.profile = profile
                 updateCasting { it.copy(profile = profile) }
             }
         }
 
         override fun onAudioState(state: AudioState) {
-            scope.launch {
-                if (audioState == AudioState.NO_PERMISSION || audioState == AudioState.OFF) return@launch
+            onCurrent {
+                if (audioState == AudioState.NO_PERMISSION || audioState == AudioState.OFF) return@onCurrent
                 audioState = state
                 updateCasting { it.copy(audio = state) }
                 rtc?.sendDc(com.benchan.wireless.screencasting.core.protocol.datachannel.DcMessage.Audio(state))
@@ -468,11 +483,11 @@ class SenderController @Inject constructor(
         }
 
         override fun onCapturedAppVisible(visible: Boolean) {
-            scope.launch { updateCasting { it.copy(appVisible = visible) } }
+            onCurrent { updateCasting { it.copy(appVisible = visible) } }
         }
 
         override fun onProtectedContent(suspected: Boolean) {
-            scope.launch { updateCasting { it.copy(protectedSuspected = suspected) } }
+            onCurrent { updateCasting { it.copy(protectedSuspected = suspected) } }
         }
     }
 
@@ -501,6 +516,19 @@ class SenderController @Inject constructor(
             }
             MediaState.DISCONNECTED, MediaState.FAILED -> {
                 if (rtc == null) return
+                if (castingSince == 0L) {
+                    // 首帧前从未连通：不是“断线重连”，保持“正在建立连接”。FAILED 时 ICE restart 重试，用尽后以连接失败结束（E3）
+                    if (state == MediaState.FAILED) {
+                        if (preMediaIceRestarts < MAX_PRE_MEDIA_ICE_RESTARTS) {
+                            preMediaIceRestarts++
+                            WscLog.w(TAG, "ICE failed before first media, restart #$preMediaIceRestarts")
+                            rtc?.restartIce()
+                        } else {
+                            scope.launch { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP, failure = ConnectFailure.MEDIA_BLOCKED) }
+                        }
+                    }
+                    return
+                }
                 sm.onEvent(SessionEvent.MediaDisconnected)
                 if (connection?.isOpen == true && reconnectJob == null) {
                     // 只是 ICE 断开、信令还在：直接 ICE restart（FAILED 立即，DISCONNECTED 给 2 秒自愈）
@@ -543,6 +571,8 @@ class SenderController @Inject constructor(
         WscLog.w(TAG, "signaling closed in $s")
         connection = null
         when {
+            // 首帧前信令断开：从未连通过，按连接失败结束而不是显示“重连”（E3）
+            rtc != null && s is SenderState.Starting && castingSince == 0L -> scope.launch { end(EndReason.CONNECT_FAILED, sendBye = null, failure = ConnectFailure.LOST) }
             rtc != null && (s is SenderState.Casting || s is SenderState.Starting || s is SenderState.Reconnecting) -> startReconnect()
             s is SenderState.Ended || s is SenderState.Idle -> Unit
             else -> scope.launch { end(EndReason.CONNECT_FAILED, sendBye = null, failure = ConnectFailure.LOST) }
@@ -670,27 +700,31 @@ class SenderController @Inject constructor(
     val isSessionActive: Boolean get() = rtc != null
 
     private suspend fun end(reason: EndReason, sendBye: ByeReason?, detail: String? = null, failure: ConnectFailure? = null) {
-        val t = target
-        cancelTimeout()
-        reconnectJob?.cancel()
-        reconnectJob = null
-        reconnectShowJob?.cancel()
-        mediaWatchdog?.cancel()
-        if (sendBye != null) send(Bye(sendBye))
-        val conn = connection
-        connection = null
-        readerJob?.cancel()
-        conn?.close("end $reason")
-        val session = rtc
-        rtc = null
-        if (session != null) {
-            withContext(Dispatchers.IO) { session.close() }
-            stopService()
-            writeReport(reason)
+        // 不可取消 + 幂等（E1 / E4）：end() 常在超时 / 重连 / 看门狗 Job 里被调用，而它会取消这些 Job；
+        // 不加保护时第一个挂起点（关闭会话）就抛 CancellationException，会话不关、服务不停、状态卡住。
+        endGuard.end(sessionGen) {
+            val t = target
+            cancelTimeout()
+            reconnectJob?.cancel()
+            reconnectJob = null
+            reconnectShowJob?.cancel()
+            mediaWatchdog?.cancel()
+            if (sendBye != null) send(Bye(sendBye))
+            val conn = connection
+            connection = null
+            readerJob?.cancel()
+            conn?.close("end $reason")
+            val session = rtc
+            rtc = null
+            if (session != null) {
+                withContext(Dispatchers.IO) { session.close() }
+                stopService()
+                writeReport(reason)
+            }
+            sm.onEvent(SessionEvent.Closed)
+            WscLog.i(TAG, "session ended: $reason ${failure ?: ""} ${detail.orEmpty()}")
+            _state.value = if (reason == EndReason.USER_STOPPED) SenderState.Idle else SenderState.Ended(t, reason, detail, failure)
         }
-        sm.onEvent(SessionEvent.Closed)
-        WscLog.i(TAG, "session ended: $reason ${failure ?: ""} ${detail.orEmpty()}")
-        _state.value = if (reason == EndReason.USER_STOPPED) SenderState.Idle else SenderState.Ended(t, reason, detail, failure)
     }
 
     private fun writeReport(reason: EndReason) {
@@ -770,6 +804,7 @@ class SenderController @Inject constructor(
         castingSince = 0
         lastAutoDowngradeFrom = null
         audioState = AudioState.OFF
+        preMediaIceRestarts = 0
     }
 
     @Suppress("unused")
@@ -780,5 +815,6 @@ class SenderController @Inject constructor(
         const val HELLO_TIMEOUT_MS = 6_000L
         const val PAIR_REPLY_TIMEOUT_MS = 8_000L
         const val FIRST_MEDIA_TIMEOUT_MS = 60_000L
+        const val MAX_PRE_MEDIA_ICE_RESTARTS = 2
     }
 }

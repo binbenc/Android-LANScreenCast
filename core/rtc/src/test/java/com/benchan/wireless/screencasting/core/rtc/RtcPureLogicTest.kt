@@ -76,4 +76,15 @@ class RtcPureLogicTest {
         assertNotNull(lat)
         assertTrue(lat!! in 80..110)
     }
+
+    @Test
+    fun audioCapturePacingNeverBusyLoops() {
+        val p = com.benchan.wireless.screencasting.core.rtc.sender.PlaybackAudioCapture
+        // 48kHz 立体声 10ms = 1920 字节 → 10ms
+        org.junit.Assert.assertEquals(10L, p.paceMillis(1920, 48_000, 2))
+        // 读失败（缺整个缓冲）或缺 0 字节时也至少睡 1ms，绝不空转
+        org.junit.Assert.assertEquals(1L, p.paceMillis(0, 48_000, 2))
+        org.junit.Assert.assertEquals(1L, p.paceMillis(-5, 48_000, 2))
+        org.junit.Assert.assertEquals(20L, p.paceMillis(1_000_000, 48_000, 2))
+    }
 }

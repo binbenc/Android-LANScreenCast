@@ -37,18 +37,30 @@ fun ReceiverScreen(
     val dlna by viewModel.dlnaPlayback.collectAsStateWithLifecycle()
     val apple by viewModel.appleState.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    // 每个实例最多持有一次监听引用：以前 ON_STOP 和 onDispose 都会 stopListening，页面切换动画结束时旧实例被移除，
+    // 多减一次把新实例的引用也抵消了，监听在待机页可见时被停掉（E8）
     DisposableEffect(lifecycle) {
+        var holding = false
         val obs = LifecycleEventObserver { _, e ->
             when (e) {
-                Lifecycle.Event.ON_START -> viewModel.startListening()
-                Lifecycle.Event.ON_STOP -> viewModel.stopListening()
+                Lifecycle.Event.ON_START -> if (!holding) {
+                    holding = true
+                    viewModel.startListening()
+                }
+                Lifecycle.Event.ON_STOP -> if (holding) {
+                    holding = false
+                    viewModel.stopListening()
+                }
                 else -> Unit
             }
         }
         lifecycle.addObserver(obs)
         onDispose {
             lifecycle.removeObserver(obs)
-            viewModel.stopListening()
+            if (holding) {
+                holding = false
+                viewModel.stopListening()
+            }
         }
     }
     LaunchedEffect(standby.notice) {

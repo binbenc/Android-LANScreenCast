@@ -10,7 +10,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.activity.compose.LocalActivity
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -71,3 +77,20 @@ internal fun FadingSourceTag(text: String, state: SourceTagState, modifier: Modi
 }
 
 private const val SOURCE_TAG_VISIBLE_MS = 3_000L
+
+/**
+ * 播放页沉浸式（E6）：隐藏状态栏和导航栏（手机 / 平板当接收端时，浅色导航栏不再压在黑色视频上），
+ * 从边缘滑动可临时呼出；离开播放页恢复。TV 上通常没有系统栏，等同空操作。
+ */
+@Composable
+internal fun ImmersiveSystemBars() {
+    val activity = LocalActivity.current
+    val view = LocalView.current
+    DisposableEffect(activity, view) {
+        val window = activity?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller?.hide(WindowInsetsCompat.Type.systemBars())
+        onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+    }
+}

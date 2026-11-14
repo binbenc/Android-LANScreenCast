@@ -205,7 +205,7 @@ fun SettingsScreen(
                 }
                 // 开机自启只在接收端模式下有意义：发送端模式隐藏（BootReceiver 同样会检查模式，P2）
                 if (receiverMode) {
-                    SwitchRow("开机自启", "开机后在后台等待投屏，有人投屏时用通知打开确认界面；部分电视系统不支持后台唤起（不显示通知或禁止后台启动），此时需先打开本应用", settings.bootStart, onChange = { on ->
+                    SwitchRow("开机自启", "开机后在后台等待投屏（通知栏会常驻一条“正在后台等待投屏”），有人投屏时用通知打开确认界面；部分电视系统不支持后台唤起，此时需先打开本应用", settings.bootStart, onChange = { on ->
                         if (on) dialog = "boot" else viewModel.setBootStart(false)
                     })
                 }
@@ -257,7 +257,7 @@ fun SettingsScreen(
             title = { Text("开启开机自启？") },
             text = {
                 Text(
-                    "开机后会在后台等待投屏，略微增加耗电。\n\n" +
+                    "开机后会在后台等待投屏，略微增加耗电。系统要求后台运行的应用显示一条常驻通知“正在后台等待投屏”，可在通知上点“停止”。\n\n" +
                         "有人投屏时，本应用会用通知打开确认 / 播放界面，所以需要允许通知。" +
                         "部分电视系统不显示通知、或会阻止应用在后台自启，这种情况下仍需先打开本应用才能接收投屏。",
                 )

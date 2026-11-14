@@ -34,6 +34,14 @@ class PlaybackAudioCapture(
     private var recordChannels = 0
     private var silentMs = 0L
     private var lastReported: AudioState? = null
+    private var consecutiveFailures = 0
+    private var retryAfterNs = 0L
+
+    /** 连续读失败（约 1 秒）时上报“疑似无声”，界面提示而不是静默。 */
+    private fun onReadFailure() {
+        consecutiveFailures++
+        if (consecutiveFailures >= FAILURES_BEFORE_SILENT) report(AudioState.SILENT_SUSPECTED)
+    }
 
     override fun onBuffer(buffer: ByteBuffer, audioFormat: Int, channelCount: Int, sampleRate: Int, bytesRead: Int, captureTimeNs: Long): Long {
         val size = bytesRead.coerceAtMost(buffer.capacity())
@@ -43,18 +51,32 @@ class PlaybackAudioCapture(
             pace(size, sampleRate, channelCount)
             return 0
         }
-        val rec = ensureRecord(sampleRate, channelCount)
+        val rec = if (System.nanoTime() < retryAfterNs) null else ensureRecord(sampleRate, channelCount)
         if (rec == null) {
             zeroFill(buffer, size)
             pace(size, sampleRate, channelCount)
+            onReadFailure()
             return 0
         }
         buffer.position(0)
         val n = rec.read(buffer, size, AudioRecord.READ_BLOCKING)
         if (n < size) {
-            // 读取失败或不足：剩余部分补零，防止上一轮数据重复播放
+            // 读取失败或不足：剩余部分补零，防止上一轮数据重复播放；
+            // 按缺的那部分时长限速，否则 read 立即返回错误时采集线程会空转（E5）
             for (i in maxOf(n, 0) until size) buffer.put(i, 0)
+            pace(size - maxOf(n, 0), sampleRate, channelCount)
         }
+        if (n < 0) {
+            if (n == AudioRecord.ERROR_DEAD_OBJECT) {
+                // AudioRecord 已失效（例如音频服务重启）：释放，稍后重建
+                WscLog.w(TAG, "playback capture dead object, will recreate")
+                release()
+                retryAfterNs = System.nanoTime() + RETRY_DELAY_NS
+            }
+            onReadFailure()
+            return 0
+        }
+        consecutiveFailures = 0
         trackSilence(buffer, size, sampleRate, channelCount)
         return 0 // 0 = 使用采集线程自己的时间戳
     }
@@ -128,9 +150,8 @@ class PlaybackAudioCapture(
         for (i in 0 until size) buffer.put(i, 0)
     }
 
-    private fun pace(size: Int, sampleRate: Int, channels: Int) {
-        val ms = size * 1000L / (sampleRate * channels * 2).coerceAtLeast(1)
-        runCatching { Thread.sleep(ms.coerceIn(1, 20)) }
+    private fun pace(bytes: Int, sampleRate: Int, channels: Int) {
+        runCatching { Thread.sleep(paceMillis(bytes, sampleRate, channels)) }
     }
 
     fun release() {
@@ -141,9 +162,15 @@ class PlaybackAudioCapture(
         record = null
     }
 
-    private companion object {
-        const val TAG = "PlaybackAudio"
-        const val SILENCE_THRESHOLD = 8
-        const val SILENT_SUSPECT_MS = 10_000L
+    companion object {
+        private const val TAG = "PlaybackAudio"
+        private const val SILENCE_THRESHOLD = 8
+        private const val SILENT_SUSPECT_MS = 10_000L
+        private const val FAILURES_BEFORE_SILENT = 100 // 100 × 10ms ≈ 1 秒
+        private const val RETRY_DELAY_NS = 500_000_000L
+
+        /** 16-bit PCM 的 [bytes] 字节对应的播放时长（毫秒），限制在 1~20ms（采集回调周期 10ms）。 */
+        internal fun paceMillis(bytes: Int, sampleRate: Int, channels: Int): Long =
+            (bytes.coerceAtLeast(0) * 1000L / (sampleRate * channels * 2).coerceAtLeast(1)).coerceIn(1, 20)
     }
 }

@@ -63,6 +63,7 @@ import com.benchan.wireless.screencasting.core.protocol.session.TrustPolicy
 import com.benchan.wireless.screencasting.core.data.settings.AppMode
 import com.benchan.wireless.screencasting.core.data.settings.effectiveMode
 import com.benchan.wireless.screencasting.core.ui.util.DeviceKind
+import com.benchan.wireless.screencasting.feature.receiver.service.BackgroundListenService
 import com.benchan.wireless.screencasting.feature.receiver.service.ReceiverAlerts
 import com.benchan.wireless.screencasting.feature.receiver.service.ReceiverService
 import com.benchan.wireless.screencasting.protocol.airplay.api.AirPlayReceiver
@@ -82,6 +83,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -366,9 +368,13 @@ class ReceiverController @Inject constructor(
         listenJob = scope.launch { listen() }
     }
 
+    /** 后台监听通知上的“停止”。 */
+    fun stopBackgroundListening() = scope.launch { stopBackgroundListeningLocked() }
+
     private fun stopBackgroundListeningLocked() {
         if (!backgroundListening) return
         backgroundListening = false
+        BackgroundListenService.stop(context)
         if (!keepListening() && active == null && !appleBusy() && dlna.playback.value == null) shutdownListener()
     }
 
@@ -763,7 +769,8 @@ class ReceiverController @Inject constructor(
             val a = activeFor() ?: return
             // 信令断开：保留 PeerConnection 与最后一帧，等待发送端 HELLO{resume}（最长 30 秒）
             a.signalingLostAt = System.currentTimeMillis()
-            _session.update { it?.copy(reconnecting = true) }
+            // 首帧前断开不显示“重连 / 最后一帧”（E3）
+            if (a.firstFrameAt > 0L) _session.update { it?.copy(reconnecting = true) }
             a.reconnectTimer?.cancel()
             a.reconnectTimer = scope.launch {
                 delay(WscProtocol.RECONNECT_WINDOW_MS)
@@ -836,6 +843,8 @@ class ReceiverController @Inject constructor(
                         if (a.accumulator.disconnects > a.accumulator.autoRecovered) a.accumulator.onRecovered()
                     }
                     MediaState.DISCONNECTED, MediaState.FAILED -> {
+                        // 首帧前从未连通：不是“重连”，界面保持“正在接收…”（E3）
+                        if (a.firstFrameAt == 0L) return@launch
                         a.accumulator.onDisconnected()
                         _session.update { it?.copy(reconnecting = true, reconnectAttempt = (it.reconnectAttempt) + 1) }
                     }
@@ -893,19 +902,23 @@ class ReceiverController @Inject constructor(
 
     private suspend fun endActive(a: Active, bye: ByeReason?, notice: String?) {
         if (active !== a) return
-        active = null
-        a.reconnectTimer?.cancel()
-        a.displayWatchdog?.cancel()
-        if (bye != null) a.inbound.send(Bye(bye))
-        a.inbound.conn.close("session end")
-        renderers.forEach(a.rtc::detachRenderer)
-        withContext(Dispatchers.IO) { a.rtc.close() }
-        if (dlna.playback.value == null && !appleBusy()) ReceiverService.stop(context)
-        _session.value = null
-        _standby.update { it.copy(notice = notice) }
-        writeReport(a, bye?.name ?: notice ?: "ended")
-        WscLog.i(TAG, "mirror session ${a.sid} ended (${bye ?: notice})")
-        if (!keepListening()) shutdownListener()
+        // 不可取消（E1）：endActive 常在 reconnectTimer / displayWatchdog 里被调用而又会取消它们，
+        // 不加保护时第一个挂起点（关闭 RTC）就会抛 CancellationException，后续清理全部被跳过
+        withContext(NonCancellable) {
+            active = null
+            a.reconnectTimer?.cancel()
+            a.displayWatchdog?.cancel()
+            if (bye != null) a.inbound.send(Bye(bye))
+            a.inbound.conn.close("session end")
+            renderers.forEach(a.rtc::detachRenderer)
+            withContext(Dispatchers.IO) { a.rtc.close() }
+            if (dlna.playback.value == null && !appleBusy()) ReceiverService.stop(context)
+            _session.value = null
+            _standby.update { it.copy(notice = notice) }
+            writeReport(a, bye?.name ?: notice ?: "ended")
+            WscLog.i(TAG, "mirror session ${a.sid} ended (${bye ?: notice})")
+            if (!keepListening()) shutdownListener()
+        }
     }
 
     private fun writeReport(a: Active, reason: String) {
