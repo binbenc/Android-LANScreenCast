@@ -21,6 +21,7 @@ import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import com.benchan.wireless.screencasting.feature.sender.R
 import com.benchan.wireless.screencasting.feature.sender.session.SenderController
 import com.benchan.wireless.screencasting.feature.sender.session.SenderState
+import com.benchan.wireless.screencasting.feature.sender.session.isTerminal
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -86,8 +87,9 @@ class ScreenCastService : LifecycleService() {
                     is SenderState.Starting, is SenderState.Casting, is SenderState.Reconnecting -> {
                         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification(s))
                     }
-                    else -> {
-                        WscLog.i(TAG, "session not active ($s), stopping service")
+                    // 首个值通常还是 ReadyToCapture（onProjectionGranted 异步切到 Starting），不能据此停服务
+                    else -> if (s.isTerminal) {
+                        WscLog.i(TAG, "session ended ($s), stopping service")
                         stopSelf()
                     }
                 }

@@ -4,6 +4,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import com.benchan.wireless.screencasting.core.ui.components.LocalModalOverlayVisible
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,13 +23,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.focusable
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import com.benchan.wireless.screencasting.core.ui.theme.onScrim
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +52,8 @@ import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionKind
  * 兼容 Apple 设备（非官方）播放页。界面文案不出现 “AirPlay” 字样与苹果图标（PRD 12、决策 #23）。
  */
 
+private const val PIN_OVERLAY_TIMEOUT_MS = 60_000L
+
 private const val SOURCE_LABEL = "兼容 Apple 设备"
 
 /** 连按两次返回断开（与 WSC 播放页一致，PRD 6.2）。 */
@@ -52,7 +61,8 @@ private const val SOURCE_LABEL = "兼容 Apple 设备"
 private fun DoubleBackToDisconnect(message: String, onDisconnect: () -> Unit) {
     val context = LocalContext.current
     var lastBack by remember { mutableLongStateOf(0L) }
-    BackHandler {
+    // 根部弹层可见时把返回键让给弹层（S-d）
+    BackHandler(enabled = !LocalModalOverlayVisible.current) {
         val now = System.currentTimeMillis()
         if (now - lastBack < 2_000) {
             onDisconnect()
@@ -64,34 +74,32 @@ private fun DoubleBackToDisconnect(message: String, onDisconnect: () -> Unit) {
 }
 
 @Composable
-private fun SourceTag(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text,
-        modifier.padding(horizontal = 48.dp, vertical = 27.dp)
-            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
-        color = Color.White, style = MaterialTheme.typography.bodySmall,
-    )
-}
-
-@Composable
 internal fun AppleCompatPlayback(
     session: AppleSession,
     videoPlayer: Player?,
     setSurface: (android.view.Surface?) -> Unit,
     onDisconnect: () -> Unit,
+    onDisplay: (Boolean) -> Unit = {},
 ) {
+    DisposableEffect(session.kind) {
+        onDisplay(true)
+        onDispose { onDisplay(false) }
+    }
     DoubleBackToDisconnect("再按一次返回键断开", onDisconnect)
-    when (session.kind) {
-        AppleSessionKind.MIRROR -> AppleMirror(session, setSurface)
-        AppleSessionKind.VIDEO_URL -> AppleVideoUrl(session, videoPlayer)
-        AppleSessionKind.AUDIO -> AppleAudio(session)
+    val tag = rememberSourceTagState()
+    Box(Modifier.fillMaxSize().showSourceTagOnKeys(tag)) {
+        when (session.kind) {
+            AppleSessionKind.MIRROR -> AppleMirror(session, setSurface, tag)
+            AppleSessionKind.VIDEO_URL -> AppleVideoUrl(session, videoPlayer, tag)
+            AppleSessionKind.AUDIO -> AppleAudio(session)
+        }
     }
 }
 
 /** 镜像：MediaCodec 直接解码到这个 SurfaceView。 */
 @Composable
-private fun AppleMirror(session: AppleSession, setSurface: (android.view.Surface?) -> Unit) {
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+private fun AppleMirror(session: AppleSession, setSurface: (android.view.Surface?) -> Unit, tag: SourceTagState) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim)) {
         AndroidView(
             factory = { ctx ->
                 SurfaceView(ctx).apply {
@@ -108,18 +116,18 @@ private fun AppleMirror(session: AppleSession, setSurface: (android.view.Surface
         if (session.firstFrameAt == null) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 CircularProgressIndicator()
-                Text("正在连接 ${session.peerName}…", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text("正在连接 ${session.peerName}…", color = MaterialTheme.colorScheme.onScrim, style = MaterialTheme.typography.titleMedium)
             }
         }
-        SourceTag("$SOURCE_LABEL · ${session.peerName}", Modifier.align(Alignment.TopStart))
+        FadingSourceTag("$SOURCE_LABEL · ${session.peerName}", tag, Modifier.align(Alignment.TopStart))
     }
 }
 
 /** 视频网址：Media3 PlayerView（SurfaceView），遥控器可暂停 / 拖动。 */
 @OptIn(UnstableApi::class)
 @Composable
-private fun AppleVideoUrl(session: AppleSession, player: Player?) {
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+private fun AppleVideoUrl(session: AppleSession, player: Player?, tag: SourceTagState) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim)) {
         if (player != null) {
             AndroidView(
                 factory = { ctx ->
@@ -127,6 +135,8 @@ private fun AppleVideoUrl(session: AppleSession, player: Player?) {
                         useController = true
                         keepScreenOn = true
                         this.player = player
+                        // 控制条出现（遥控器按键或触摸）时同时显示来源标签（S-b）
+                        setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { v -> if (v == android.view.View.VISIBLE) tag.show() })
                     }
                 },
                 update = { it.player = player },
@@ -136,7 +146,7 @@ private fun AppleVideoUrl(session: AppleSession, player: Player?) {
         } else {
             CircularProgressIndicator(Modifier.align(Alignment.Center))
         }
-        SourceTag("视频网址 · $SOURCE_LABEL · ${session.peerName}", Modifier.align(Alignment.TopStart))
+        FadingSourceTag("视频网址 · $SOURCE_LABEL · ${session.peerName}", tag, Modifier.align(Alignment.TopStart))
     }
 }
 
@@ -158,11 +168,22 @@ private fun AppleAudio(session: AppleSession) {
  * Apple 设备首次连接时的配对 PIN（PIN 默认开启，决策 #23）：覆盖在任何页面之上，方便在 iPhone 上照着输入。
  */
 @Composable
-internal fun AppleCompatPinOverlay(pin: String) {
+internal fun AppleCompatPinOverlay(pin: String, onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+    val focus = remember { FocusRequester() }
+    // 弹层没有按钮：卡片自身取得焦点并锁住，方向键不会移到下面的待机页（B5）
+    LaunchedEffect(pin) {
+        runCatching { focus.requestFocus() }
+        // UxPlay 在 iPhone 放弃配对时没有回调：60 秒后自动收起（S9）
+        delay(PIN_OVERLAY_TIMEOUT_MS)
+        onDismiss()
+    }
+    // TV 返回键关闭覆盖层，而不是退出应用（S9）
+    BackHandler(onBack = onDismiss)
+    ModalScrim {
         Column(
-            Modifier.widthIn(max = 560.dp).background(c.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(32.dp),
+            Modifier.widthIn(max = 560.dp).background(c.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(32.dp)
+                .trapFocus().focusRequester(focus).focusable(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -178,6 +199,7 @@ internal fun AppleCompatPinOverlay(pin: String) {
                 }
             }
             Text("请在 iPhone / iPad 上输入此 PIN。配对后这台设备下次可直接连接。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text("按返回键关闭", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }
 }

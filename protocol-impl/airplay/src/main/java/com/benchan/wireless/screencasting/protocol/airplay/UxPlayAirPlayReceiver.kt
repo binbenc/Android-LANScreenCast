@@ -118,7 +118,7 @@ class UxPlayAirPlayReceiver @Inject constructor(
 
     private fun startNative(cfg: Config) {
         if (!UxPlayNative.load()) {
-            _state.value = AppleCompatState.Failed("当前版本未包含兼容 Apple 设备模块")
+            _state.value = AppleCompatState.Failed("当前安装包不包含这项功能，请安装完整版本")
             WscLog.w(TAG, "native library not packaged in this build")
             return
         }
@@ -137,7 +137,7 @@ class UxPlayAirPlayReceiver @Inject constructor(
             WscLog.i(TAG, "advertising (pin=${cfg.requirePin})")
         } else {
             running = null
-            _state.value = AppleCompatState.Failed(UxPlayStartError.describe(rc))
+            _state.value = AppleCompatState.Failed(UxPlayStartError.userMessage(rc))
             WscLog.w(TAG, "start failed: ${UxPlayStartError.describe(rc)}")
         }
     }

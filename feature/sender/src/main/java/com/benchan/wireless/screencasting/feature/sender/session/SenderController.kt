@@ -152,17 +152,18 @@ class SenderController @Inject constructor(
             WscClient(id).connect(newTarget.host, newTarget.port, pin)
         } catch (e: SignalingConnectException) {
             WscLog.w(TAG, "connect failed: ${e.message}")
-            end(if (e.certificateMismatch) EndReason.CERTIFICATE_MISMATCH else EndReason.CONNECT_FAILED, sendBye = null)
+            end(if (e.certificateMismatch) EndReason.CERTIFICATE_MISMATCH else EndReason.CONNECT_FAILED, sendBye = null, failure = ConnectFailure.UNREACHABLE)
             return@launch
         } catch (e: Exception) {
             WscLog.w(TAG, "connect failed", e)
-            end(EndReason.CONNECT_FAILED, sendBye = null)
+            end(EndReason.CONNECT_FAILED, sendBye = null, failure = ConnectFailure.UNREACHABLE)
             return@launch
         }
         attach(conn)
         sm.onEvent(SessionEvent.TransportOpened)
-        send(helloPayload(id, s.deviceName, resume = false))
-        armTimeout(HELLO_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, sendBye = null) }
+        // 告诉接收端本机是否仍信任它：本机移除了信任时接收端会改走配对，而不是直接放行（PROTOCOL.md 2.1）
+        send(helloPayload(id, s.deviceName, resume = false, trustsReceiver = isReceiverTrustedLocally()))
+        armTimeout(HELLO_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, sendBye = null, failure = ConnectFailure.HANDSHAKE_TIMEOUT) }
     }
 
     private fun pinFor(t: CastTarget): ServerPin {
@@ -173,7 +174,7 @@ class SenderController @Inject constructor(
         return ServerPin.None
     }
 
-    private fun helloPayload(id: DeviceIdentity, name: String, resume: Boolean) = Hello(
+    private fun helloPayload(id: DeviceIdentity, name: String, resume: Boolean, trustsReceiver: Boolean? = null) = Hello(
         ver = WscProtocol.VERSION,
         deviceId = id.deviceId,
         name = name,
@@ -181,6 +182,7 @@ class SenderController @Inject constructor(
         role = "sender",
         caps = listOf(WscProtocol.Caps.H264, WscProtocol.Caps.OPUS),
         resume = resume,
+        trusted = if (resume) null else trustsReceiver,
     )
 
     private fun attach(conn: SignalingConnection) {
@@ -227,7 +229,7 @@ class SenderController @Inject constructor(
             is IceCandidate -> rtc?.onRemoteIce(p.candidate, p.sdpMid, p.sdpMLineIndex)
             is Bye -> {
                 WscLog.i(TAG, "receiver said BYE ${p.reason}")
-                end(EndReason.REMOTE_CLOSED, sendBye = null)
+                end(if (p.reason == ByeReason.NO_DISPLAY) EndReason.RECEIVER_NO_DISPLAY else EndReason.REMOTE_CLOSED, sendBye = null)
             }
             is ErrorPayload -> onError(p)
             else -> Unit
@@ -276,20 +278,20 @@ class SenderController @Inject constructor(
                 send(PairRequest(deviceName(), Build.MODEL.orEmpty(), PairMethod.QR))
                 val mac = QrProof.compute(t.qrNonce, identity!!.fingerprint.bytes, receiverFp!!.bytes, sessionId)
                 send(PairQr(Base64Url.encode(mac)))
-                armTimeout(PAIR_REPLY_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP) }
+                armTimeout(PAIR_REPLY_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP, failure = ConnectFailure.QR_PAIR_TIMEOUT) }
             }
             t.castCodePin != null -> {
                 pairMethod = PairMethod.CODE
                 send(PairRequest(deviceName(), Build.MODEL.orEmpty(), PairMethod.CODE))
                 startSpake(t.castCodePin)
-                armTimeout(PAIR_REPLY_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP) }
+                armTimeout(PAIR_REPLY_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP, failure = ConnectFailure.CODE_PAIR_TIMEOUT) }
             }
             else -> {
                 pairMethod = PairMethod.PIN
                 send(PairRequest(deviceName(), Build.MODEL.orEmpty(), PairMethod.PIN))
                 val deadline = System.currentTimeMillis() + WscProtocol.PAIR_CONFIRM_TIMEOUT_MS
                 _state.value = SenderState.AwaitingPin(named, deadline)
-                armTimeout(WscProtocol.PAIR_CONFIRM_TIMEOUT_MS + 2_000) { end(EndReason.CONFIRM_TIMEOUT, ByeReason.USER_STOP) }
+                armTimeout(WscProtocol.PAIR_CONFIRM_TIMEOUT_MS + 2_000) { end(EndReason.PIN_TIMEOUT, ByeReason.USER_STOP) }
             }
         }
     }
@@ -362,23 +364,28 @@ class SenderController @Inject constructor(
                 pairing = null
                 val s = _state.value
                 if (pairMethod == PairMethod.CODE) {
-                    end(EndReason.REJECTED, sendBye = null, detail = "投屏码不正确")
+                    end(EndReason.CAST_CODE_WRONG, sendBye = null)
                 } else if (s is SenderState.AwaitingPin) {
                     _state.value = s.copy(error = true, attemptsLeft = e.attemptsLeft, verifying = false)
                     _events.tryEmit(SenderEvent.PinIncorrect(e.attemptsLeft))
                     armTimeout((s.deadlineAt - System.currentTimeMillis()).coerceAtLeast(1_000) + 2_000) {
-                        end(EndReason.CONFIRM_TIMEOUT, ByeReason.USER_STOP)
+                        end(EndReason.PIN_TIMEOUT, ByeReason.USER_STOP)
                     }
                 }
             }
             ErrorCode.PAIR_REJECTED -> end(EndReason.REJECTED, sendBye = null)
-            ErrorCode.PAIR_TIMEOUT -> end(EndReason.CONFIRM_TIMEOUT, sendBye = null)
+            ErrorCode.PAIR_TIMEOUT -> end(if (pairMethod == PairMethod.PIN) EndReason.PIN_TIMEOUT else EndReason.CONFIRM_TIMEOUT, sendBye = null)
             ErrorCode.PAIR_LOCKED -> end(EndReason.PAIR_LOCKED, sendBye = null)
             ErrorCode.VERSION_UNSUPPORTED -> end(EndReason.VERSION_UNSUPPORTED, sendBye = null)
             ErrorCode.BUSY -> end(EndReason.BUSY, sendBye = null)
-            ErrorCode.QR_INVALID -> end(EndReason.REJECTED, sendBye = null, detail = "二维码已过期，请重新扫码")
+            ErrorCode.QR_INVALID -> end(EndReason.QR_EXPIRED, sendBye = null)
             ErrorCode.RESUME_FAILED -> end(EndReason.RECONNECT_FAILED, sendBye = null)
-            else -> end(EndReason.INTERNAL_ERROR, sendBye = null, detail = e.code.name)
+            // 错误码只写日志，界面显示可读文案（EndReason.snackbarText）
+            ErrorCode.UNAUTHENTICATED -> end(EndReason.AUTH_FAILED, sendBye = null)
+            else -> {
+                WscLog.w(TAG, "receiver error ${e.code}")
+                end(EndReason.INTERNAL_ERROR, sendBye = null)
+            }
         }
     }
 
@@ -393,7 +400,7 @@ class SenderController @Inject constructor(
         if (t == null || connection?.isOpen != true) {
             WscLog.w(TAG, "projection granted but no authenticated session")
             stopService()
-            if (t != null) end(EndReason.CONNECT_FAILED, sendBye = null)
+            if (t != null) end(EndReason.CONNECT_FAILED, sendBye = null, failure = ConnectFailure.LOST)
             return@launch
         }
         captureGrantedAt = System.currentTimeMillis()
@@ -410,7 +417,7 @@ class SenderController @Inject constructor(
         rtc = session
         session.start()
         // 首帧超时：60 秒还没有连上媒体就判定失败（交互稿 10 统计口径）
-        armTimeout(FIRST_MEDIA_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP) }
+        armTimeout(FIRST_MEDIA_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP, failure = ConnectFailure.FIRST_FRAME_TIMEOUT) }
     }
 
     private val rtcListener = object : SenderRtcSession.Listener {
@@ -538,7 +545,7 @@ class SenderController @Inject constructor(
         when {
             rtc != null && (s is SenderState.Casting || s is SenderState.Starting || s is SenderState.Reconnecting) -> startReconnect()
             s is SenderState.Ended || s is SenderState.Idle -> Unit
-            else -> scope.launch { end(EndReason.CONNECT_FAILED, sendBye = null) }
+            else -> scope.launch { end(EndReason.CONNECT_FAILED, sendBye = null, failure = ConnectFailure.LOST) }
         }
     }
 
@@ -662,7 +669,7 @@ class SenderController @Inject constructor(
 
     val isSessionActive: Boolean get() = rtc != null
 
-    private suspend fun end(reason: EndReason, sendBye: ByeReason?, detail: String? = null) {
+    private suspend fun end(reason: EndReason, sendBye: ByeReason?, detail: String? = null, failure: ConnectFailure? = null) {
         val t = target
         cancelTimeout()
         reconnectJob?.cancel()
@@ -682,8 +689,8 @@ class SenderController @Inject constructor(
             writeReport(reason)
         }
         sm.onEvent(SessionEvent.Closed)
-        WscLog.i(TAG, "session ended: $reason ${detail.orEmpty()}")
-        _state.value = if (reason == EndReason.USER_STOPPED) SenderState.Idle else SenderState.Ended(t, reason, detail)
+        WscLog.i(TAG, "session ended: $reason ${failure ?: ""} ${detail.orEmpty()}")
+        _state.value = if (reason == EndReason.USER_STOPPED) SenderState.Idle else SenderState.Ended(t, reason, detail, failure)
     }
 
     private fun writeReport(reason: EndReason) {

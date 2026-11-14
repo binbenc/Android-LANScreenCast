@@ -59,12 +59,21 @@ import com.benchan.wireless.screencasting.core.security.trust.TrustedDeviceStore
 import com.benchan.wireless.screencasting.core.signaling.SignalingConnection
 import com.benchan.wireless.screencasting.core.signaling.SignalingEvent
 import com.benchan.wireless.screencasting.core.signaling.WscServer
+import com.benchan.wireless.screencasting.core.protocol.session.TrustPolicy
+import com.benchan.wireless.screencasting.core.data.settings.AppMode
+import com.benchan.wireless.screencasting.core.data.settings.effectiveMode
+import com.benchan.wireless.screencasting.core.ui.util.DeviceKind
+import com.benchan.wireless.screencasting.feature.receiver.service.ReceiverAlerts
 import com.benchan.wireless.screencasting.feature.receiver.service.ReceiverService
 import com.benchan.wireless.screencasting.protocol.airplay.api.AirPlayReceiver
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleAdmission
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleCompatState
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleEndReason
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionSummary
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionKind
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.benchan.wireless.screencasting.protocol.dlna.DlnaConsent
 import com.benchan.wireless.screencasting.protocol.dlna.DlnaManager
 import com.benchan.wireless.screencasting.protocol.dlna.DlnaPlayback
@@ -131,14 +140,57 @@ class ReceiverController @Inject constructor(
     /** DLNA 推送播放（F09）。 */
     val dlnaPlayback: StateFlow<DlnaPlayback?> = dlna.playback
     val dlnaPlayer get() = dlna.player.exoPlayer
+    /** App 是否在前台（任何页面，ProcessLifecycleOwner ≥ STARTED，R5）。 */
+    private val appForeground = MutableStateFlow(false)
+
+    /** DLNA / Apple 视频画面（PlayerView / SurfaceView）挂载数。 */
+    private var videoDisplays = 0
+    private var videoWatchdog: Job? = null
+
     private val dlnaApproved = HashMap<String, Long>()
+    private val dlnaGuard = PairingGuard()
+
+    /** DLNA 来源 IP → 可读来源名（后台提醒用，不外露视频标题）。 */
+    private val dlnaLabels = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     init {
         dlna.consent = DlnaConsent { remote, ua, title -> approveDlna(remote, ua, title) }
         scope.launch {
+            var wasPlaying = false
             dlna.playback.collect { p ->
-                if (p != null) ReceiverService.start(context, p.title ?: p.controlPoint) else if (active == null && !appleBusy()) ReceiverService.stop(context)
+                if (p != null) {
+                    ReceiverService.start(context, p.title ?: p.controlPoint)
+                    if (!wasPlaying) {
+                        // 后台提醒只显示来源，不外露播放内容（视频标题）
+                        alertIfBackground(dlnaLabels[p.controlPoint] ?: ReceiverCopy.DLNA_UNKNOWN_APP)
+                        // 确定是视频时：约 10 秒内画面仍未挂上就停止，避免后台只放声音；音频 / MIME 缺失保持现状（R1）
+                        if (p.isKnownVideo) watchVideoDisplay("dlna") {
+                            if (dlna.playback.value != null) {
+                                dlna.stopPlayback()
+                                _standby.update { it.copy(notice = ReceiverCopy.VIDEO_NO_DISPLAY) }
+                            }
+                        }
+                    }
+                } else if (active == null && !appleBusy()) {
+                    ReceiverService.stop(context)
+                }
+                wasPlaying = p != null
             }
+        }
+        // DLNA 播放失败不再静默回待机（C2）
+        scope.launch { dlna.playbackFailed.collect { _standby.update { it.copy(notice = ReceiverCopy.DLNA_PLAYBACK_FAILED) } } }
+        // 界面不在前台（开机自启后台监听）时，确认请求用通知把界面拉起来（B2）
+        scope.launch {
+            consent.current.collect { r ->
+                // App 在前台（任何页面）时只显示根部弹窗，不发高优先级通知（R5）
+                if (r != null && !appForeground.value) ReceiverAlerts.showConsent(context, r.id, r.peerName) else if (r == null) ReceiverAlerts.cancel(context)
+            }
+        }
+        // 关闭“开机自启”或切换为发送端后撤销后台监听（不再依赖进程被杀，P2）
+        scope.launch {
+            val tv = DeviceKind.isTv(context)
+            settings.settings.map { it.bootStart && it.effectiveMode(tv) == AppMode.RECEIVER }.distinctUntilChanged()
+                .collect { on -> if (!on) stopBackgroundListeningLocked() }
         }
         airPlay.ifPresent { ap ->
             ap.admission = AppleAdmission { name, model, _ -> approveApple(name, model) }
@@ -146,12 +198,40 @@ class ReceiverController @Inject constructor(
                 ap.state.map { (it as? AppleCompatState.Active)?.session?.peerName }.distinctUntilChanged().collect { peer ->
                     if (peer != null) {
                         ReceiverService.start(context, peer)
+                        alertIfBackground(peer)
                     } else if (active == null && dlna.playback.value == null) {
                         ReceiverService.stop(context)
                     }
                 }
             }
             scope.launch { ap.sessionEnded.collect(::onAppleEnded) }
+            // 视频类 Apple 会话（镜像 / 视频网址）后台开始约 10 秒仍无画面：断开当前设备；纯音频保持现状（R1）
+            scope.launch {
+                ap.state.map { (it as? AppleCompatState.Active)?.session?.let { s -> s.id to s.kind } }.distinctUntilChanged().collect { cur ->
+                    val kind = cur?.second ?: return@collect
+                    if (kind == AppleSessionKind.MIRROR || kind == AppleSessionKind.VIDEO_URL) {
+                        watchVideoDisplay("apple") {
+                            if (appleBusy()) {
+                                ap.disconnect()
+                                _standby.update { it.copy(notice = ReceiverCopy.VIDEO_NO_DISPLAY) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    init {
+        // ProcessLifecycleOwner 只能在主线程注册观察者
+        scope.launch(Dispatchers.Main) {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(
+                LifecycleEventObserver { owner, _ ->
+                    val fg = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+                    appForeground.value = fg
+                    if (fg) ReceiverAlerts.cancel(context)
+                },
+            )
         }
     }
 
@@ -201,7 +281,7 @@ class ReceiverController @Inject constructor(
                 ),
             )
         }
-        scope.launch { if (listeners == 0 && active == null) shutdownListener() }
+        scope.launch { if (!keepListening() && active == null) shutdownListener() }
     }
 
     /**
@@ -216,7 +296,14 @@ class ReceiverController @Inject constructor(
         val known = dlnaApproved[remote]?.let { now - it < DLNA_REMEMBER_MS } == true
         val needConfirm = replacing || (s.dlnaConfirmUnknown && !known)
         if (needConfirm) {
-            val name = userAgent?.substringBefore('/')?.substringBefore(' ')?.takeIf { it.isNotBlank() && it.length <= 24 } ?: remote
+            // UA 第一个词常是 “Linux/Dalvik” 之类，识别不出时显示“局域网内的视频 App”，IP 在副标题里（C3）
+            val name = ReceiverCopy.dlnaPeerLabel(userAgent)
+            dlnaLabels[remote] = name
+            // 按来源 IP 限频：30 秒内最多 5 次确认请求，防止局域网内刷屏（P3）
+            if (!dlnaGuard.tryRequest(remote)) {
+                WscLog.w(TAG, "DLNA consent rate limited for $remote")
+                return false
+            }
             val r = consent.request(name, remote, CastProtocol.DLNA, pin = null, firstTime = !known, replacing = replacing)
             if (r != ConsentResult.ALLOWED) return false
         }
@@ -233,9 +320,18 @@ class ReceiverController @Inject constructor(
     val appleState: StateFlow<AppleCompatState> =
         if (airPlay.isPresent) airPlay.get().state else MutableStateFlow(AppleCompatState.Stopped)
 
+    /** 是否有任何播放（镜像 / DLNA / Apple）在进行：界面据此回到播放页。 */
+    val anyPlayback: kotlinx.coroutines.flow.Flow<Boolean> by lazy {
+        combine(session, dlna.playback, appleState) { m, d, a -> m != null || d != null || a is AppleCompatState.Active }.distinctUntilChanged()
+    }
+
     fun setAppleSurface(surface: android.view.Surface?) = airPlay.ifPresent { it.setVideoSurface(surface) }
 
+    /** 前台界面（待机页 / 播放页）的引用计数。 */
     private var listeners = 0
+
+    /** 开机自启的后台监听（不计入 [listeners]，可重复调用，关闭“开机自启”时撤销）。 */
+    private var backgroundListening = false
     private var listenJob: Job? = null
     private var server: WscServer? = null
     private var identity: DeviceIdentity? = null
@@ -248,13 +344,54 @@ class ReceiverController @Inject constructor(
     /** 界面进入前台（待机页 / 播放页）时调用。 */
     fun startListening() = scope.launch {
         listeners++
+        ReceiverAlerts.cancel(context)
+        // 后台开始的播放在后台时可能没能启动前台服务：界面回到前台后补上
+        active?.let { ReceiverService.start(context, it.peerName) }
         if (listenJob?.isActive == true) return@launch
         listenJob = scope.launch { listen() }
     }
 
     fun stopListening() = scope.launch {
         listeners = (listeners - 1).coerceAtLeast(0)
-        if (listeners == 0 && active == null && !appleBusy()) shutdownListener()
+        if (!keepListening() && active == null && !appleBusy()) shutdownListener()
+    }
+
+    /**
+     * 开机自启（BootReceiver）：在后台开启发现与监听。与界面的引用计数分开，避免“开机 +1 后再打开 / 退出 App”
+     * 让计数永远不归零（B2）。
+     */
+    fun startBackgroundListening() = scope.launch {
+        backgroundListening = true
+        if (listenJob?.isActive == true) return@launch
+        listenJob = scope.launch { listen() }
+    }
+
+    private fun stopBackgroundListeningLocked() {
+        if (!backgroundListening) return
+        backgroundListening = false
+        if (!keepListening() && active == null && !appleBusy() && dlna.playback.value == null) shutdownListener()
+    }
+
+    private fun keepListening(): Boolean = listeners > 0 || backgroundListening
+
+    /** 播放开始时 App 不在前台：用通知把播放页拉起来。 */
+    private fun alertIfBackground(peer: String) {
+        scope.launch { if (!appForeground.value) ReceiverAlerts.showPlayback(context, peer) }
+    }
+
+    fun setVideoDisplay(attached: Boolean) = scope.launch {
+        videoDisplays = (videoDisplays + if (attached) 1 else -1).coerceAtLeast(0)
+    }
+
+    private fun watchVideoDisplay(what: String, onTimeout: suspend () -> Unit) {
+        videoWatchdog?.cancel()
+        videoWatchdog = scope.launch {
+            delay(NO_DISPLAY_TIMEOUT_MS)
+            if (videoDisplays == 0) {
+                WscLog.w(TAG, "$what video has no display after ${NO_DISPLAY_TIMEOUT_MS}ms, stopping")
+                onTimeout()
+            }
+        }
     }
 
     private suspend fun listen() {
@@ -295,11 +432,13 @@ class ReceiverController @Inject constructor(
     }
 
     private fun refreshStandby(ipBytes: ByteArray?, prefix: Int, ip: String?, port: Int, name: String, apple: Boolean, id: DeviceIdentity) {
-        val code = if (ipBytes != null && CastCode.supportsNetwork(prefix)) runCatching { CastCode.of(ipBytes, castPin) }.getOrNull() else null
+        // 投屏码固定连 8443：端口回退为随机端口时不显示投屏码（C1）
+        val supported = CastCode.supportsNetwork(prefix)
+        val code = if (ipBytes != null && supported && port == WscProtocol.PREFERRED_PORT) runCatching { CastCode.of(ipBytes, castPin) }.getOrNull() else null
         val qr = ip?.let { QrPayload(it, port, id.fingerprint.bytes, qrNonce.current(), name = name).toUri() }
         _standby.update {
             it.copy(
-                deviceName = name, ip = ip, port = port, castCode = code, qrContent = qr,
+                deviceName = name, ip = ip, port = port, castCode = code, qrContent = qr, castCodeNetworkSupported = supported,
                 listening = true, lanAvailable = ip != null, appleCompatAvailable = airPlay.isPresent, appleCompatEnabled = apple,
             )
         }
@@ -398,7 +537,8 @@ class ReceiverController @Inject constructor(
 
         private suspend fun onMessage(msg: WscMessage) {
             val p = msg.payload
-            val wasTrusted = (p is Hello) && trusted.isTrusted(peerFp)
+            // 双方都信任才免配对：发送端声明不信任本机时改走配对（PROTOCOL.md 2.1，B1）
+            val wasTrusted = (p is Hello) && TrustPolicy.receiverTrusts(trusted.isTrusted(peerFp), p.trusted)
             val confirm = (p is Hello) && confirmRequired()
             val t = sm.onEvent(
                 SessionEvent.Received(msg.type, trusted = wasTrusted, confirmRequired = confirm, errorCode = (p as? ErrorPayload)?.code),
@@ -432,6 +572,9 @@ class ReceiverController @Inject constructor(
             if (VersionNegotiation.negotiate(WscProtocol.VERSION, h.ver) == null) {
                 send(ErrorPayload(ErrorCode.VERSION_UNSUPPORTED, min = WscProtocol.MIN_COMPATIBLE_VERSION, max = WscProtocol.VERSION))
                 conn.close("version")
+                WscLog.w(TAG, "incompatible protocol version ${h.ver} from $ip")
+                // 待机页提示哪一端需要更新（C4）
+                _standby.update { it.copy(notice = ReceiverCopy.versionMismatchNotice(h.name.ifBlank { h.model }, h.ver)) }
                 return
             }
             sid = msg.sessionId ?: Ids.newSessionId()
@@ -642,6 +785,7 @@ class ReceiverController @Inject constructor(
         var firstFrameAt = 0L
         var signalingLostAt = 0L
         var reconnectTimer: Job? = null
+        var displayWatchdog: Job? = null
         val accumulator = SessionStatsAccumulator()
         val gradeTracker = LatencyGradeTracker()
         val history = ArrayDeque<Int>()
@@ -660,6 +804,15 @@ class ReceiverController @Inject constructor(
         renderers.forEach(rtc::attachRenderer)
         _session.value = MirrorSession(a.sid, a.peerName, a.peerAddress, a.startedAt)
         ReceiverService.start(context, a.peerName)
+        alertIfBackground(a.peerName)
+        // 没有可见的播放界面时不在后台只放声音：先用通知拉起界面，约 10 秒内仍没有挂上画面就结束（P1）
+        a.displayWatchdog = scope.launch {
+            delay(NO_DISPLAY_TIMEOUT_MS)
+            if (active === a && renderers.isEmpty()) {
+                WscLog.w(TAG, "no renderer attached within ${NO_DISPLAY_TIMEOUT_MS}ms, ending session")
+                endActive(a, ByeReason.NO_DISPLAY, notice = null)
+            }
+        }
         WscLog.i(TAG, "mirror session ${a.sid} started from ${a.peerName}")
         return a
     }
@@ -742,6 +895,7 @@ class ReceiverController @Inject constructor(
         if (active !== a) return
         active = null
         a.reconnectTimer?.cancel()
+        a.displayWatchdog?.cancel()
         if (bye != null) a.inbound.send(Bye(bye))
         a.inbound.conn.close("session end")
         renderers.forEach(a.rtc::detachRenderer)
@@ -751,7 +905,7 @@ class ReceiverController @Inject constructor(
         _standby.update { it.copy(notice = notice) }
         writeReport(a, bye?.name ?: notice ?: "ended")
         WscLog.i(TAG, "mirror session ${a.sid} ended (${bye ?: notice})")
-        if (listeners == 0) shutdownListener()
+        if (!keepListening()) shutdownListener()
     }
 
     private fun writeReport(a: Active, reason: String) {
@@ -781,5 +935,6 @@ class ReceiverController @Inject constructor(
         const val LOCK_OWNER = "receiver-standby"
         const val HELLO_TIMEOUT_MS = 8_000L
         const val DLNA_REMEMBER_MS = 24 * 60 * 60 * 1000L
+        const val NO_DISPLAY_TIMEOUT_MS = 10_000L
     }
 }

@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.benchan.wireless.screencasting.feature.sender.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -9,6 +11,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +34,7 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.PlayCircleOutline
 import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.ScreenShare
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tv
@@ -78,9 +82,11 @@ import kotlinx.coroutines.delay
 @Composable
 internal fun DeviceListScreen(
     ui: DeviceListUi,
-    searchStartedAt: Long,
+    searchStartedAt: () -> Long,
     onDevice: (DeviceRow) -> Unit,
+    onDisabledDevice: (DeviceRow) -> Unit,
     onForget: (DeviceRow) -> Unit,
+    onRefresh: () -> Unit,
     onScan: () -> Unit,
     onCastCode: () -> Unit,
     onManualIp: () -> Unit,
@@ -89,14 +95,17 @@ internal fun DeviceListScreen(
     onInstallHelp: () -> Unit,
 ) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(searchStartedAt) {
+    LaunchedEffect(Unit) {
         while (true) {
             now = System.currentTimeMillis()
             delay(500)
         }
     }
-    val elapsed = if (searchStartedAt > 0) now - searchStartedAt else 0
-    val showFallback = elapsed >= 3_000 || ui.count > 0
+    // 每次重组都重新读取：点“重新搜索”后起点会变
+    val started = searchStartedAt()
+    val elapsed = if (started > 0) (now - started).coerceAtLeast(0) else 0
+    // 02/04（还没发现设备）：兜底卡片 / 诊断，隐藏底栏；03（已发现设备）：显示底栏，不再显示兜底卡片（U4）
+    val showFallback = elapsed >= 3_000 && ui.count == 0
     val showDiagnostics = elapsed >= 10_000 && ui.count == 0
     var menuRow by remember { mutableStateOf<DeviceRow?>(null) }
 
@@ -104,6 +113,10 @@ internal fun DeviceListScreen(
         TopAppBar(
             title = { Text("投屏") },
             actions = {
+                // 04：没找到设备时提供“重新搜索”
+                if (showDiagnostics) {
+                    IconButton(onClick = onRefresh) { Icon(Icons.Rounded.Refresh, contentDescription = "重新搜索") }
+                }
                 IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, contentDescription = "设置") }
             },
         )
@@ -134,7 +147,7 @@ internal fun DeviceListScreen(
                     items(3) { SkeletonRow() }
                 } else {
                     items(ui.nearby, key = { "n-" + it.device.deviceId }) { row ->
-                        DeviceRowItem(row, onClick = { if (row.enabled) onDevice(row) }, onLongClick = { menuRow = row })
+                        DeviceRowItem(row, onClick = { if (row.enabled) onDevice(row) else onDisabledDevice(row) }, onLongClick = { menuRow = row })
                     }
                 }
                 item {
@@ -144,7 +157,8 @@ internal fun DeviceListScreen(
                 }
             }
         }
-        BottomBar(onScan, onCastCode, onManualIp)
+        // 兜底卡片 / 诊断页已经提供了同样的入口：隐藏底栏，避免重复（C15）
+        if (showFallback || showDiagnostics) EncryptedFooter() else BottomBar(onScan, onCastCode, onManualIp)
     }
 
     menuRow?.let { row ->
@@ -179,16 +193,16 @@ private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -
     val d = row.device
     val dlna = d.protocol == DeviceProtocol.DLNA_ONLY
     val subtitle = when {
-        dlna -> "DLNA 仅支持推送视频 · 下个版本开放"
-        row.recent != null -> "WSC 镜像 · 上次 ${relativeTime(row.recent.lastUsedAt)}"
-        row.trusted -> "WSC 镜像 · ${d.host}"
-        else -> "WSC 镜像 · 首次连接需输入 PIN"
+        dlna -> "只支持推送视频 · 暂不能镜像"
+        row.recent != null -> "屏幕镜像 · 上次 ${relativeTime(row.recent.lastUsedAt)}"
+        row.trusted -> "屏幕镜像 · ${d.host}"
+        else -> "屏幕镜像 · 首次连接需输入 PIN"
     }
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onClickLabel = if (dlna) null else "连接")
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onClickLabel = if (dlna) "查看原因" else "连接")
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
@@ -241,7 +255,8 @@ private fun FallbackCard(onScan: () -> Unit, onCastCode: () -> Unit, onManualIp:
     ) {
         Text("没看到你的电视？", style = MaterialTheme.typography.titleMedium)
         Text("路由器可能拦截了自动发现。可以直接连接：", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // FlowRow：200% 字号 / 窄屏时按钮自动换行（C11）
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onScan) {
                 Icon(Icons.Rounded.QrCodeScanner, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -302,7 +317,7 @@ private fun NotFoundContent(
         item { CheckRow(null, "路由器是否开启了“AP 隔离”？", "也叫无线隔离 / 客户端隔离") }
         item { CheckRow(null, "是否连接了“访客网络”？", "访客网络通常禁止设备互访，请换到主网络") }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onScan) {
                     Icon(Icons.Rounded.QrCodeScanner, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
@@ -313,7 +328,7 @@ private fun NotFoundContent(
         }
         item { TextButton(onClick = onDiagnostics) { Text("完整网络诊断（组播检测）") } }
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            FlowRow(itemVerticalAlignment = Alignment.CenterVertically) {
                 Text("电视还没装接收端？", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
                 TextButton(onClick = onInstallHelp) { Text("获取安装方法") }
             }
@@ -345,10 +360,24 @@ private fun CheckRow(confirmed: Boolean?, title: String, detail: String) {
 }
 
 @Composable
+private fun EncryptedFooter() {
+    val c = MaterialTheme.colorScheme
+    Row(
+        Modifier.fillMaxWidth().navigationBarsPadding().reportFooterHeight().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.Lock, null, Modifier.size(14.dp), tint = c.tertiary)
+        Spacer(Modifier.width(4.dp))
+        Text("所有连接均端到端加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+    }
+}
+
+@Composable
 private fun BottomBar(onScan: () -> Unit, onCastCode: () -> Unit, onManualIp: () -> Unit) {
     val c = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxWidth().background(c.surfaceContainer).navigationBarsPadding().padding(vertical = 8.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+    Column(Modifier.fillMaxWidth().background(c.surfaceContainer).navigationBarsPadding().reportFooterHeight().padding(vertical = 8.dp)) {
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             TextButton(onClick = onScan, modifier = Modifier.heightIn(min = 48.dp)) {
                 Icon(Icons.Rounded.QrCodeScanner, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("扫码")
             }

@@ -6,6 +6,7 @@ import com.benchan.wireless.screencasting.core.protocol.message.Role
 import com.benchan.wireless.screencasting.core.protocol.session.SessionEvent
 import com.benchan.wireless.screencasting.core.protocol.session.SessionState
 import com.benchan.wireless.screencasting.core.protocol.session.SessionStateMachine
+import com.benchan.wireless.screencasting.core.protocol.session.TrustPolicy
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -99,5 +100,24 @@ class SessionStateMachineTest {
         assertTrue(sm2.onEvent(SessionEvent.Received(MessageType.PAIR_PIN)).accepted)
         assertTrue(sm2.onEvent(SessionEvent.LocallyAuthenticated).accepted)
         assertEquals(SessionState.AUTHENTICATED, sm2.state)
+    }
+
+    @Test
+    fun trustRequiresBothSides() {
+        // 发送端移除了信任：即使接收端仍信任，也必须重新配对（PROTOCOL.md 2.1）
+        assertFalse(TrustPolicy.receiverTrusts(locallyTrusted = true, senderHelloTrusted = false))
+        assertTrue(TrustPolicy.receiverTrusts(locallyTrusted = true, senderHelloTrusted = true))
+        // 旧版发送端没有该字段：沿用旧行为
+        assertTrue(TrustPolicy.receiverTrusts(locallyTrusted = true, senderHelloTrusted = null))
+        assertFalse(TrustPolicy.receiverTrusts(locallyTrusted = false, senderHelloTrusted = true))
+        assertFalse(TrustPolicy.receiverTrusts(locallyTrusted = false, senderHelloTrusted = null))
+
+        // 接收端据此进入 PAIRING，之后 PAIR_REQ 合法
+        val sm = SessionStateMachine(Role.RECEIVER)
+        sm.onEvent(SessionEvent.TransportOpened)
+        val trusted = TrustPolicy.receiverTrusts(locallyTrusted = true, senderHelloTrusted = false)
+        sm.onEvent(SessionEvent.Received(MessageType.HELLO, trusted = trusted))
+        assertEquals(SessionState.PAIRING, sm.state)
+        assertTrue(sm.onEvent(SessionEvent.Received(MessageType.PAIR_REQ)).accepted)
     }
 }

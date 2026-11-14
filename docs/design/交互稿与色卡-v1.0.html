@@ -45,8 +45,11 @@ window.ROLES = [
   ['outline-variant','outlineVariant','分隔线（装饰性，不要求对比度）','#C2C7CF','#42474E','on-surface','描边'],
   ['inverse-surface','inverseSurface','Snackbar 底','#2E3135','#E1E2E8','inverse-on-surface','反相'],
   ['inverse-on-surface','inverseOnSurface','Snackbar 文字；TV 焦点态文字','#EFF0F5','#2E3135','inverse-surface','反相'],
-  ['scrim','scrim','遮罩（叠加透明度 32%~60%）','#000000','#000000','surface','反相']
+  ['scrim','scrim','遮罩：仅变暗 32%（scrimAlpha.dim）；上面有文字时 ≥60%（scrimAlpha.text）','#000000','#000000','on-scrim','反相'],
+  ['on-scrim','onScrim','叠在 scrim（≥60%）或视频 / 相机画面上的文字与图标，不再叠加透明度','#FFFFFF','#FFFFFF','scrim','反相']
 ];
+/* 遮罩透明度两档：dim = 只压暗背景（如重连时最后一帧）；text = 遮罩上有文字（文字对比 ≥ 4.5:1） */
+window.SCRIM_ALPHA = {dim: 0.32, text: 0.6};
 /* 扩展语义色（M3 Extended Colors，按 color / onColor / container / onContainer 四件套） */
 window.EXT = [
   ['success','success','连接成功、延迟极佳','#2E6B3C','#9AD7A2','on-success','语义'],
@@ -705,6 +708,8 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
       <tr><td>外环</td><td colspan="2">3 dp surface 间隙 + 2 dp primary <code>#A2C9F0</code> 环</td><td>当元素本身是浅色（如二维码卡）时，反相失效，靠外环兜底</td></tr>
       <tr><td>光晕</td><td colspan="2">0 0 32 dp 6 dp，primary @ 32%</td><td>增大焦点的视觉面积，余光可捕捉；按下时移除光晕作为“已确认”反馈</td></tr>
       <tr><td>动效</td><td colspan="2">150 ms，cubic-bezier(.05,.7,.1,1)（M3 emphasized-decelerate）</td><td>&lt;200 ms 感知为即时；减速曲线让焦点“落定”，系统“减少动画”开启时直接切换</td></tr>
+      <tr><td>M3 按钮（设置类页面）</td><td>scale 1.04 + 3 dp 间隙 2 dp primary 外环</td><td>—</td><td>Material 按钮不支持反相填充，用外环 + 轻微放大保证 ≥ 3:1；“减少动画”开启时不放大（实现：<code>Modifier.tvFocusRing()</code>）</td></tr>
+      <tr><td>列表行焦点态</td><td colspan="2">2 dp primary 内描边（圆角 12 dp）+ onSurface 12% 叠色；按下 20%</td><td>行通常铺满宽度，外环会被裁掉，改用内描边；TV 主题下替换 M3 水波纹（实现：<code>TvFocusIndication</code>）</td></tr>
       <tr><td>初始焦点</td><td colspan="2">每个页面必须声明默认焦点；返回时恢复上次焦点</td><td>避免“按了方向键没反应”的失控感；敏感操作（允许投屏）不放默认焦点</td></tr>
     </tbody>
   </table></div>

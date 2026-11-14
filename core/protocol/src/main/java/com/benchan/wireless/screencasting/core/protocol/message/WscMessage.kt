@@ -38,8 +38,8 @@ enum class PairMethod {
     @SerialName("CONFIRM") CONFIRM,
 }
 
-/** 错误码（ERROR 消息）。 */
-@Serializable
+/** 错误码（ERROR 消息）。未知值解码为 [INTERNAL]（前向兼容，PROTOCOL.md 2.2）。 */
+@Serializable(with = ErrorCodeSerializer::class)
 enum class ErrorCode(val fatal: Boolean) {
     @SerialName("VERSION_UNSUPPORTED") VERSION_UNSUPPORTED(true),
     @SerialName("UNAUTHENTICATED") UNAUTHENTICATED(true),
@@ -54,8 +54,8 @@ enum class ErrorCode(val fatal: Boolean) {
     @SerialName("INTERNAL") INTERNAL(true),
 }
 
-/** BYE 原因。 */
-@Serializable
+/** BYE 原因。未知值解码为 [USER_STOP]（前向兼容，PROTOCOL.md 2.2）。 */
+@Serializable(with = ByeReasonSerializer::class)
 enum class ByeReason {
     /** 用户在 App、通知或 Tile 中停止。 */
     @SerialName("USER_STOP") USER_STOP,
@@ -69,6 +69,8 @@ enum class ByeReason {
     @SerialName("REPLACED") REPLACED,
     /** 接收端用户主动断开（连按两次返回）。 */
     @SerialName("RECEIVER_EXIT") RECEIVER_EXIT,
+    /** 接收端没有可见的播放界面（后台收到可信直连，约 10 秒内界面没有打开），不在后台只放声音。 */
+    @SerialName("NO_DISPLAY") NO_DISPLAY,
 }
 
 @Serializable
@@ -84,7 +86,11 @@ data class Hello(
     val caps: List<String> = emptyList(),
     /** 发送端重连时为 true，并携带原 sessionId（技术方案 4.3）。 */
     val resume: Boolean = false,
-    /** 接收端回复：该发送端是否在可信列表中。 */
+    /**
+     * 接收端回复：该发送端是否在可信列表中。
+     * 发送端的 HELLO 也带上它：表示发送端是否信任本次 TLS 看到的接收端证书。为 false 时接收端必须走配对
+     * （发送端移除了信任而接收端仍信任时，避免双方状态不一致进入死路，见 PROTOCOL.md 2.1）。
+     */
     val trusted: Boolean? = null,
     /** 接收端回复：可信但策略为“每次都确认”时为 true。 */
     val confirmRequired: Boolean? = null,

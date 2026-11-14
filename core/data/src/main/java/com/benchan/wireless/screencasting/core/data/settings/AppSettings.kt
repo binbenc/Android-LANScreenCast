@@ -29,3 +29,6 @@ data class AppSettings(
     /** 录屏授权前说明卡“下次不再提示”。 */
     val skipCaptureIntro: Boolean = false,
 )
+
+/** 实际生效的模式：未手动选择时按设备类型（TV → 接收端，其余 → 发送端）。 */
+fun AppSettings.effectiveMode(isTv: Boolean): AppMode = mode ?: if (isTv) AppMode.RECEIVER else AppMode.SENDER

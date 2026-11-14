@@ -1,5 +1,9 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
+import com.benchan.wireless.screencasting.core.ui.components.tvInitialFocus
+import com.benchan.wireless.screencasting.core.ui.components.tvSafeArea
+import com.benchan.wireless.screencasting.core.common.WscLog
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -77,10 +81,24 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
         url = null
     }
     val c = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
-        TopAppBar(title = { Text("把接收端安装到电视") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } })
+    Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
+        SettingsTopBar("把接收端安装到电视", onBack, initialFocus = apk == null)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("同一个安装包既是发送端也是接收端。电视安装后打开，会自动进入“等待投屏”。", style = MaterialTheme.typography.bodyMedium)
+            if (apk == null) {
+                // 从应用商店以拆分安装包（App Bundle）安装时，本机没有可以独立安装的完整安装包（D7）
+                Row(
+                    Modifier.fillMaxWidth().background(WscTheme.extended.warningContainer, RoundedCornerShape(12.dp)).padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(Icons.Rounded.WarningAmber, null, tint = WscTheme.extended.onWarningContainer)
+                    Text(
+                        "本机的应用是以拆分安装包形式安装的（例如来自应用商店），无法直接分享给电视。" +
+                            "请从项目发布页下载 universal（通用）安装包，用 U 盘或电视浏览器安装。",
+                        style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer,
+                    )
+                }
+            }
             if (apk != null && !apk.supports32Bit) {
                 Row(
                     Modifier.fillMaxWidth().background(WscTheme.extended.warningContainer, RoundedCornerShape(12.dp)).padding(12.dp),
@@ -108,10 +126,14 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                                 server = s
                                 url = "http://${lan?.ip}:$port/${s.token}"
                                 error = null
-                            }.onFailure { error = "无法开启分享：${it.message}" }
+                            }.onFailure {
+                                // 技术细节只写日志（C5）
+                                WscLog.w("InstallHelp", "start apk share failed", it)
+                                error = "无法开启分享，请确认手机已连接 Wi‑Fi 后重试，或改用 U 盘安装"
+                            }
                         }
                     },
-                    modifier = Modifier.heightIn(min = 48.dp),
+                    modifier = Modifier.tvInitialFocus(apk != null).tvFocusRing().heightIn(min = 48.dp),
                 ) { Text("开始分享") }
                 if (lan == null) Text("请先连接 Wi‑Fi", color = c.error)
                 error?.let { Text(it, color = c.error) }
@@ -120,7 +142,7 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                 Text(currentUrl, fontFamily = FontFamily.Monospace, fontSize = 22.sp, color = c.primary)
                 QrCode(currentUrl, Modifier.size(180.dp), description = "安装包下载地址二维码（给其他手机或平板用）")
                 Text("已下载 $downloads 次", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                OutlinedButton(onClick = { server?.stop(); server = null; url = null }) { Text("停止分享") }
+                OutlinedButton(onClick = { server?.stop(); server = null; url = null }, modifier = Modifier.tvFocusRing()) { Text("停止分享") }
             }
             Text("方法二：U 盘", style = MaterialTheme.typography.titleMedium)
             Text("把安装包拷到 U 盘，插到电视上，用电视的“文件管理”打开安装。部分电视需要先在系统设置里允许“安装未知来源应用”。", style = MaterialTheme.typography.bodyMedium)

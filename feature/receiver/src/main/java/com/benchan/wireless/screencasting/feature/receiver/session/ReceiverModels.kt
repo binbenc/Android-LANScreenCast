@@ -18,7 +18,13 @@ data class StandbyInfo(
     val appleCompatEnabled: Boolean,
     /** 回到待机页时短暂显示的提示，例如“小张的 Pixel 8 已断开”“发送端已锁屏”。 */
     val notice: String? = null,
-)
+    /** 当前网段能否使用投屏码（/24~/30）。 */
+    val castCodeNetworkSupported: Boolean = true,
+) {
+    /** 投屏码不可用的原因（端口回退 / 网段不支持）；null = 可用或没有网络。 */
+    val castCodeUnavailableReason: String?
+        get() = if (castCode != null) null else ReceiverCopy.castCodeUnavailableReason(lanAvailable, port, castCodeNetworkSupported)
+}
 
 /** 投屏请求确认弹窗（交互稿 12；DLNA 陌生设备推送沿用此弹窗，无 PIN 区域）。 */
 data class ConfirmRequest(

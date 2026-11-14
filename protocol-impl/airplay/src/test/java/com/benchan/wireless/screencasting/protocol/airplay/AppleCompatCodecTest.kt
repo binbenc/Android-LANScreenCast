@@ -162,7 +162,12 @@ class AppleCompatCodecTest {
         assertEquals(0, UxPlayFlags.of(requirePin = false, hls = false, h265 = false))
         assertEquals(3, UxPlayFlags.of(requirePin = true, hls = true, h265 = false))
         assertEquals(7, UxPlayFlags.of(requirePin = true, hls = true, h265 = true))
-        assertEquals("无法监听端口", UxPlayStartError.describe(-4))
+        assertEquals("listen port failed", UxPlayStartError.describe(-4))
+        // 界面文案不含返回码、协议名
+        for (rc in listOf(-1, -2, -3, -4, -5, -42)) {
+            val msg = UxPlayStartError.userMessage(rc)
+            assertFalse(msg, msg.contains(rc.toString()) || msg.contains("mDNS") || msg.contains("AirPlay"))
+        }
     }
 
     private fun bytes(vararg v: Int) = ByteArray(v.size) { v[it].toByte() }

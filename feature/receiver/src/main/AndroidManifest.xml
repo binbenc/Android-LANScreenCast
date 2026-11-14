@@ -6,12 +6,18 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 开机自启（默认关闭，决策 #14）：只在用户开启后才实际生效 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 开机自启后在后台收到投屏请求时，用全屏通知把确认界面拉到前台（不申请悬浮窗） -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application>
         <service
             android:name=".service.ReceiverService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <receiver
+            android:name=".service.ReceiverAlertActionReceiver"
+            android:exported="false" />
 
         <receiver
             android:name=".service.BootReceiver"

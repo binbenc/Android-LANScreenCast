@@ -43,18 +43,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.nativeKeyCode
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.benchan.wireless.screencasting.core.protocol.datachannel.AudioState
 import com.benchan.wireless.screencasting.core.ui.components.LatencySparkline
+import com.benchan.wireless.screencasting.core.ui.components.LocalIsTv
+import com.benchan.wireless.screencasting.core.ui.components.LocalModalOverlayVisible
+import com.benchan.wireless.screencasting.core.ui.theme.ScrimAlpha
+import com.benchan.wireless.screencasting.core.ui.theme.onScrim
 import com.benchan.wireless.screencasting.core.ui.components.TvButton
 import com.benchan.wireless.screencasting.core.ui.components.formatMbps
 import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
@@ -85,6 +91,8 @@ internal fun PlaybackScreen(
     var lastBack by remember { mutableLongStateOf(0L) }
     var protectedDismissed by remember { mutableStateOf(false) }
     val rootFocus = remember { FocusRequester() }
+    val isTv = LocalIsTv.current
+    val c = MaterialTheme.colorScheme
 
     LaunchedEffect(session.firstFrame) {
         if (session.firstFrame) {
@@ -100,10 +108,18 @@ internal fun PlaybackScreen(
         }
     }
     LaunchedEffect(session.protectedSuspected) { if (!session.protectedSuspected) protectedDismissed = false }
-    LaunchedEffect(Unit) { runCatching { rootFocus.requestFocus() } }
+    // 浮层收起（含 8 秒自动收起）/ 屏 15“知道了”后把焦点还给根节点，遥控器按键才不会丢（B6）
+    val cardShown = session.protectedSuspected && !protectedDismissed && !session.reconnecting
+    // 确认弹窗等根部弹层显示期间不抢焦点，关闭后焦点回到 rootFocus（U2）
+    val modalVisible = LocalModalOverlayVisible.current
+    LaunchedEffect(overlay, cardShown, modalVisible) {
+        if (!modalVisible && !overlay && !cardShown) runCatching { rootFocus.requestFocus() }
+    }
 
     // 返回键 1 次 → 提示；2 秒内第 2 次 → 断开（PRD 6.2：连按两次返回才断开）
-    BackHandler {
+    // 根部弹层可见时把返回键让给弹层（返回 = 拒绝），不计入“连按两次断开”（S-d）
+    val modalShown = LocalModalOverlayVisible.current
+    BackHandler(enabled = !modalShown) {
         val now = System.currentTimeMillis()
         if (now - lastBack < 2_000) {
             onDisconnect()
@@ -112,9 +128,11 @@ internal fun PlaybackScreen(
             Toast.makeText(context, "再按一次返回键断开投屏", Toast.LENGTH_SHORT).show()
         }
     }
+    // 浮层打开时，返回键先收起浮层（后注册的 BackHandler 优先）
+    BackHandler(enabled = overlay && !modalShown) { overlay = false }
 
     Box(
-        Modifier.fillMaxSize().background(Color.Black)
+        Modifier.fillMaxSize().background(c.scrim)
             .focusRequester(rootFocus)
             .onPreviewKeyEvent { e ->
                 if (e.type == KeyEventType.KeyUp && e.key.nativeKeyCode == KeyEvent.KEYCODE_MENU) {
@@ -136,7 +154,7 @@ internal fun PlaybackScreen(
 
         // 14：重连中，最后一帧降亮度到 50% + 居中胶囊
         if (session.reconnecting) {
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(c.scrim.copy(alpha = ScrimAlpha.Text)), contentAlignment = Alignment.Center) {
                 Column(
                     Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f), RoundedCornerShape(28.dp)).padding(horizontal = 32.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -144,16 +162,16 @@ internal fun PlaybackScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = WscTheme.extended.warning)
-                        Text("正在重连…", style = MaterialTheme.typography.titleLarge)
+                        Text("正在重连…", style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                     }
                     Text("${session.peerName} · 第 ${session.reconnectAttempt.coerceAtLeast(1)} 次 · 最长等待 30 秒", style = MaterialTheme.typography.bodyMedium)
                 }
-                Text("画面为断开前的最后一帧", Modifier.align(Alignment.BottomCenter).padding(32.dp), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                Text("画面为断开前的最后一帧", Modifier.align(Alignment.BottomCenter).padding(32.dp), style = MaterialTheme.typography.bodySmall, color = c.onScrim)
             }
         } else if (!session.firstFrame) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CircularProgressIndicator()
-                Text("正在接收 ${session.peerName} 的画面…", color = Color.White, style = MaterialTheme.typography.bodyLarge)
+                Text("正在接收 ${session.peerName} 的画面…", color = c.onScrim, style = MaterialTheme.typography.bodyLarge)
             }
         }
 
@@ -169,7 +187,7 @@ internal fun PlaybackScreen(
         }
 
         // 15：受保护内容提示（推断，交互稿 Q3 / Q12）
-        if (session.protectedSuspected && !protectedDismissed && !session.reconnecting) {
+        if (cardShown) {
             ProtectedCard(Modifier.align(Alignment.Center)) { protectedDismissed = true }
         }
 
@@ -177,24 +195,24 @@ internal fun PlaybackScreen(
         if (session.audio == AudioState.NO_PERMISSION || session.audio == AudioState.OFF) {
             Row(
                 Modifier.align(Alignment.TopStart).padding(horizontal = 48.dp, vertical = 27.dp)
-                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+                    .background(c.scrim.copy(alpha = ScrimAlpha.Text), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Icon(Icons.Rounded.VolumeOff, null, Modifier.size(16.dp), tint = Color.White)
-                Text("无声音", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                Icon(Icons.Rounded.VolumeOff, null, Modifier.size(16.dp), tint = c.onScrim)
+                Text("无声音", color = c.onScrim, style = MaterialTheme.typography.labelMedium)
             }
         }
 
         AnimatedVisibility(hint && session.firstFrame && !overlay, Modifier.align(Alignment.BottomEnd), enter = fadeIn(), exit = fadeOut()) {
             Text(
-                "按菜单键查看连接信息 · 连按两次返回断开",
-                Modifier.padding(horizontal = 48.dp, vertical = 27.dp).background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
-                color = Color.White, style = MaterialTheme.typography.bodySmall,
+                PlaybackCopy.firstFrameHint(isTv),
+                Modifier.padding(horizontal = 48.dp, vertical = 27.dp).background(c.scrim.copy(alpha = ScrimAlpha.Text), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
+                color = c.onScrim, style = MaterialTheme.typography.bodySmall,
             )
         }
 
         AnimatedVisibility(overlay, Modifier.align(Alignment.TopEnd), enter = fadeIn(), exit = fadeOut()) {
-            StatsOverlay(session, onDisconnect = onDisconnect, onClose = { overlay = false; runCatching { rootFocus.requestFocus() } })
+            StatsOverlay(session, isTv, onDisconnect = onDisconnect, onClose = { overlay = false })
         }
     }
 }
@@ -222,12 +240,13 @@ private fun VideoSurface(eglContext: EglBase.Context, attach: (VideoSink) -> Uni
 }
 
 @Composable
-private fun StatsOverlay(session: MirrorSession, onDisconnect: () -> Unit, onClose: () -> Unit) {
+private fun StatsOverlay(session: MirrorSession, isTv: Boolean, onDisconnect: () -> Unit, onClose: () -> Unit) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
     val s = session.stats
     val closeFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { closeFocus.requestFocus() } }
+    val modalVisible = LocalModalOverlayVisible.current
+    LaunchedEffect(modalVisible) { if (!modalVisible) runCatching { closeFocus.requestFocus() } }
     Column(
         Modifier.padding(horizontal = 48.dp, vertical = 27.dp).widthIn(max = 360.dp)
             .background(c.surfaceContainerHigh.copy(alpha = 0.9f), RoundedCornerShape(16.dp)).padding(20.dp),
@@ -235,14 +254,14 @@ private fun StatsOverlay(session: MirrorSession, onDisconnect: () -> Unit, onClo
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("投屏统计", style = MaterialTheme.typography.titleMedium)
-            Text("菜单键收起", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(PlaybackCopy.overlayCloseHint(isTv), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
         StatRow("来源", session.peerName)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("协议", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), tint = c.tertiary)
-                Text("WSC · 已加密", style = MaterialTheme.typography.bodyMedium)
+                Text("屏幕镜像 · 已加密", style = MaterialTheme.typography.bodyMedium)
             }
         }
         StatRow("分辨率", if (s.width > 0) "${s.width} × ${s.height} · ${s.fps} fps" else "—")
@@ -278,7 +297,8 @@ private fun StatRow(label: String, value: String) {
 private fun ProtectedCard(modifier: Modifier, onDismiss: () -> Unit) {
     val c = MaterialTheme.colorScheme
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val modalVisible = LocalModalOverlayVisible.current
+    LaunchedEffect(modalVisible) { if (!modalVisible) runCatching { focus.requestFocus() } }
     Column(
         modifier.widthIn(max = 560.dp).background(c.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -294,4 +314,12 @@ private fun ProtectedCard(modifier: Modifier, onDismiss: () -> Unit) {
         TvButton("知道了", onDismiss, Modifier.focusRequester(focus))
         Box(Modifier.width(1.dp))
     }
+}
+
+/** 播放页提示文案按设备类型切换：TV 用遥控器，触屏设备（平板 / 手机当接收端）用轻点（C12）。 */
+internal object PlaybackCopy {
+    fun firstFrameHint(isTv: Boolean): String =
+        if (isTv) "按确定键或菜单键查看连接信息 · 连按两次返回断开" else "轻点屏幕查看连接信息 · 连按两次返回断开"
+
+    fun overlayCloseHint(isTv: Boolean): String = if (isTv) "按返回键收起" else "轻点画面收起"
 }

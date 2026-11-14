@@ -30,6 +30,16 @@ sealed interface SessionEvent {
     data object Closed : SessionEvent
 }
 
+/**
+ * 可信直连的判定（PROTOCOL.md 2.1）：接收端本地信任对方证书，并且发送端在 HELLO 里没有声明“我不信任你”。
+ * 任一方移除了信任，双方都回到配对（PIN / 投屏码 / 二维码），绝不在缺少带外认证的情况下建立信任。
+ */
+object TrustPolicy {
+    /** [senderHelloTrusted] 为 null 表示旧版发送端没有该字段，保持旧行为。 */
+    fun receiverTrusts(locallyTrusted: Boolean, senderHelloTrusted: Boolean?): Boolean =
+        locallyTrusted && senderHelloTrusted != false
+}
+
 /** 一次转移的结果。[rejected] 不为空时表示该事件在当前状态非法，调用方应回 ERROR 并断开。 */
 data class Transition(
     val from: SessionState,

@@ -18,7 +18,7 @@ WebSocket over TLS 1.3，路径 `/wsc`，首选端口 8443（占用时随机）�
 
 | t | 方向 | p |
 |---|---|---|
-| HELLO | 双向 | `ver, deviceId, name, model, role, caps[], resume`；接收端回复另带 `trusted, confirmRequired, resumeOk` |
+| HELLO | 双向 | `ver, deviceId, name, model, role, caps[], resume, trusted?`；接收端回复另带 `confirmRequired, resumeOk`（`trusted` 见 2.1） |
 | PAIR_REQ | 发→收 | `name, model, method`（PIN / CODE / QR / CONFIRM） |
 | PAIR_PIN | 双向 | `point`：SPAKE2 公开值（SEC1 未压缩点，base64url） |
 | PAIR_CONFIRM | 发→收 | `mac`：发送端确认 MAC |
@@ -26,8 +26,28 @@ WebSocket over TLS 1.3，路径 `/wsc`，首选端口 8443（占用时随机）�
 | PAIR_QR | 发→收 | `mac` = HMAC-SHA256(n, fpA ‖ fpB ‖ sessionId) |
 | OFFER / ANSWER | 发→收 / 收→发 | `sdp`（OFFER 另带 `iceRestart`） |
 | ICE | 双向 | `candidate, sdpMid, sdpMLineIndex`（只允许 host 候选） |
-| BYE | 双向 | `reason`：USER_STOP / PROJECTION_STOPPED / SCREEN_LOCKED / RECONNECT_TIMEOUT / REPLACED / RECEIVER_EXIT |
+| BYE | 双向 | `reason`：USER_STOP / PROJECTION_STOPPED / SCREEN_LOCKED / RECONNECT_TIMEOUT / REPLACED / RECEIVER_EXIT / NO_DISPLAY（接收端界面未打开，约 10 秒内没有画面渲染） |
 | ERROR | 双向 | `code, message, min?, max?, attemptsLeft?`；PIN_MISMATCH 非致命，其余致命 |
+
+### 2.1 可信直连（双方都信任才免配对）
+
+- 发送端 HELLO（非 resume）带 `trusted`：发送端本地可信列表里是否有本次 TLS 看到的接收端证书指纹。
+- 接收端判定可信 = 本地信任对方指纹 **且** 发送端 `trusted != false`（字段缺失视为旧版本，沿用仅看本地的旧行为）。
+  可信且无需确认 → 回 `HELLO{trusted:true}` 并进入 AUTHENTICATED；否则回 `HELLO{trusted:false}` 进入 PAIRING。
+- 因此任一方移除了信任，双方都会重新走 PIN / 投屏码 / 二维码配对；接收端在 AUTHENTICATED 收到 `PAIR_REQ` 仍按非法序列处理（`ERROR{BAD_MESSAGE}` 并断开）。
+  这一规则只会让认证更严格，不会让未经带外认证的设备获得信任。参考向量 `receiver-trusted-rejects-pair-req`、`receiver-trusted-but-sender-untrusted-repairs`。
+
+### 2.2 未知枚举值（前向兼容）
+
+新版本可能增加枚举值。解码规则：
+
+| 字段 | 未知值降级为 | 理由 |
+|---|---|---|
+| `BYE.reason` | `USER_STOP` | 对方已经主动结束会话，界面显示通用的“已断开” |
+| `ERROR.code` | `INTERNAL`（致命） | 不用 `BAD_MESSAGE`（那表示“你发的消息不合法”）；按致命处理最安全，界面显示通用的“连接出错了” |
+| `PAIR_REQ.method`、消息类型 `t` 等其他枚举 | 不降级，按畸形消息处理 | 无法安全猜测语义（配对方式决定认证强度） |
+
+值不是字符串（例如数字）时仍按畸形消息处理。参考向量 `bye-unknown-reason-falls-back`、`error-unknown-code-falls-back`、`bad-enum-pair-method`。
 
 状态机与非法序列（例如认证前收到 OFFER 必须 `ERROR{UNAUTHENTICATED}` 并断开）见 `vectors/state/sequences.json`。
 

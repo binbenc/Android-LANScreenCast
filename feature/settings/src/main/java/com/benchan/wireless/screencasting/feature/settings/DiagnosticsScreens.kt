@@ -1,5 +1,9 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.core.ui.components.LocalIsTv
+import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
+import com.benchan.wireless.screencasting.core.ui.components.tvInitialFocus
+import com.benchan.wireless.screencasting.core.ui.components.tvSafeArea
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -65,8 +69,9 @@ fun NetworkDiagnosticsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = 
     LaunchedEffect(Unit) { viewModel.runDiagnostics(null) }
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
-    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
-        TopAppBar(title = { Text("网络诊断") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } })
+    Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
+        // 默认焦点给返回按钮：“重新诊断”在诊断进行中不可用，不能作为初始焦点（U6）
+        SettingsTopBar("网络诊断", onBack, initialFocus = true)
         LazyColumn(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 Text("不读取 Wi‑Fi 名称（需要定位权限），只检查网段与连通性。", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
@@ -99,7 +104,7 @@ fun NetworkDiagnosticsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = 
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(onClick = { viewModel.runDiagnostics(target) }, enabled = !running) { Text("重新诊断") }
+                        Button(onClick = { viewModel.runDiagnostics(target) }, enabled = !running, modifier = Modifier.tvFocusRing()) { Text("重新诊断") }
                         if (running) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                     }
                 }
@@ -116,23 +121,32 @@ fun LogExportScreen(versionName: String, onBack: () -> Unit, viewModel: Settings
     val scope = rememberCoroutineScope()
     var text by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { text = viewModel.buildLogPreview(versionName) }
-    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
-        TopAppBar(title = { Text("导出本地日志") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } })
+    Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
+        SettingsTopBar("导出本地日志", onBack)
         Text(
             "以下是将要导出的全部内容，请先确认。导出后由你选择发给谁（例如在 GitHub 提 issue 时附上），本应用不会自动上传。",
             Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Column(
-            Modifier.weight(1f).padding(16.dp).fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
-                .verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()).padding(12.dp),
-        ) {
-            Text(text ?: "正在读取…", fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp)
+        if (LocalIsTv.current) {
+            // TV 上遥控器无法滚动查看长文本：只显示摘要，导出后在手机 / 电脑上查看全文（S10）
+            Text(
+                text?.let { "共 ${it.lines().size} 行（对端设备名已脱敏）。电视上不显示全文，导出后可在手机或电脑上查看。" } ?: "正在读取…",
+                Modifier.weight(1f).padding(16.dp), style = MaterialTheme.typography.bodyMedium,
+            )
+        } else {
+            Column(
+                Modifier.weight(1f).padding(16.dp).fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
+                    .verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()).padding(12.dp),
+            ) {
+                Text(text ?: "正在读取…", fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp)
+            }
         }
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = { viewModel.clearLog(); scope.launch { text = viewModel.buildLogPreview(versionName) } }) { Text("清空运行日志") }
+            OutlinedButton(onClick = { viewModel.clearLog(); scope.launch { text = viewModel.buildLogPreview(versionName) } }, modifier = Modifier.tvFocusRing()) { Text("清空运行日志") }
             Button(
                 enabled = text != null,
+                modifier = Modifier.tvInitialFocus(text != null).tvFocusRing(),
                 onClick = {
                     val content = text ?: return@Button
                     scope.launch {

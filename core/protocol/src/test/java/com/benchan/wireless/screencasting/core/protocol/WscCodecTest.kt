@@ -2,6 +2,8 @@ package com.benchan.wireless.screencasting.core.protocol
 
 import com.benchan.wireless.screencasting.core.protocol.message.Bye
 import com.benchan.wireless.screencasting.core.protocol.message.ByeReason
+import com.benchan.wireless.screencasting.core.protocol.message.ErrorCode
+import com.benchan.wireless.screencasting.core.protocol.message.ErrorPayload
 import com.benchan.wireless.screencasting.core.protocol.message.MessageIdGenerator
 import com.benchan.wireless.screencasting.core.protocol.message.MessageType
 import com.benchan.wireless.screencasting.core.protocol.message.Offer
@@ -63,5 +65,16 @@ class WscCodecTest {
         assertEquals(1, VersionNegotiation.negotiate(1, 2))
         assertEquals(null, VersionNegotiation.negotiate(3, 1, localMin = 2))
         assertEquals(null, VersionNegotiation.negotiate(1, 3))
+    }
+
+    @Test
+    fun unknownEnumValuesFallBack() {
+        val bye = WscCodec.decode("{\"t\":\"BYE\",\"id\":1,\"v\":1,\"p\":{\"reason\":\"FUTURE_REASON\"}}")
+        assertEquals(ByeReason.USER_STOP, (bye.payload as Bye).reason)
+        val err = WscCodec.decode("{\"t\":\"ERROR\",\"id\":2,\"v\":1,\"p\":{\"code\":\"FUTURE_CODE\"}}")
+        assertEquals(ErrorCode.INTERNAL, (err.payload as ErrorPayload).code)
+        // 已知值照常往返
+        for (r in ByeReason.entries) assertEquals(r, (WscCodec.decode(WscCodec.encode(Bye(r).toMessage(1, null))).payload as Bye).reason)
+        for (c in ErrorCode.entries) assertEquals(c, (WscCodec.decode(WscCodec.encode(ErrorPayload(c).toMessage(1, null))).payload as ErrorPayload).code)
     }
 }

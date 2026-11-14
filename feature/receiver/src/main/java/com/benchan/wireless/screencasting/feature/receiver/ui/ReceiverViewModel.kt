@@ -38,4 +38,5 @@ class ReceiverViewModel @Inject constructor(
     fun attach(sink: VideoSink) = controller.attachRenderer(sink)
     fun detach(sink: VideoSink) = controller.detachRenderer(sink)
     fun clearNotice() = controller.clearNotice()
+    fun setVideoDisplay(attached: Boolean) = controller.setVideoDisplay(attached)
 }

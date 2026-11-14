@@ -39,7 +39,8 @@ fun LatencySparkline(values: List<Int>, modifier: Modifier = Modifier, maxMs: In
 @Composable
 fun LatencyHistogram(histogram: List<Int>, modifier: Modifier = Modifier, maxMs: Int = 320) {
     val ext = WscTheme.extended
-    Canvas(modifier.semantics { contentDescription = "延迟分布图" }) {
+    val description = histogramDescription(histogram)
+    Canvas(modifier.semantics { contentDescription = description }) {
         val buckets = (maxMs / 10).coerceAtMost(histogram.size)
         val peak = histogram.take(buckets).maxOrNull()?.coerceAtLeast(1) ?: 1
         val w = size.width / buckets
@@ -50,4 +51,12 @@ fun LatencyHistogram(histogram: List<Int>, modifier: Modifier = Modifier, maxMs:
             drawRect(ext.latency(LatencyGrade.of(i * 10 + 5)), Offset(i * w + 1, size.height - h), Size(w - 2, h))
         }
     }
+}
+
+/** 直方图的读屏描述：按延迟等级汇总样本数，例如“延迟分布：极佳 12 次，良好 3 次，一般 0 次，较差 1 次”。 */
+fun histogramDescription(histogram: List<Int>): String {
+    if (histogram.sum() == 0) return "延迟分布：暂无数据"
+    val counts = IntArray(LatencyGrade.entries.size)
+    histogram.forEachIndexed { i, n -> counts[LatencyGrade.of(i * 10 + 5).ordinal] += n }
+    return "延迟分布：" + LatencyGrade.entries.joinToString("，") { "${it.label} ${counts[it.ordinal]} 次" }
 }

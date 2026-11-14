@@ -11,9 +11,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -29,7 +31,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import com.benchan.wireless.screencasting.core.ui.theme.ScrimAlpha
+import com.benchan.wireless.screencasting.core.ui.theme.onScrim
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -53,7 +60,9 @@ internal fun QrScannerScreen(onResult: (String) -> Boolean, onBack: () -> Unit) 
     val executor = remember { Executors.newSingleThreadExecutor() }
     BackHandler(onBack = onBack)
 
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    val c = MaterialTheme.colorScheme
+    // 预览铺满整个屏幕（含系统栏下方），控件自行避开系统栏（C9）
+    Box(Modifier.fillMaxSize().background(c.scrim)) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
@@ -95,15 +104,22 @@ internal fun QrScannerScreen(onResult: (String) -> Boolean, onBack: () -> Unit) 
                 view
             },
         )
-        Box(Modifier.align(Alignment.Center).size(240.dp).border(3.dp, Color.White, RoundedCornerShape(16.dp)))
+        Box(Modifier.align(Alignment.Center).size(240.dp).border(3.dp, c.onScrim, RoundedCornerShape(16.dp)))
         Column(Modifier.statusBarsPadding().padding(8.dp)) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回", tint = Color.White) }
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.background(c.scrim.copy(alpha = ScrimAlpha.Text), CircleShape),
+            ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回", tint = c.onScrim) }
         }
+        // 底部提示加 scrim 底衬，亮背景下也能看清（C7）
         Text(
             hint,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(48.dp),
-            color = Color.White,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 24.dp, vertical = 32.dp)
+                .background(c.scrim.copy(alpha = ScrimAlpha.Text), RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 10.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+            color = c.onScrim,
             style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
         )
     }
     DisposableEffect(Unit) {

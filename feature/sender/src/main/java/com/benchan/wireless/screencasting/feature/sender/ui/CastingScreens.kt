@@ -1,9 +1,13 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.benchan.wireless.screencasting.feature.sender.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,13 +17,16 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.LockClock
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shield
@@ -32,6 +39,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -53,8 +61,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -72,7 +82,8 @@ import kotlinx.coroutines.delay
 
 /**
  * 交互稿 06：录屏授权前说明卡。卡片措辞与系统弹窗一致（再认 < 回忆），建议选“整个屏幕”；
- * 声音开关首次打开时才申请 RECORD_AUDIO；Android 14+ 每次会话都需授权，提供“下次不再提示”。
+ * 声音偏好为开且尚未授权时，点“继续”（或跳过说明卡）后先申请 RECORD_AUDIO 再弹录屏授权，拒绝只投画面；
+ * Android 14+ 每次会话都需授权，提供“下次不再提示”。
  * 另外按决策 #17 提示“锁屏会停止投屏，看剧建议用推送模式”。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,14 +129,20 @@ internal fun CaptureIntroSheet(
                 Icon(Icons.Rounded.LockClock, null, tint = WscTheme.extended.onWarningContainer)
                 Text("锁屏会停止投屏。镜像期间手机会保持亮屏；看剧建议用视频 App 的“投屏”按钮推送。", style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer)
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                Row(Modifier.weight(1f).toggleable(skip, role = Role.Checkbox) { skip = it }, verticalAlignment = Alignment.CenterVertically) {
+            // FlowRow：200% 字号时按钮换到下一行而不是被挤压（C11）
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(Modifier.weight(1f).heightIn(min = 48.dp).toggleable(skip, role = Role.Checkbox) { skip = it }, verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = skip, onCheckedChange = null)
                     Text("下次不再提示", style = MaterialTheme.typography.bodyMedium)
                 }
-                TextButton(onClick = onCancel) { Text("取消") }
-                Spacer(Modifier.width(8.dp))
-                Button(onClick = { onContinue(skip) }) { Text("继续") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onCancel) { Text("取消") }
+                    Button(onClick = { onContinue(skip) }) { Text("继续") }
+                }
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -163,12 +180,19 @@ internal fun CastingScreen(
     onAutoAdjust: (Boolean) -> Unit,
     onAudio: (Boolean) -> Unit,
     onStop: () -> Unit,
+    onOpenAppSettings: () -> Unit = {},
+    showNotificationTip: Boolean = false,
+    notificationNeedsSettings: Boolean = false,
+    onAllowNotifications: () -> Unit = {},
+    onDismissNotificationTip: () -> Unit = {},
 ) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
     val elapsed = rememberElapsed(state.startedAt)
+    // 内容可滚动、“停止投屏”固定在页脚，任何字号 / 横屏下都在首屏（C10）
+    Column(Modifier.fillMaxSize().systemBarsPadding()) {
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+        Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Spacer(Modifier.height(8.dp))
@@ -180,7 +204,7 @@ internal fun CastingScreen(
             DeviceAvatar(Icons.Rounded.Tv)
             Column(Modifier.weight(1f)) {
                 Text(state.target.name, style = MaterialTheme.typography.titleMedium)
-                EncryptedLabel("WSC")
+                EncryptedLabel("屏幕镜像")
             }
             Text("投屏中", style = MaterialTheme.typography.labelLarge, color = ext.success)
         }
@@ -202,6 +226,19 @@ internal fun CastingScreen(
             }
             if (state.protectedSuspected) {
                 Text("当前画面可能受保护（黑屏），建议改用视频 App 的“投屏”按钮推送", style = MaterialTheme.typography.bodySmall, color = ext.warning, textAlign = TextAlign.Center)
+            }
+        }
+        if (showNotificationTip) {
+            // 可关闭的通知权限提示（S-c）
+            Row(
+                Modifier.fillMaxWidth().background(c.secondaryContainer, RoundedCornerShape(12.dp)).padding(start = 12.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Rounded.Notifications, null, tint = c.onSecondaryContainer)
+                Spacer(Modifier.width(8.dp))
+                Text(SenderCopy.NOTIFICATION_TIP, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = c.onSecondaryContainer)
+                TextButton(onClick = onAllowNotifications) { Text(if (notificationNeedsSettings) SenderCopy.OPEN_SETTINGS else SenderCopy.NOTIFICATION_ALLOW) }
+                IconButton(onClick = onDismissNotificationTip) { Icon(Icons.Rounded.Close, "关闭提示", tint = c.onSecondaryContainer) }
             }
         }
         Text("画质", style = MaterialTheme.typography.titleSmall, color = c.primary)
@@ -229,21 +266,32 @@ internal fun CastingScreen(
         SwitchRow("自动调节", "网络变差时自动降为“流畅”", state.autoAdjust, onAutoAdjust)
         SwitchRow(
             "声音",
-            if (state.audio == AudioState.NO_PERMISSION) "未授予录音权限，只投画面（可在系统设置中开启）" else "在电视上播放手机的声音",
+            if (state.audio == AudioState.NO_PERMISSION) SenderCopy.AUDIO_NO_PERMISSION else "在电视上播放手机的声音",
             state.audio != AudioState.OFF && state.audio != AudioState.NO_PERMISSION,
             onAudio,
             enabled = state.audio != AudioState.NO_PERMISSION,
         )
-        Button(
-            onClick = onStop,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = c.errorContainer, contentColor = c.onErrorContainer),
-        ) {
-            Icon(Icons.Rounded.Stop, null)
-            Spacer(Modifier.width(8.dp))
-            Text("停止投屏")
+        if (state.audio == AudioState.NO_PERMISSION) {
+            TextButton(onClick = onOpenAppSettings) { Text(SenderCopy.OPEN_SETTINGS) }
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(8.dp))
+    }
+    StopFooter(onStop)
+    }
+}
+
+/** 固定在页脚的“停止投屏”（07 / 08A 共用）。 */
+@Composable
+private fun StopFooter(onStop: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    Button(
+        onClick = onStop,
+        modifier = Modifier.reportFooterHeight().fillMaxWidth().padding(16.dp).heightIn(min = 56.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = c.errorContainer, contentColor = c.onErrorContainer),
+    ) {
+        Icon(Icons.Rounded.Stop, null)
+        Spacer(Modifier.width(8.dp))
+        Text("停止投屏")
     }
 }
 
@@ -274,12 +322,21 @@ internal fun ReconnectingScreen(state: SenderState.Reconnecting, onStop: () -> U
         }
     }
     val waited = ((now - state.since) / 1000).toInt()
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(Modifier.fillMaxSize().systemBarsPadding()) {
+    Column(
+        Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Column(
             Modifier.fillMaxWidth().background(ext.warningContainer, RoundedCornerShape(16.dp)).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("正在重连（第 ${state.attempt.coerceAtLeast(1)} 次）", style = MaterialTheme.typography.titleLarge, color = ext.onWarningContainer)
+            // 读屏：标题变化时礼貌播报；秒数类文字不设 liveRegion，避免每秒打断（C13）
+            Text(
+                "正在重连（第 ${state.attempt.coerceAtLeast(1)} 次）",
+                style = MaterialTheme.typography.titleLarge, color = ext.onWarningContainer,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
             Text("网络中断了一下。录屏没有停止，恢复后会自动继续，不需要重新授权。", style = MaterialTheme.typography.bodyMedium, color = ext.onWarningContainer)
             LinearProgressIndicator(
                 progress = { (now - state.since).toFloat() / WscProtocol.RECONNECT_WINDOW_MS },
@@ -310,12 +367,8 @@ internal fun ReconnectingScreen(state: SenderState.Reconnecting, onStop: () -> U
                 Text("下一次尝试：${if (s == 0L) "正在尝试" else "$s 秒后"}", style = MaterialTheme.typography.bodySmall)
             }
         }
-        Spacer(Modifier.weight(1f))
-        Button(
-            onClick = onStop,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = c.errorContainer, contentColor = c.onErrorContainer),
-        ) { Icon(Icons.Rounded.Stop, null); Spacer(Modifier.width(8.dp)); Text("停止投屏") }
+    }
+    StopFooter(onStop)
     }
 }
 
@@ -347,8 +400,11 @@ internal fun EndedScreen(
         EndReason.VERSION_UNSUPPORTED -> Copy("对方版本过旧", "请升级 $name 上的接收端后再试。", null, null)
         else -> Copy("连接已断开", state.detail ?: "", "重新连接", null)
     }
+    // 可滚动的同时保持垂直居中：内容最小高度 = 可视高度（S8）
+    BoxWithConstraints(Modifier.fillMaxSize().systemBarsPadding()) {
+    val minH = maxHeight
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = minH).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
     ) {
@@ -370,10 +426,11 @@ internal fun EndedScreen(
             }
             copy.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, textAlign = TextAlign.Center) }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
             OutlinedButton(onClick = onBack) { Text("返回设备列表") }
             if (state.reason == EndReason.RECONNECT_FAILED) TextButton(onClick = onDiagnostics) { Text("网络诊断") }
         }
+    }
     }
 }
 
@@ -388,17 +445,4 @@ internal fun rememberElapsed(since: Long): String {
     }
     val s = ((now - since) / 1000).coerceAtLeast(0)
     return "%02d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60)
-}
-
-/** 结束原因 → Snackbar 文案（不需要整页的情况）。 */
-internal fun EndReason.snackbarText(name: String?): String? = when (this) {
-    EndReason.REJECTED -> "对方拒绝了投屏请求"
-    EndReason.CONFIRM_TIMEOUT -> "${name ?: "电视"} 没有响应，请重试"
-    EndReason.PAIR_LOCKED -> "尝试次数过多，请 60 秒后再试"
-    EndReason.CONNECT_FAILED -> "找不到 ${name ?: "该设备"}，请确认电视已打开接收页面"
-    EndReason.CERTIFICATE_MISMATCH -> "设备身份校验失败：可能是其他设备冒充，或接收端重装过（可在设置中移除信任后重新配对）"
-    EndReason.BUSY -> "对方正忙"
-    EndReason.REMOTE_CLOSED -> "${name ?: "电视"} 已断开投屏"
-    EndReason.INTERNAL_ERROR -> "连接出错了，请重试"
-    else -> null
 }

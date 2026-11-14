@@ -93,14 +93,13 @@ fun ReceiverScreen(
         when {
             handledByExtra -> Unit
             apple is AppleCompatState.Active ->
-                AppleCompatPlayback((apple as AppleCompatState.Active).session, viewModel.appleVideoPlayer, viewModel::setAppleSurface, viewModel::disconnectApple)
-            dlna != null -> DlnaPlaybackScreen(dlna!!, viewModel.dlnaPlayer, viewModel::stopDlna)
+                AppleCompatPlayback((apple as AppleCompatState.Active).session, viewModel.appleVideoPlayer, viewModel::setAppleSurface, viewModel::disconnectApple, viewModel::setVideoDisplay)
+            dlna != null -> DlnaPlaybackScreen(dlna!!, viewModel.dlnaPlayer, viewModel::stopDlna, viewModel::setVideoDisplay)
             s != null -> PlaybackScreen(s, viewModel.eglContext, viewModel::attach, viewModel::detach, viewModel::disconnect)
             saver -> ScreenSaver(standby)
             else -> StandbyScreen(standby, onOpenSettings, onEnableAppleCompat, appleFailure = (apple as? AppleCompatState.Failed)?.reason)
         }
-        (apple as? AppleCompatState.Advertising)?.pin?.let { AppleCompatPinOverlay(it) }
-        request?.let { r -> ConfirmDialog(r) { allowed -> viewModel.respond(r.id, allowed) } }
+        // 确认弹窗与 Apple PIN 覆盖层在 Activity 根部渲染（ReceiverModalHost），任何页面都能看到（P1）
     }
 }
 

@@ -20,6 +20,12 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
+/**
+ * 二维码的固定配色：白底深码，刻意不走主题 token、不随深浅色反相——反相二维码很多扫码器识别不了（交互稿 11：保证识别率）。
+ */
+private val QrBackground = Color.White
+private val QrModule = Color(0xFF111418)
+
 /** 二维码：固定白底深码，不随主题反相（交互稿 11：保证识别率）。 */
 @Composable
 fun QrCode(content: String, modifier: Modifier = Modifier, description: String = "连接二维码") {
@@ -33,7 +39,7 @@ fun QrCode(content: String, modifier: Modifier = Modifier, description: String =
         }.getOrNull()
     }
     Box(
-        modifier.aspectRatio(1f).background(Color.White, RoundedCornerShape(12.dp)).padding(12.dp)
+        modifier.aspectRatio(1f).background(QrBackground, RoundedCornerShape(12.dp)).padding(12.dp)
             .semantics { contentDescription = description },
     ) {
         if (matrix != null) {
@@ -41,7 +47,7 @@ fun QrCode(content: String, modifier: Modifier = Modifier, description: String =
                 val n = matrix.size
                 val cell = size.minDimension / n
                 for (y in 0 until n) for (x in 0 until n) {
-                    if (matrix[y][x]) drawRect(Color(0xFF111418), Offset(x * cell, y * cell), Size(cell + 0.5f, cell + 0.5f))
+                    if (matrix[y][x]) drawRect(QrModule, Offset(x * cell, y * cell), Size(cell + 0.5f, cell + 0.5f))
                 }
             }
         }

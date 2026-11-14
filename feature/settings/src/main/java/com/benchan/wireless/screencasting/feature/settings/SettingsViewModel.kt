@@ -110,9 +110,9 @@ class SettingsViewModel @Inject constructor(
         val s = ReportSummary.from(reports.records.value)
         val records = reports.records.value.takeLast(20)
         val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-        buildString {
+        val raw = buildString {
             appendLine("# 局域投屏 本地诊断日志")
-            appendLine("# 只包含本机统计与运行日志，不含 Wi‑Fi 名称、投屏内容、推送的网址。")
+            appendLine("# 只包含本机统计与运行日志，不含 Wi‑Fi 名称、投屏内容、推送的网址；对端设备名已替换为“设备 A / B …”。")
             appendLine("app=$versionName android=${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) model=${Build.MODEL}")
             appendLine("sessions=${s.total} success=${s.succeeded} disconnects=${s.disconnects} avgLatency=${s.avgLatencyMs} p95=${s.p95LatencyMs}")
             appendLine()
@@ -128,6 +128,9 @@ class SettingsViewModel @Inject constructor(
             appendLine("## 运行日志")
             append(log.readAll())
         }
+        // 对端设备名可能是“小张的 iPhone”之类的个人信息：导出前脱敏，同一导出内一致映射（N8）
+        val names = reports.records.value.map { it.peerName } + trustedStore.devices.value.map { it.name }
+        LogAnonymizer.anonymize(raw, names, localName = repo.current().deviceName)
     }
 
     /** 写到 cache/exports，由 FileProvider 分享（只共享用户预览过的这一个文件）。 */
@@ -144,4 +147,44 @@ class SettingsViewModel @Inject constructor(
 private fun com.benchan.wireless.screencasting.core.data.report.CastProtocol.exportLabel(): String = when (this) {
     com.benchan.wireless.screencasting.core.data.report.CastProtocol.AIRPLAY -> "APPLE_COMPAT"
     else -> name
+}
+
+/** 导出日志的对端设备名脱敏（N8）：按首次出现顺序映射为“设备 A / B / …”，同一份导出内一致；会话报告界面不受影响。 */
+internal object LogAnonymizer {
+    private const val MIN_SUBSTRING_LEN = 3
+
+    /**
+     * @param localName 本机设备名，替换为“本机”（R4）。
+     * 名字少于 3 个字符时只按整词替换（前后不是字母 / 数字 / 汉字），避免把 “TV” 之类误替换进别的单词里。
+     */
+    fun anonymize(text: String, peerNames: List<String>, localName: String? = null): String {
+        val local = localName?.trim()?.takeIf { it.isNotEmpty() }
+        val distinct = peerNames.map { it.trim() }.filter { it.isNotEmpty() && it != "DLNA" && it != local }.distinct()
+        val order = distinct.sortedBy { n -> text.indexOf(n).let { if (it < 0) Int.MAX_VALUE else it } }
+        val aliases = LinkedHashMap<String, String>()
+        local?.let { aliases[it] = "本机" }
+        order.forEachIndexed { i, n -> aliases[n] = "设备 ${alias(i)}" }
+        if (aliases.isEmpty()) return text
+        var out = text
+        // 先替换较长的名字，避免“小张的手机”被“小张”截断
+        for (n in aliases.keys.sortedByDescending { it.length }) {
+            val replacement = aliases.getValue(n)
+            out = if (n.length >= MIN_SUBSTRING_LEN) {
+                out.replace(n, replacement)
+            } else {
+                Regex("(?<![\\p{L}\\p{N}])" + Regex.escape(n) + "(?![\\p{L}\\p{N}])").replace(out, Regex.escapeReplacement(replacement))
+            }
+        }
+        return out
+    }
+
+    private fun alias(i: Int): String {
+        var n = i
+        val sb = StringBuilder()
+        do {
+            sb.insert(0, ('A' + n % 26))
+            n = n / 26 - 1
+        } while (n >= 0)
+        return sb.toString()
+    }
 }

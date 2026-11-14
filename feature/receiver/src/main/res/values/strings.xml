@@ -4,4 +4,13 @@
     <string name="receiver_notif_title">正在接收投屏</string>
     <string name="receiver_notif_from">来自 %1$s</string>
     <string name="receiver_notif_generic">画面加密传输，只在局域网内</string>
+    <string name="receiver_alert_channel_name">投屏请求</string>
+    <string name="receiver_alert_channel_desc">本应用不在前台时，有设备请求投屏或开始播放会用此通知打开接收界面</string>
+    <string name="receiver_alert_consent_title">%1$s 请求投屏</string>
+    <string name="receiver_alert_consent_text">点按打开确认，30 秒内未确认将自动拒绝</string>
+    <string name="receiver_alert_reject">拒绝</string>
+    <string name="receiver_alert_playback_channel_name">投屏开始（静音）</string>
+    <string name="receiver_alert_playback_channel_desc">本应用不在前台时开始播放，用此通知打开播放画面，不响铃</string>
+    <string name="receiver_alert_playback_title">%1$s 正在投屏到本机</string>
+    <string name="receiver_alert_playback_text">点按打开播放画面</string>
 </resources>

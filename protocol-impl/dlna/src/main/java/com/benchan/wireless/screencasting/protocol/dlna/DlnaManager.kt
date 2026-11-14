@@ -13,7 +13,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -25,7 +28,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** 正在进行的 DLNA 推送播放（接收端界面据此显示播放页）。 */
-data class DlnaPlayback(val title: String?, val controlPoint: String, val state: TransportState, val startedAt: Long)
+data class DlnaPlayback(
+    val title: String?,
+    val controlPoint: String,
+    val state: TransportState,
+    val startedAt: Long,
+    /** DIDL-Lite 里声明的 MIME（可能缺失）；只有 video/... 才能确定是视频。 */
+    val mimeType: String? = null,
+) {
+    /** 能确定是视频（MIME 缺失时返回 false：宁可不强制结束）。 */
+    val isKnownVideo: Boolean get() = mimeType?.lowercase()?.startsWith("video/") == true
+}
 
 /**
  * DLNA DMR（F09、PRD R-07、技术方案 3.7）：自研最小 SSDP + SOAP + GENA，HTTP 用 Ktor CIO，播放用 Media3 ExoPlayer。
@@ -48,6 +61,11 @@ class DlnaManager @Inject constructor(
 
     private val _playback = MutableStateFlow<DlnaPlayback?>(null)
     val playback: StateFlow<DlnaPlayback?> = _playback.asStateFlow()
+
+    private val _playbackFailed = MutableSharedFlow<Long>(extraBufferCapacity = 1)
+
+    /** 推送的视频播放失败（格式不支持 / 链接失效）后发出一次，接收端据此在待机页提示，而不是静默返回（C2）。 */
+    val playbackFailed: SharedFlow<Long> = _playbackFailed.asSharedFlow()
 
     private var http: LanHttpServer? = null
     private var ssdp: SsdpAdvertiser? = null
@@ -75,10 +93,11 @@ class DlnaManager @Inject constructor(
                         sessionStartedAt = System.currentTimeMillis()
                         trackTitle = snap.metadata?.title
                     }
-                    _playback.value = DlnaPlayback(snap.metadata?.title, lastControlPoint, snap.state, prev?.startedAt ?: sessionStartedAt)
+                    _playback.value = DlnaPlayback(snap.metadata?.title, lastControlPoint, snap.state, prev?.startedAt ?: sessionStartedAt, snap.metadata?.mimeType)
                 } else if (prev != null) {
                     _playback.value = null
                     recordSession(snap.error)
+                    if (snap.error) _playbackFailed.tryEmit(System.currentTimeMillis())
                 }
             }
         }

@@ -27,7 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import com.benchan.wireless.screencasting.core.ui.theme.ScrimAlpha
+import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -57,13 +62,14 @@ internal fun ConfirmDialog(request: ConfirmRequest, onRespond: (Boolean) -> Unit
     BackHandler { onRespond(false) }
     val remaining = ((request.deadlineAt - now) / 1000).coerceAtLeast(0)
     val protocolLabel = when (request.protocol) {
-        CastProtocol.WSC -> "WSC 镜像"
-        CastProtocol.DLNA -> "DLNA 推送"
+        CastProtocol.WSC -> "屏幕镜像"
+        CastProtocol.DLNA -> "视频推送（DLNA）"
         CastProtocol.AIRPLAY -> "兼容 Apple 设备"
     }
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+    ModalScrim {
         Column(
-            Modifier.widthIn(max = 560.dp).background(c.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(32.dp),
+            Modifier.widthIn(max = 560.dp).background(c.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(32.dp)
+                .trapFocus(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -72,10 +78,14 @@ internal fun ConfirmDialog(request: ConfirmRequest, onRespond: (Boolean) -> Unit
                 if (request.replacing) "${request.peerName} 请求替换当前投屏" else "${request.peerName} 请求投屏",
                 style = MaterialTheme.typography.headlineSmall,
             )
-            Text(
-                listOfNotNull(if (request.firstTime) "首次连接" else null, request.peerAddress, protocolLabel).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // “首次连接”用 warning 提醒注意来源（D2）
+                if (request.firstTime) Text("首次连接", style = MaterialTheme.typography.bodyMedium, color = WscTheme.extended.warning)
+                Text(
+                    listOf(request.peerAddress, protocolLabel).joinToString(" · ", prefix = if (request.firstTime) "· " else ""),
+                    style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant,
+                )
+            }
             request.pin?.let { pin ->
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -91,9 +101,27 @@ internal fun ConfirmDialog(request: ConfirmRequest, onRespond: (Boolean) -> Unit
             }
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 TvButton("拒绝", { onRespond(false) }, Modifier.focusRequester(rejectFocus))
-                TvButton("允许", { onRespond(true) }, leading = { Icon(Icons.Rounded.Check, null, Modifier.size(20.dp)) })
+                // “允许”用 primary 填充表达主操作；默认焦点仍在“拒绝”
+                TvButton("允许", { onRespond(true) }, emphasis = true, leading = { Icon(Icons.Rounded.Check, null, Modifier.size(20.dp)) })
             }
             Text("$remaining 秒后自动拒绝", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }
 }
+
+/**
+ * 弹层遮罩（B5）：scrim ScrimAlpha.Text（60%），吃掉所有触摸（不会点到下面的待机页 / 播放页）。
+ */
+@Composable
+internal fun ModalScrim(content: @Composable () -> Unit) {
+    Box(
+        Modifier.fillMaxSize()
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = ScrimAlpha.Text))
+            // 遮罩自身注册指针输入即成为命中目标，下层兄弟节点（待机页 / 播放页）不再收到触摸
+            .pointerInput(Unit) { detectTapGestures { } },
+        contentAlignment = Alignment.Center,
+    ) { content() }
+}
+
+/** 把遥控器焦点限制在弹层内：方向键到边缘时不再移到下面的页面（B5）。 */
+internal fun Modifier.trapFocus(): Modifier = this.focusProperties { onExit = { cancelFocusChange() } }.focusGroup()

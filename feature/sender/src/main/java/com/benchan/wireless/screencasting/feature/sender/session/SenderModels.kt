@@ -30,8 +30,18 @@ enum class EndReason {
     USER_STOPPED,
     /** 对方拒绝了投屏请求。 */
     REJECTED,
-    /** 30 秒内电视没有确认。 */
+    /** 投屏码不正确（接收端已换新码）。 */
+    CAST_CODE_WRONG,
+    /** 二维码已过期或已被使用。 */
+    QR_EXPIRED,
+    /** 接收端认为本机没有通过认证（例如对方已移除信任且无法重新配对）。 */
+    AUTH_FAILED,
+    /** 30 秒内电视没有确认（可信设备“每次都确认”）。 */
     CONFIRM_TIMEOUT,
+    /** PIN 配对 30 秒内没有完成（可能是电视上没点“允许”，也可能是 PIN 没输完）。 */
+    PIN_TIMEOUT,
+    /** 接收端没有打开投屏界面（后台收到投屏，约 10 秒内画面没有显示）。 */
+    RECEIVER_NO_DISPLAY,
     /** PIN / 投屏码错误次数过多，60 秒内不能再发起。 */
     PAIR_LOCKED,
     /** 连不上（地址错误、电视未打开接收页、网络不通）。 */
@@ -53,6 +63,22 @@ enum class EndReason {
     /** 接收端正忙。 */
     BUSY,
     INTERNAL_ERROR,
+}
+
+/** CONNECT_FAILED 的细分原因（决定提示文案与下一步，交互稿 Q 系列“错误带下一步”）。 */
+enum class ConnectFailure {
+    /** TCP / TLS 连不上（地址错误、电视未打开接收页、AP 隔离）。 */
+    UNREACHABLE,
+    /** 连上了但对方没有回 HELLO。 */
+    HANDSHAKE_TIMEOUT,
+    /** 二维码配对没有回应。 */
+    QR_PAIR_TIMEOUT,
+    /** 投屏码配对没有回应。 */
+    CODE_PAIR_TIMEOUT,
+    /** 已授权录屏，但 60 秒内媒体没有连通（多为路由器拦截 UDP）。 */
+    FIRST_FRAME_TIMEOUT,
+    /** 认证完成前信令断开。 */
+    LOST,
 }
 
 /** 投屏中的实时统计（状态胶囊、通知副标题）。 */
@@ -108,8 +134,20 @@ sealed interface SenderState {
         val profile: QualityProfile,
     ) : SenderState
 
-    data class Ended(val target: CastTarget?, val reason: EndReason, val detail: String? = null) : SenderState
+    data class Ended(
+        val target: CastTarget?,
+        val reason: EndReason,
+        val detail: String? = null,
+        val failure: ConnectFailure? = null,
+    ) : SenderState
 }
+
+/**
+ * 会话已结束（录屏前台服务应停止）。注意 ReadyToCapture / Starting 不是终止状态：
+ * 授权结果交给服务后，控制器异步切到 Starting，服务首先观察到的仍是 ReadyToCapture（A1）。
+ */
+val SenderState.isTerminal: Boolean
+    get() = this is SenderState.Idle || this is SenderState.Ended
 
 /** 一次性事件（Snackbar 等）。 */
 sealed interface SenderEvent {

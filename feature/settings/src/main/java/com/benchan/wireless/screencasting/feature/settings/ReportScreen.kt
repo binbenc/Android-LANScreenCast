@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
+import com.benchan.wireless.screencasting.core.ui.components.tvInitialFocus
+import com.benchan.wireless.screencasting.core.ui.components.tvSafeArea
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,16 +60,12 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
     val range30 by viewModel.range30.collectAsStateWithLifecycle()
     var confirmClear by remember { mutableStateOf(false) }
     val ext = WscTheme.extended
-    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
-        TopAppBar(
-            title = { Text("投屏报告") },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } },
-            actions = { IconButton(onClick = onExport) { Icon(Icons.Rounded.IosShare, "导出日志") } },
-        )
+    Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
+        SettingsTopBar("投屏报告", onBack, actions = { IconButton(onClick = onExport, modifier = Modifier.tvFocusRing()) { Icon(Icons.Rounded.IosShare, "导出日志") } })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                SegmentedButton(range30, { viewModel.setRange30(true) }, SegmentedButtonDefaults.itemShape(0, 2)) { Text("最近 30 天") }
-                SegmentedButton(!range30, { viewModel.setRange30(false) }, SegmentedButtonDefaults.itemShape(1, 2)) { Text("全部") }
+                SegmentedButton(range30, { viewModel.setRange30(true) }, SegmentedButtonDefaults.itemShape(0, 2), Modifier.tvInitialFocus().tvFocusRing()) { Text("最近 30 天") }
+                SegmentedButton(!range30, { viewModel.setRange30(false) }, SegmentedButtonDefaults.itemShape(1, 2), Modifier.tvFocusRing()) { Text("全部") }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Metric("投屏成功率", s.successRatePercent?.toString() ?: "—", "%", "${s.succeeded} / ${s.total} 次", null, Modifier.weight(1f))
@@ -97,7 +96,7 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Shield, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                 Text("数据只保存在本机，不会上传", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { confirmClear = true }) { Text("清除记录") }
+                TextButton(onClick = { confirmClear = true }, modifier = Modifier.tvFocusRing()) { Text("清除记录") }
             }
         }
     }
@@ -106,8 +105,8 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
             onDismissRequest = { confirmClear = false },
             title = { Text("清除全部投屏记录？") },
             text = { Text("清除后无法恢复。诊断日志不受影响。") },
-            confirmButton = { TextButton(onClick = { viewModel.clearReports(); confirmClear = false }) { Text("清除") } },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("取消") } },
+            confirmButton = { TextButton(onClick = { viewModel.clearReports(); confirmClear = false }, modifier = Modifier.tvFocusRing()) { Text("清除") } },
+            dismissButton = { TextButton(onClick = { confirmClear = false }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
         )
     }
 }

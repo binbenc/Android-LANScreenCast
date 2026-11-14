@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.core.ui.theme
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
@@ -12,8 +13,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGrade
+import com.benchan.wireless.screencasting.core.ui.components.LocalIsTv
+import com.benchan.wireless.screencasting.core.ui.components.TvFocusIndication
 
 /** M3 只内置 error；成功、警告、延迟色阶以 Extended Colors 补齐（交互稿 03）。 */
 @Immutable
@@ -99,6 +103,22 @@ val WscShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp),
 )
 
+/**
+ * 叠在 scrim（叠加透明度 ≥ [ScrimAlpha.Text]）或视频 / 相机画面上的文字与图标色（交互稿 token on-scrim），
+ * 避免在页面里硬编码 Color.White（D1）。文字本身不要再叠加透明度。
+ */
+val ColorScheme.onScrim: Color
+    get() = if (surface.luminance() < 0.5f) onScrimDark else onScrimLight
+
+/** 遮罩透明度两档（交互稿 SCRIM_ALPHA）。 */
+object ScrimAlpha {
+    /** 只压暗背景，上面没有文字。 */
+    const val Dim = 0.32f
+
+    /** 遮罩上有文字：保证文字对比度。 */
+    const val Text = 0.6f
+}
+
 /** 当前主题的扩展语义色。 */
 object WscTheme {
     val extended: ExtendedColors
@@ -122,7 +142,18 @@ fun WscAppTheme(
             typography = if (tv) TvTypography else PhoneTypography,
             shapes = WscShapes,
         ) {
-            if (tv) TvThemeBridge(content) else content()
+            if (tv) {
+                TvThemeBridge {
+                    // TV：M3 clickable 行改用明显的焦点样式（默认水波纹的焦点叠色对比度只有约 1.2:1）
+                    CompositionLocalProvider(
+                        LocalIsTv provides true,
+                        LocalIndication provides TvFocusIndication(colors.primary, colors.onSurface),
+                        content = content,
+                    )
+                }
+            } else {
+                content()
+            }
         }
     }
 }

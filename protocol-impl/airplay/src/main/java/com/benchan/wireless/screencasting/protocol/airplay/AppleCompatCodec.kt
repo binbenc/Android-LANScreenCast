@@ -170,12 +170,20 @@ object UxPlayFlags {
 
 /** nativeStart 的返回码（与 bridge/uxplay_jni.c 对应）。 */
 object UxPlayStartError {
+    /** 日志用的技术描述（含返回码）。 */
     fun describe(rc: Int): String = when (rc) {
         0 -> "ok"
-        -1 -> "mDNS 初始化失败"
-        -2, -3 -> "协议栈初始化失败"
-        -4 -> "无法监听端口"
-        -5 -> "mDNS 注册失败"
-        else -> "未知错误 $rc"
+        -1 -> "mDNS init failed"
+        -2, -3 -> "protocol stack init failed ($rc)"
+        -4 -> "listen port failed"
+        -5 -> "mDNS register failed"
+        else -> "unknown error $rc"
+    }
+
+    /** 界面文案：说明原因 + 下一步，不出现返回码 / 协议名（C5）。错误码只进日志。 */
+    fun userMessage(rc: Int): String = when (rc) {
+        -1, -5 -> "无法在局域网中公布本机。请确认电视已连接 Wi‑Fi 或网线，然后在设置中关闭再打开该开关"
+        -4 -> "网络端口被其他应用占用。请重启电视后再试"
+        else -> "启动时出错了。请在设置中关闭再打开该开关；仍不行请重启电视，或导出日志反馈"
     }
 }
