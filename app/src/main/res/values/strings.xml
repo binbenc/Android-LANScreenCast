@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">WirelessScreenCasting</string>
+    <!-- 产品正式名称待定（PRD Q6），交互稿占位名“局域投屏” -->
+    <string name="app_name">局域投屏</string>
 </resources>

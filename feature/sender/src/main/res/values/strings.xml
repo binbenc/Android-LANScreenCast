@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sender_channel_name">投屏状态</string>
+    <string name="sender_channel_desc">投屏进行中时显示延迟、码率和停止按钮</string>
+    <string name="sender_notif_title">局域投屏</string>
+    <string name="sender_notif_casting_to">正在投屏到 %1$s</string>
+    <string name="sender_notif_latency">延迟 %1$d ms</string>
+    <string name="sender_notif_starting">正在建立连接…</string>
+    <string name="sender_notif_reconnecting">正在重连…</string>
+    <string name="sender_notif_reconnecting_detail">与 %1$s 的连接中断了一下，录屏没有停止</string>
+    <string name="sender_stop">停止</string>
+    <string name="sender_switch_smooth">切换为流畅</string>
+    <string name="sender_tile_label">投屏</string>
+    <string name="sender_tile_casting">投屏中</string>
+</resources>

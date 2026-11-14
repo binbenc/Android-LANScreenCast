@@ -13,3 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# 兼容 Apple 设备模块的第三方源码（按 third_party/README.md 拉取，建议用 submodule）
+protocol-impl/airplay/src/main/cpp/third_party/*/
+
+# 各模块构建产物
+build/
+.kotlin/

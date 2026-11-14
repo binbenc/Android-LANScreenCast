@@ -1,0 +1,4 @@
+# libwebrtc 通过 JNI 反射调用大量 Java 方法（类名、方法签名都不能被改）
+-keep class org.webrtc.** { *; }
+-keep class livekit.org.webrtc.** { *; }
+-dontwarn org.webrtc.**

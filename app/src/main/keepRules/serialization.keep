@@ -1,0 +1,7 @@
+# kotlinx.serialization：规则通常随库自带，这里只放兜底（协议消息类、DataChannel 消息、本地存储模型）
+-keepclassmembers @kotlinx.serialization.Serializable class com.benchan.wireless.screencasting.** {
+    *** Companion;
+    *** INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class com.benchan.wireless.screencasting.**$$serializer { *; }

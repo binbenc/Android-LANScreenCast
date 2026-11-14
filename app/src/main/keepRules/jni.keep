@@ -1,0 +1,4 @@
+# 我们自己的 JNI 桥接（兼容 Apple 设备模块）：native 方法与供 C 回调的 Java 方法
+-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }
+-keep @androidx.annotation.Keep class * { *; }
+-keepclassmembers class * { @androidx.annotation.Keep *; }

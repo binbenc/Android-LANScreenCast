@@ -1,9 +1,8 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.WirelessScreenCasting" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+<resources>
+    <!-- 窗口级主题：只负责启动前的窗口底色，界面全部由 Compose（core:ui WscTheme）绘制。 -->
+    <style name="Theme.WirelessScreenCasting" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/wsc_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
-
-    <style name="Theme.WirelessScreenCasting" parent="Base.Theme.WirelessScreenCasting" />
 </resources>

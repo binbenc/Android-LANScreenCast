@@ -1,0 +1,10 @@
+# Java-WebSocket / Ktor / OkHttp / BouncyCastle 的可选依赖（SLF4J 绑定、JNDI、Conscrypt 等）在 Android 上不存在
+-dontwarn org.slf4j.**
+-dontwarn javax.naming.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.jsse.**
+-dontwarn org.openjsse.**
+-dontwarn java.lang.management.**
+-dontwarn io.ktor.server.engine.**
+-dontwarn reactor.blockhound.**
+-dontwarn javax.lang.model.**

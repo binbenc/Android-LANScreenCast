@@ -1,0 +1,97 @@
+// 由交互稿 Token 生成（docs/design/交互稿与色卡-v1.0.html 顶部 ROLES / EXT），请勿手改；改色请改交互稿后重新生成。
+package com.benchan.wireless.screencasting.core.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+// ---- Light ----
+val primaryLight = Color(0xFF2F5A82) // 主按钮、选中态、进度条、链接、品牌标识
+val onPrimaryLight = Color(0xFFFFFFFF) // 主按钮上的文字与图标
+val primaryContainerLight = Color(0xFFD2E4FA) // 设备头像底、选中卡片、强调区块
+val onPrimaryContainerLight = Color(0xFF12344F) // primaryContainer 上的文字
+val inversePrimaryLight = Color(0xFFA2C9F0) // Snackbar 中的操作按钮
+val secondaryLight = Color(0xFF535F6E) // 次要强调、筛选标签
+val onSecondaryLight = Color(0xFFFFFFFF) // secondary 上的文字
+val secondaryContainerLight = Color(0xFFD7E3F4) // 分段按钮选中、Tonal 按钮
+val onSecondaryContainerLight = Color(0xFF3B4856) // Tonal 按钮文字
+val tertiaryLight = Color(0xFF3A646A) // "可信 / 已加密"语义强调（盾牌、锁）
+val onTertiaryLight = Color(0xFFFFFFFF) // tertiary 上的文字
+val tertiaryContainerLight = Color(0xFFC0E9EF) // "已信任"标签底
+val onTertiaryContainerLight = Color(0xFF1F4C52) // "已信任"标签文字
+val errorLight = Color(0xFFBA1A1A) // 断开、失败、错误文字
+val onErrorLight = Color(0xFFFFFFFF) // error 上的文字
+val errorContainerLight = Color(0xFFFFDAD6) // 停止投屏按钮、错误卡片
+val onErrorContainerLight = Color(0xFF93000A) // errorContainer 上的文字
+val surfaceLight = Color(0xFFF8F9FC) // 页面底色
+val onSurfaceLight = Color(0xFF191C20) // 正文、标题；TV 焦点态底色（深色）
+val surfaceVariantLight = Color(0xFFDEE3EB) // 输入框底、进度轨道
+val onSurfaceVariantLight = Color(0xFF42474E) // 次要文字、说明、图标
+val surfaceDimLight = Color(0xFFD8DAE0) // 最暗表面
+val surfaceBrightLight = Color(0xFFF8F9FC) // 最亮表面
+val surfaceContainerLowestLight = Color(0xFFFFFFFF) // 键盘按键、最低层卡片
+val surfaceContainerLowLight = Color(0xFFF2F3F7) // 卡片、底部弹层
+val surfaceContainerLight = Color(0xFFECEEF2) // 导航栏、键盘面板
+val surfaceContainerHighLight = Color(0xFFE6E8EC) // 状态胶囊、头像底、骨架屏
+val surfaceContainerHighestLight = Color(0xFFE1E2E7) // 对话框、TV 未聚焦按钮
+val outlineLight = Color(0xFF72777F) // 输入框边框、开关轨道（需 ≥3:1）
+val outlineVariantLight = Color(0xFFC2C7CF) // 分隔线（装饰性，不要求对比度）
+val inverseSurfaceLight = Color(0xFF2E3135) // Snackbar 底
+val inverseOnSurfaceLight = Color(0xFFEFF0F5) // Snackbar 文字；TV 焦点态文字
+val scrimLight = Color(0xFF000000) // 遮罩（叠加透明度 32%~60%）
+val successLight = Color(0xFF2E6B3C) // 连接成功、延迟极佳
+val onSuccessLight = Color(0xFFFFFFFF) // success 上的文字
+val successContainerLight = Color(0xFFB5F1BD) // 成功提示底
+val onSuccessContainerLight = Color(0xFF135228) // 成功提示文字
+val warningLight = Color(0xFF7A5900) // 网络较差、重连中
+val onWarningLight = Color(0xFFFFFFFF) // warning 上的文字
+val warningContainerLight = Color(0xFFFFDEA3) // 警告卡片底
+val onWarningContainerLight = Color(0xFF5C4300) // 警告卡片文字
+val latency1Light = Color(0xFF2E6B3C) // 延迟 < 100 ms · 极佳
+val latency2Light = Color(0xFF536500) // 延迟 100–150 ms · 良好
+val latency3Light = Color(0xFF7A5900) // 延迟 150–250 ms · 一般
+val latency4Light = Color(0xFFBA1A1A) // 延迟 > 250 ms · 较差
+
+// ---- Dark ----
+val primaryDark = Color(0xFFA2C9F0) // 主按钮、选中态、进度条、链接、品牌标识
+val onPrimaryDark = Color(0xFF0A3050) // 主按钮上的文字与图标
+val primaryContainerDark = Color(0xFF234766) // 设备头像底、选中卡片、强调区块
+val onPrimaryContainerDark = Color(0xFFD2E4FA) // primaryContainer 上的文字
+val inversePrimaryDark = Color(0xFF2F5A82) // Snackbar 中的操作按钮
+val secondaryDark = Color(0xFFBBC7D8) // 次要强调、筛选标签
+val onSecondaryDark = Color(0xFF25313E) // secondary 上的文字
+val secondaryContainerDark = Color(0xFF3B4856) // 分段按钮选中、Tonal 按钮
+val onSecondaryContainerDark = Color(0xFFD7E3F4) // Tonal 按钮文字
+val tertiaryDark = Color(0xFFA4CDD3) // "可信 / 已加密"语义强调（盾牌、锁）
+val onTertiaryDark = Color(0xFF02363C) // tertiary 上的文字
+val tertiaryContainerDark = Color(0xFF1F4C52) // "已信任"标签底
+val onTertiaryContainerDark = Color(0xFFC0E9EF) // "已信任"标签文字
+val errorDark = Color(0xFFFFB4AB) // 断开、失败、错误文字
+val onErrorDark = Color(0xFF690005) // error 上的文字
+val errorContainerDark = Color(0xFF93000A) // 停止投屏按钮、错误卡片
+val onErrorContainerDark = Color(0xFFFFDAD6) // errorContainer 上的文字
+val surfaceDark = Color(0xFF111418) // 页面底色
+val onSurfaceDark = Color(0xFFE1E2E8) // 正文、标题；TV 焦点态底色（深色）
+val surfaceVariantDark = Color(0xFF42474E) // 输入框底、进度轨道
+val onSurfaceVariantDark = Color(0xFFC2C7CF) // 次要文字、说明、图标
+val surfaceDimDark = Color(0xFF111418) // 最暗表面
+val surfaceBrightDark = Color(0xFF37393E) // 最亮表面
+val surfaceContainerLowestDark = Color(0xFF0C0E12) // 键盘按键、最低层卡片
+val surfaceContainerLowDark = Color(0xFF191C20) // 卡片、底部弹层
+val surfaceContainerDark = Color(0xFF1D2024) // 导航栏、键盘面板
+val surfaceContainerHighDark = Color(0xFF272A2F) // 状态胶囊、头像底、骨架屏
+val surfaceContainerHighestDark = Color(0xFF32353A) // 对话框、TV 未聚焦按钮
+val outlineDark = Color(0xFF8C9199) // 输入框边框、开关轨道（需 ≥3:1）
+val outlineVariantDark = Color(0xFF42474E) // 分隔线（装饰性，不要求对比度）
+val inverseSurfaceDark = Color(0xFFE1E2E8) // Snackbar 底
+val inverseOnSurfaceDark = Color(0xFF2E3135) // Snackbar 文字；TV 焦点态文字
+val successDark = Color(0xFF9AD7A2) // 连接成功、延迟极佳
+val onSuccessDark = Color(0xFF00391A) // success 上的文字
+val successContainerDark = Color(0xFF135228) // 成功提示底
+val onSuccessContainerDark = Color(0xFFB5F1BD) // 成功提示文字
+val warningDark = Color(0xFFEFC04A) // 网络较差、重连中
+val onWarningDark = Color(0xFF402D00) // warning 上的文字
+val warningContainerDark = Color(0xFF5C4300) // 警告卡片底
+val onWarningContainerDark = Color(0xFFFFDEA3) // 警告卡片文字
+val latency1Dark = Color(0xFF9AD7A2) // 延迟 < 100 ms · 极佳
+val latency2Dark = Color(0xFFBBD06F) // 延迟 100–150 ms · 良好
+val latency3Dark = Color(0xFFEFC04A) // 延迟 150–250 ms · 一般
+val latency4Dark = Color(0xFFFFB4AB) // 延迟 > 250 ms · 较差

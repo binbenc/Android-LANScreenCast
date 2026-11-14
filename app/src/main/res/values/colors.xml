@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- 与交互稿 Token surface 一致 -->
+    <color name="wsc_window_background">#F8F9FC</color>
+    <color name="wsc_banner_background">#111418</color>
 </resources>

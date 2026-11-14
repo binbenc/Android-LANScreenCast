@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 品牌标志（占位）：一大一小两块屏幕叠放，小屏实心 = 发送端，大屏线框 = 接收端（交互稿 08） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.75"
+        android:strokeLineJoin="round"
+        android:pathData="M4,4.5h16a1.5,1.5 0,0 1,1.5 1.5v9a1.5,1.5 0,0 1,-1.5 1.5h-7" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.75"
+        android:strokeLineCap="round"
+        android:pathData="M2.5,13V6A1.5,1.5 0,0 1,4 4.5M8,19.5h8" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M2,13.5h7a1,1 0,0 1,1 1v5a1,1 0,0 1,-1 1h-7a1,1 0,0 1,-1 -1v-5a1,1 0,0 1,1 -1z" />
+</vector>

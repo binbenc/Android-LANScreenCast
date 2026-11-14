@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="receiver_channel_name">接收投屏</string>
+    <string name="receiver_notif_title">正在接收投屏</string>
+    <string name="receiver_notif_from">来自 %1$s</string>
+    <string name="receiver_notif_generic">画面加密传输，只在局域网内</string>
+</resources>
