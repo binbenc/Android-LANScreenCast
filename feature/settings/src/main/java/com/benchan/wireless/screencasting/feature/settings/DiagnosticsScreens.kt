@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,7 +65,7 @@ fun NetworkDiagnosticsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = 
     LaunchedEffect(Unit) { viewModel.runDiagnostics(null) }
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
         TopAppBar(title = { Text("网络诊断") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } })
         LazyColumn(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -78,7 +79,7 @@ fun NetworkDiagnosticsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = 
                 }
                 Row(
                     Modifier.fillMaxWidth().background(c.surfaceContainerLow, RoundedCornerShape(12.dp)).padding(12.dp)
-                        .semantics(mergeDescendants = true) { contentDescription = "$label：${ch.title}。${ch.detail}" },
+                        .semantics(mergeDescendants = true) { contentDescription = "$label：${ch.title}${if (ch.title.last() in "？?。") "" else "。"}${ch.detail}" },
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(icon, null, tint = tint)
@@ -115,7 +116,7 @@ fun LogExportScreen(versionName: String, onBack: () -> Unit, viewModel: Settings
     val scope = rememberCoroutineScope()
     var text by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { text = viewModel.buildLogPreview(versionName) }
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
         TopAppBar(title = { Text("导出本地日志") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } })
         Text(
             "以下是将要导出的全部内容，请先确认。导出后由你选择发给谁（例如在 GitHub 提 issue 时附上），本应用不会自动上传。",

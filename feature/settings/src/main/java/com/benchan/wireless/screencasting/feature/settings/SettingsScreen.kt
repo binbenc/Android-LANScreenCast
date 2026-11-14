@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -87,7 +88,7 @@ fun SettingsScreen(
         if (openAppleCompat && viewModel.appleCompatAvailable && !settings.appleCompatEnabled) dialog = "apple"
     }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).navigationBarsPadding()) {
         TopAppBar(
             title = { Text("设置") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } },
@@ -298,7 +299,7 @@ private fun AppleCompatDialog(pinDefault: Boolean, onDismiss: () -> Unit, onEnab
 fun TrustedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val list by viewModel.trusted.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<String?>(null) }
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
         TopAppBar(title = { Text("可信设备") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } })
         if (list.isEmpty()) {
             Text("还没有配对过的设备。第一次连接时输入 PIN、投屏码或扫码后会出现在这里。", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)

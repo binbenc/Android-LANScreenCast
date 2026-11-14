@@ -135,6 +135,10 @@ class AppleCompatCodecTest {
         assertEquals("on_video_play location=<url> from <ip> port 7000", m)
         assertEquals("mlhls <url> done", UxPlayLogRedactor.redact("mlhls mlhls://localhost/abc done"))
         assertEquals("no change", UxPlayLogRedactor.redact("no change"))
+        assertEquals(
+            "*** CLIENT MUST NOW ENTER PIN = <pin> AS Apple-compat PASSWORD",
+            UxPlayLogRedactor.redact("*** CLIENT MUST NOW ENTER PIN = \"3738\" AS AirPlay PASSWORD"),
+        )
         assertEquals("New Apple-compat connection: stopping RAOP mirror", UxPlayLogRedactor.redact("New AirPlay connection: stopping RAOP mirror"))
     }
 

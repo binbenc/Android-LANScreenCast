@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -56,7 +57,7 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
     val range30 by viewModel.range30.collectAsStateWithLifecycle()
     var confirmClear by remember { mutableStateOf(false) }
     val ext = WscTheme.extended
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().navigationBarsPadding()) {
         TopAppBar(
             title = { Text("投屏报告") },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } },

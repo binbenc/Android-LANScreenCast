@@ -1,6 +1,7 @@
 package com.benchan.wireless.screencasting.core.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
@@ -8,7 +9,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.Button
@@ -34,7 +38,7 @@ fun TvButton(
     val c = MaterialTheme.colorScheme
     Button(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 48.dp),
+        modifier = modifier.touchClickable(enabled, onClick).heightIn(min = 48.dp),
         enabled = enabled,
         shape = ButtonDefaults.shape(shape = CircleShape),
         scale = ButtonDefaults.scale(scale = 1f, focusedScale = 1.08f, pressedScale = 1.02f),
@@ -65,7 +69,7 @@ fun TvCard(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composa
     val shape = RoundedCornerShape(16.dp)
     Surface(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.touchClickable(true, onClick),
         shape = ClickableSurfaceDefaults.shape(shape),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f, pressedScale = 1.02f),
         colors = ClickableSurfaceDefaults.colors(
@@ -75,4 +79,16 @@ fun TvCard(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composa
         border = ClickableSurfaceDefaults.border(focusedBorder = Border(BorderStroke(2.dp, c.primary), inset = (-3).dp, shape = shape)),
         glow = ClickableSurfaceDefaults.glow(focusedGlow = Glow(c.primary.copy(alpha = 0.32f), 6.dp)),
     ) { content() }
+}
+
+/**
+ * tv-material 的 Button / Surface 只响应遥控器按键（tvClickable = focusable + 按键 + 语义），不处理触摸。
+ * 接收端也会跑在平板、手机等触屏设备上，这里补上点按手势，否则这些设备上的按钮点了没反应。
+ */
+@Composable
+private fun Modifier.touchClickable(enabled: Boolean, onClick: () -> Unit): Modifier {
+    val current by rememberUpdatedState(onClick)
+    return pointerInput(enabled) {
+        if (enabled) detectTapGestures(onTap = { current() })
+    }
 }

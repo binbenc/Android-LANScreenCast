@@ -23,8 +23,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -60,6 +62,7 @@ fun SenderScreen(
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val lan by viewModel.lan.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val snackbarScope = rememberCoroutineScope()
     var sub by rememberSaveable { mutableStateOf(SubRoute.NONE) }
     var manualIp by rememberSaveable { mutableStateOf(false) }
     var introDismissed by remember { mutableStateOf(false) }
@@ -145,8 +148,9 @@ fun SenderScreen(
             is SenderState.Ended -> {
                 val text = s.reason.snackbarText(s.target?.name)
                 if (text != null) {
+                    // acknowledge() 会把状态切回 Idle 并重启本 LaunchedEffect；Snackbar 必须在不随 state 取消的作用域里显示
+                    snackbarScope.launch { snackbar.showSnackbar(s.detail ?: text) }
                     viewModel.acknowledge()
-                    snackbar.showSnackbar(s.detail ?: text)
                 }
             }
             else -> Unit

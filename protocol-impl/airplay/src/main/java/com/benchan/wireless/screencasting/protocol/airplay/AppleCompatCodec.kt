@@ -134,16 +134,18 @@ object DmapMetadata {
 }
 
 /**
- * 诊断日志脱敏（PRD F25：不记录推送网址）：UxPlay 日志里的 URL 与 IP 地址替换为占位符；
+ * 诊断日志脱敏（PRD F25：不记录推送网址）：UxPlay 日志里的 URL、IP 地址与配对 PIN 替换为占位符
+ * （导出的日志可能附在公开 issue 里）；
  * 导出日志会在界面上预览，因此把上游日志里的 “AirPlay” 字样替换为 “Apple-compat”（PRD 12）。
  */
 object UxPlayLogRedactor {
     private val url = Regex("""\b(?:https?|rtsp|mlhls|nfhls)://\S+""", RegexOption.IGNORE_CASE)
     private val ipv4 = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")
     private val trademark = Regex("""air\s?play""", RegexOption.IGNORE_CASE)
+    private val pin = Regex("""(\bPIN\s*[=:]\s*)"?\d{4,8}"?""", RegexOption.IGNORE_CASE)
 
     fun redact(message: String): String =
-        message.replace(url, "<url>").replace(ipv4, "<ip>").replace(trademark, "Apple-compat")
+        message.replace(url, "<url>").replace(ipv4, "<ip>").replace(pin, "$1<pin>").replace(trademark, "Apple-compat")
 }
 
 /** UxPlay 需要一个稳定的 6 字节“硬件地址”作为设备标识：随机生成，置为本地管理的单播地址（不读取真实 MAC）。 */

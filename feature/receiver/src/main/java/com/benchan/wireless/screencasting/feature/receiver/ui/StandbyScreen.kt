@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -62,7 +63,7 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
     LaunchedEffect(showApple) {
         runCatching { if (showApple) appleFocus.requestFocus() else settingsFocus.requestFocus() }
     }
-    BoxWithConstraints(Modifier.fillMaxSize().background(c.surface).padding(horizontal = 48.dp, vertical = 27.dp)) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(c.surface).systemBarsPadding().padding(horizontal = 48.dp, vertical = 27.dp)) {
         val wide = maxWidth > maxHeight
         val left = @Composable {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
