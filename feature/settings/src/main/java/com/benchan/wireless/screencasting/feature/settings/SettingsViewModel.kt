@@ -119,7 +119,7 @@ class SettingsViewModel @Inject constructor(
             appendLine("## 最近会话")
             records.forEach { r ->
                 appendLine(
-                    "${fmt.format(Date(r.startedAt))} ${r.protocol} ${r.role} peer=${r.peerName} path=${r.discoveryPath} " +
+                    "${fmt.format(Date(r.startedAt))} ${r.protocol.exportLabel()} ${r.role} peer=${r.peerName} path=${r.discoveryPath} " +
                         "firstFrame=${r.firstFrameMs}ms ok=${r.success} p50=${r.latencyP50Ms} p95=${r.latencyP95Ms} " +
                         "bitrate=${r.avgBitrateKbps}kbps drops=${r.framesDropped} disconnects=${r.disconnects}/${r.autoRecovered} codec=${r.codec} end=${r.endReason}",
                 )
@@ -138,4 +138,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearLog() = log.clear()
+}
+
+/** 导出日志里的协议名：界面（含导出预览）不出现 “AirPlay” 字样（PRD 12）。 */
+private fun com.benchan.wireless.screencasting.core.data.report.CastProtocol.exportLabel(): String = when (this) {
+    com.benchan.wireless.screencasting.core.data.report.CastProtocol.AIRPLAY -> "APPLE_COMPAT"
+    else -> name
 }

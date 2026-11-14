@@ -40,9 +40,10 @@ android {
 
     buildTypes {
         release {
+            // R8 覆盖整个应用（packageScope 默认 "**"）：本项目代码、Ktor、BouncyCastle、OkHttp、material-icons-extended 等
+            // 一并裁剪 / 优化。依赖反射或 JNI 的部分由 src/main/keepRules/*.keep 保留（libwebrtc 整包 keep，见 webrtc.keep）。
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
         }
     }
@@ -56,6 +57,10 @@ android {
                 "META-INF/DEPENDENCIES",
                 "META-INF/LICENSE.md",
                 "META-INF/NOTICE.md",
+                // BouncyCastle 中未使用的资源：后量子 Picnic 参数表（~1.2 MB）与 PKIX 路径审查的多语言消息
+                "org/bouncycastle/pqc/**",
+                "org/bouncycastle/x509/*.properties",
+                "org/bouncycastle/pkix/*.properties",
             )
         }
     }

@@ -14,8 +14,10 @@
 .cxx
 local.properties
 
-# 兼容 Apple 设备模块的第三方源码（按 third_party/README.md 拉取，建议用 submodule）
-protocol-impl/airplay/src/main/cpp/third_party/*/
+# 兼容 Apple 设备模块：第三方源码以 git submodule 固定（.gitmodules）；原生依赖构建产物不入库
+protocol-impl/airplay/native-deps/
+*.so
+*.a
 
 # 各模块构建产物
 build/

@@ -61,6 +61,10 @@ import com.benchan.wireless.screencasting.core.signaling.SignalingEvent
 import com.benchan.wireless.screencasting.core.signaling.WscServer
 import com.benchan.wireless.screencasting.feature.receiver.service.ReceiverService
 import com.benchan.wireless.screencasting.protocol.airplay.api.AirPlayReceiver
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleAdmission
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleCompatState
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleEndReason
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionSummary
 import com.benchan.wireless.screencasting.protocol.dlna.DlnaConsent
 import com.benchan.wireless.screencasting.protocol.dlna.DlnaManager
 import com.benchan.wireless.screencasting.protocol.dlna.DlnaPlayback
@@ -77,6 +81,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -132,9 +137,71 @@ class ReceiverController @Inject constructor(
         dlna.consent = DlnaConsent { remote, ua, title -> approveDlna(remote, ua, title) }
         scope.launch {
             dlna.playback.collect { p ->
-                if (p != null) ReceiverService.start(context, p.title ?: p.controlPoint) else if (active == null) ReceiverService.stop(context)
+                if (p != null) ReceiverService.start(context, p.title ?: p.controlPoint) else if (active == null && !appleBusy()) ReceiverService.stop(context)
             }
         }
+        airPlay.ifPresent { ap ->
+            ap.admission = AppleAdmission { name, model, _ -> approveApple(name, model) }
+            scope.launch {
+                ap.state.map { (it as? AppleCompatState.Active)?.session?.peerName }.distinctUntilChanged().collect { peer ->
+                    if (peer != null) {
+                        ReceiverService.start(context, peer)
+                    } else if (active == null && dlna.playback.value == null) {
+                        ReceiverService.stop(context)
+                    }
+                }
+            }
+            scope.launch { ap.sessionEnded.collect(::onAppleEnded) }
+        }
+    }
+
+    /** 兼容 Apple 设备是否正在播放（镜像 / 音频 / 视频网址）。 */
+    private fun appleBusy(): Boolean = airPlay.map { it.state.value is AppleCompatState.Active }.orElse(false)
+
+    /**
+     * 兼容 Apple 设备的连接准入（R-09）：发送端已在 iPhone 上输入 PIN（若开启），这里只处理“已有会话时确认替换”和
+     * “每次都确认”策略。在 UxPlay 的 httpd 线程上同步等待（UxPlayAirPlayReceiver 有 35 秒上限）。
+     * 已有另一台 Apple 设备在投时，UxPlay 自己会拒绝新的 Apple 设备（nohold=0），不会走到这里。
+     */
+    private suspend fun approveApple(name: String, model: String): Boolean {
+        val s = settings.current()
+        if (!s.appleCompatEnabled) return false
+        val replacing = withContext(dispatcher) { active != null } || dlna.playback.value != null
+        if (replacing || s.connectionPolicy == ConnectionPolicy.ALWAYS_CONFIRM) {
+            val r = consent.request(name, model, CastProtocol.AIRPLAY, pin = null, firstTime = false, replacing = replacing)
+            if (r != ConsentResult.ALLOWED) {
+                WscLog.i(TAG, "Apple device request ${r.name.lowercase()}")
+                return false
+            }
+        }
+        withContext(dispatcher) { active?.let { endActive(it, ByeReason.REPLACED, notice = null) } }
+        if (dlna.playback.value != null) dlna.stopPlayback()
+        return true
+    }
+
+    private fun onAppleEnded(e: AppleSessionSummary) {
+        val name = e.session.peerName
+        val notice = when (e.reason) {
+            AppleEndReason.PEER_STOPPED -> "$name 已停止投屏"
+            AppleEndReason.CONNECTION_LOST -> "$name 已断开（网络中断）"
+            AppleEndReason.UNSUPPORTED -> "该内容不支持播放（可能受版权保护）"
+            AppleEndReason.RECEIVER_STOPPED -> null
+        }
+        if (notice != null) _standby.update { it.copy(notice = notice) }
+        val firstFrameMs = e.session.firstFrameAt?.let { it - e.session.startedAt }
+        runCatching {
+            reports.add(
+                SessionRecord(
+                    sessionId = e.session.id, protocol = CastProtocol.AIRPLAY, role = "RECEIVER", peerName = name,
+                    startedAt = e.session.startedAt, endedAt = e.endedAt,
+                    firstFrameMs = firstFrameMs, success = firstFrameMs != null && firstFrameMs <= 60_000,
+                    disconnects = if (e.reason == AppleEndReason.CONNECTION_LOST) 1 else 0,
+                    endReason = "${e.session.kind.name}:${e.reason.name}", codec = e.session.codec,
+                    androidVersion = Build.VERSION.RELEASE.orEmpty(), deviceModel = Build.MODEL.orEmpty(),
+                ),
+            )
+        }
+        scope.launch { if (listeners == 0 && active == null) shutdownListener() }
     }
 
     /**
@@ -144,7 +211,7 @@ class ReceiverController @Inject constructor(
     private suspend fun approveDlna(remote: String, userAgent: String?, title: String?): Boolean {
         val s = settings.current()
         if (!s.dlnaEnabled) return false
-        val replacing = withContext(dispatcher) { active != null }
+        val replacing = withContext(dispatcher) { active != null } || appleBusy()
         val now = System.currentTimeMillis()
         val known = dlnaApproved[remote]?.let { now - it < DLNA_REMEMBER_MS } == true
         val needConfirm = replacing || (s.dlnaConfirmUnknown && !known)
@@ -155,6 +222,7 @@ class ReceiverController @Inject constructor(
         }
         dlnaApproved[remote] = now
         withContext(dispatcher) { active?.let { endActive(it, ByeReason.REPLACED, notice = null) } }
+        if (appleBusy()) airPlay.ifPresent { it.disconnect() }
         WscLog.i(TAG, "DLNA push accepted from $remote (${title?.length ?: 0} chars title)")
         return true
     }
@@ -162,8 +230,8 @@ class ReceiverController @Inject constructor(
     fun stopDlna() = dlna.stopPlayback()
 
     /** 兼容 Apple 设备（非官方）的运行状态；构建开关关闭时恒为 Stopped。 */
-    val appleState: StateFlow<com.benchan.wireless.screencasting.protocol.airplay.api.AppleCompatState> =
-        if (airPlay.isPresent) airPlay.get().state else MutableStateFlow(com.benchan.wireless.screencasting.protocol.airplay.api.AppleCompatState.Stopped)
+    val appleState: StateFlow<AppleCompatState> =
+        if (airPlay.isPresent) airPlay.get().state else MutableStateFlow(AppleCompatState.Stopped)
 
     fun setAppleSurface(surface: android.view.Surface?) = airPlay.ifPresent { it.setVideoSurface(surface) }
 
@@ -186,7 +254,7 @@ class ReceiverController @Inject constructor(
 
     fun stopListening() = scope.launch {
         listeners = (listeners - 1).coerceAtLeast(0)
-        if (listeners == 0 && active == null) shutdownListener()
+        if (listeners == 0 && active == null && !appleBusy()) shutdownListener()
     }
 
     private suspend fun listen() {
@@ -272,6 +340,11 @@ class ReceiverController @Inject constructor(
         active?.let { endActive(it, ByeReason.RECEIVER_EXIT, notice = null) }
     }
 
+    /** 兼容 Apple 设备播放页连按两次返回：断开当前 Apple 设备，保持可被发现。 */
+    fun disconnectApple() = airPlay.ifPresent { it.disconnect() }
+
+    val appleVideoPlayer: androidx.media3.common.Player? get() = airPlay.map { it.videoPlayer }.orElse(null)
+
     // ————————————————————————————— 单条信令连接 —————————————————————————————
 
     private inner class Inbound(val conn: SignalingConnection) {
@@ -351,7 +424,7 @@ class ReceiverController @Inject constructor(
         }
 
         private suspend fun confirmRequired(): Boolean =
-            settings.current().connectionPolicy == ConnectionPolicy.ALWAYS_CONFIRM || active != null || dlna.playback.value != null
+            settings.current().connectionPolicy == ConnectionPolicy.ALWAYS_CONFIRM || active != null || dlna.playback.value != null || appleBusy()
 
         private suspend fun onHello(msg: WscMessage, h: Hello, wasTrusted: Boolean, confirm: Boolean) {
             helloDone = true
@@ -381,7 +454,7 @@ class ReceiverController @Inject constructor(
                 }
                 return
             }
-            replacing = active != null || dlna.playback.value != null
+            replacing = active != null || dlna.playback.value != null || appleBusy()
             send(
                 Hello(
                     WscProtocol.VERSION, me.deviceId, name, Build.MODEL.orEmpty(), "receiver",
@@ -579,6 +652,7 @@ class ReceiverController @Inject constructor(
         val a = Active(inbound.sid!!, inbound.peerFp, inbound.peerName, inbound.ip, inbound)
         // R-09：同时只接一路；新的镜像会话（已确认替换）结束正在进行的 DLNA 播放
         if (dlna.playback.value != null) dlna.stopPlayback()
+        if (appleBusy()) airPlay.ifPresent { it.disconnect() }
         val rtc = ReceiverRtcSession(context, rtcEngine, rtcListener(a))
         a.rtc = rtc
         active = a
@@ -672,7 +746,7 @@ class ReceiverController @Inject constructor(
         a.inbound.conn.close("session end")
         renderers.forEach(a.rtc::detachRenderer)
         withContext(Dispatchers.IO) { a.rtc.close() }
-        if (dlna.playback.value == null) ReceiverService.stop(context)
+        if (dlna.playback.value == null && !appleBusy()) ReceiverService.stop(context)
         _session.value = null
         _standby.update { it.copy(notice = notice) }
         writeReport(a, bye?.name ?: notice ?: "ended")

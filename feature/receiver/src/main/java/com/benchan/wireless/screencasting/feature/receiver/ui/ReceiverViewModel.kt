@@ -26,6 +26,8 @@ class ReceiverViewModel @Inject constructor(
     fun stopDlna() = controller.stopDlna()
     val appleState = controller.appleState
     fun setAppleSurface(surface: android.view.Surface?) = controller.setAppleSurface(surface)
+    fun disconnectApple() = controller.disconnectApple()
+    val appleVideoPlayer: androidx.media3.common.Player? get() = controller.appleVideoPlayer
 
     val eglContext: EglBase.Context get() = rtcEngine.eglBase.eglBaseContext
 

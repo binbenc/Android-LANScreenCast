@@ -21,7 +21,7 @@ class WscApplication : Application() {
         super.onCreate()
         if (BuildConfig.DEBUG) WscLog.addSink(LogcatSink)
         WscLog.addSink(diagnosticLog)
-        WscLog.i("App", "start ${BuildConfig.VERSION_NAME} airplay=${BuildConfig.AIRPLAY_AVAILABLE}")
+        WscLog.i("App", "start ${BuildConfig.VERSION_NAME} appleCompat=${BuildConfig.AIRPLAY_AVAILABLE}")
     }
 
     private object LogcatSink : LogSink {

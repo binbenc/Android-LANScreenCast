@@ -21,24 +21,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleCompatState
 
-/** 兼容 Apple 设备镜像画面（MediaCodec 直接解码到这个 SurfaceView）。 */
-@Composable
-private fun AppleMirrorSurface(setSurface: (android.view.Surface?) -> Unit) {
-    androidx.compose.ui.viewinterop.AndroidView(
-        factory = { ctx ->
-            android.view.SurfaceView(ctx).apply {
-                keepScreenOn = true
-                holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                    override fun surfaceCreated(h: android.view.SurfaceHolder) = setSurface(h.surface)
-                    override fun surfaceChanged(h: android.view.SurfaceHolder, f: Int, w: Int, hh: Int) = Unit
-                    override fun surfaceDestroyed(h: android.view.SurfaceHolder) = setSurface(null)
-                })
-            }
-        },
-        modifier = Modifier.fillMaxSize(),
-    )
-}
-
 /**
  * 接收端入口（交互稿 11~15）。待机监听只在本页可见（App 前台）时开启（PRD R-05）。
  */
@@ -78,9 +60,9 @@ fun ReceiverScreen(
     // 10 分钟无操作进入屏保（R-01）
     var lastInput by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var saver by remember { mutableStateOf(false) }
-    LaunchedEffect(lastInput, session, request, dlna) {
+    LaunchedEffect(lastInput, session, request, dlna, apple) {
         saver = false
-        if (session == null && request == null && dlna == null) {
+        if (session == null && request == null && dlna == null && apple !is AppleCompatState.Active) {
             delay(SCREEN_SAVER_MS)
             saver = true
         }
@@ -110,12 +92,14 @@ fun ReceiverScreen(
         val handledByExtra = extraPlayback?.invoke() == true
         when {
             handledByExtra -> Unit
-            apple is AppleCompatState.Mirroring -> AppleMirrorSurface(viewModel::setAppleSurface)
+            apple is AppleCompatState.Active ->
+                AppleCompatPlayback((apple as AppleCompatState.Active).session, viewModel.appleVideoPlayer, viewModel::setAppleSurface, viewModel::disconnectApple)
             dlna != null -> DlnaPlaybackScreen(dlna!!, viewModel.dlnaPlayer, viewModel::stopDlna)
             s != null -> PlaybackScreen(s, viewModel.eglContext, viewModel::attach, viewModel::detach, viewModel::disconnect)
             saver -> ScreenSaver(standby)
-            else -> StandbyScreen(standby, onOpenSettings, onEnableAppleCompat, applePin = (apple as? AppleCompatState.Advertising)?.pin)
+            else -> StandbyScreen(standby, onOpenSettings, onEnableAppleCompat, appleFailure = (apple as? AppleCompatState.Failed)?.reason)
         }
+        (apple as? AppleCompatState.Advertising)?.pin?.let { AppleCompatPinOverlay(it) }
         request?.let { r -> ConfirmDialog(r) { allowed -> viewModel.respond(r.id, allowed) } }
     }
 }

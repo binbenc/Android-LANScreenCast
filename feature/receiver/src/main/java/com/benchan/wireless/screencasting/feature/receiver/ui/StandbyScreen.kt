@@ -54,7 +54,7 @@ import kotlin.random.Random
  * 5% 过扫描安全区：水平 48dp、垂直 27dp。
  */
 @Composable
-internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnableAppleCompat: () -> Unit, applePin: String? = null) {
+internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnableAppleCompat: () -> Unit, appleFailure: String? = null) {
     val c = MaterialTheme.colorScheme
     val settingsFocus = remember { FocusRequester() }
     val appleFocus = remember { FocusRequester() }
@@ -95,8 +95,8 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
                         TvButton("去开启", onEnableAppleCompat, Modifier.focusRequester(appleFocus))
                     }
                 }
-                applePin?.let {
-                    Text("Apple 设备连接 PIN：$it", style = MaterialTheme.typography.titleMedium, color = c.primary)
+                if (info.appleCompatEnabled && appleFailure != null) {
+                    Text("兼容 Apple 设备未能启动：$appleFailure", style = MaterialTheme.typography.bodyMedium, color = WscTheme.extended.warning)
                 }
                 info.notice?.let {
                     Text(it, style = MaterialTheme.typography.bodyLarge, color = WscTheme.extended.warning)

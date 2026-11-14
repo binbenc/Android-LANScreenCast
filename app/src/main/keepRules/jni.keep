@@ -2,3 +2,9 @@
 -keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }
 -keep @androidx.annotation.Keep class * { *; }
 -keepclassmembers class * { @androidx.annotation.Keep *; }
+
+# 兼容 Apple 设备：bridge/uxplay_jni.c 在 JNI_OnLoad 中按名字 + 签名查找回调接口方法、RegisterNatives 绑定 UxPlayNative。
+# 接口方法名固定后，实现类的覆盖方法随之保持同名（JNI 用接口的 methodID 调用实现对象）。
+-keep interface com.benchan.wireless.screencasting.protocol.airplay.UxPlayCallbacks { *; }
+-keepclassmembers class * implements com.benchan.wireless.screencasting.protocol.airplay.UxPlayCallbacks { <methods>; }
+-keep class com.benchan.wireless.screencasting.protocol.airplay.UxPlayNative { native <methods>; }

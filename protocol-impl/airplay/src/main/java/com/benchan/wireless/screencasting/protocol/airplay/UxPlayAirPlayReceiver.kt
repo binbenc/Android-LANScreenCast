@@ -1,29 +1,49 @@
 package com.benchan.wireless.screencasting.protocol.airplay
 
 import android.content.Context
-import android.media.MediaCodec
-import android.media.MediaFormat
+import android.net.nsd.NsdManager
+import android.net.nsd.NsdServiceInfo
 import android.view.Surface
 import com.benchan.wireless.screencasting.core.common.Ids
 import com.benchan.wireless.screencasting.core.common.WscLog
 import com.benchan.wireless.screencasting.protocol.airplay.api.AirPlayReceiver
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleAdmission
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleCompatState
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleEndReason
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSession
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionKind
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionSummary
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.util.Locale
+import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 兼容 Apple 设备（非官方）接收端（F15、PRD R-08、技术方案 3.8）。
+ * 兼容 Apple 设备（非官方）接收端（F15、PRD R-08、技术方案 3.8）：UxPlay lib（JNI）+ Android 媒体栈。
  *
- * 已实现：构建开关、JNI 门面与回调、mDNS 注册转接（NsdManager）、镜像 H.264/H.265 → MediaCodec → Surface 的解码骨架、PIN 透传。
- * 未完成（见 docs/dev/开发进度.md F15）：
- * - TODO(F15-native): third_party 源码（UxPlay lib、libplist、OpenSSL 3.x、FFmpeg ALAC）的 Android 交叉编译；
- * - TODO(F15-audio): AAC-ELD / ALAC 解码与 Oboe 输出；
- * - TODO(F15-hls): HLS 视频网址（本地 playlist 代理 + ExoPlayer）。
+ * - 镜像：H.264 → [MirrorVideoDecoder]（MediaCodec → Surface）；H.265 默认不通告（M1 只验证 H.264）。
+ * - 音频（RAOP）：ALAC（原生 FFmpeg 解码）/ AAC-LC / AAC-ELD（MediaCodec）→ [RaopAudioPlayer]（AudioTrack）。
+ * - 视频网址：UxPlay 本地 playlist 代理 → [HlsVideoPlayer]（Media3 ExoPlayer）。
+ * - mDNS：dnssd 垫片 → [registerService] → NsdManager；只在 [start] 后注册（默认关闭）。
+ * - PIN：pin_pw=1，发送端首次连接时在电视上显示 4 位 PIN（[AppleCompatState.Advertising.pin]）。
+ * - 准入：[admission]（由接收端编排接到 ConsentBroker，实现 R-09 单路替换确认）。
+ *
+ * 线程：start / stop / disconnect 在专用单线程 [control] 上执行（nativeStop 会等待原生线程退出，绝不能在原生回调线程上调用）；
+ * 会话状态用 [sessionLock] 保护，原生回调可能来自 httpd、RTP 音频、镜像等多个线程。
  */
 @Singleton
 class UxPlayAirPlayReceiver @Inject constructor(
@@ -32,132 +52,367 @@ class UxPlayAirPlayReceiver @Inject constructor(
     private val _state = MutableStateFlow<AppleCompatState>(AppleCompatState.Stopped)
     override val state: StateFlow<AppleCompatState> = _state.asStateFlow()
 
-    private val advertisers = HashMap<String, android.net.nsd.NsdManager.RegistrationListener>()
-    private val nsd = context.getSystemService(android.net.nsd.NsdManager::class.java)
-    private var surface: Surface? = null
-    private var decoder: MediaCodec? = null
+    private val _ended = MutableSharedFlow<AppleSessionSummary>(extraBufferCapacity = 8)
+    override val sessionEnded: SharedFlow<AppleSessionSummary> = _ended.asSharedFlow()
+
+    @Volatile
+    override var admission: AppleAdmission? = null
+
+    private val control = Executors.newSingleThreadExecutor { r -> Thread(r, "apple-compat-control") }
+    private val nsd = context.getSystemService(NsdManager::class.java)
+    private val advertisers = HashMap<String, NsdManager.RegistrationListener>()
+
+    private data class Config(val name: String, val requirePin: Boolean)
+
+    /** 仅在 [control] 线程读写。 */
+    private var running: Config? = null
+
+    private val sessionLock = Any()
+    private var openConnections = 0
+    private var peerName: String? = null
+    private var peerModel: String = ""
+    private var session: AppleSession? = null
     private var pin: String? = null
-    private var peerName: String = ""
+
+    @Volatile
+    private var pendingAdmission: Job? = null
+
+    private val video = MirrorVideoDecoder { decoder -> markFirstFrame(decoder) }
+    private val audio = RaopAudioPlayer()
+    private val hls = HlsVideoPlayer(
+        context,
+        onStarted = { beginSession(AppleSessionKind.VIDEO_URL) },
+        onFinished = { error -> endSession(if (error) AppleEndReason.UNSUPPORTED else AppleEndReason.PEER_STOPPED, AppleSessionKind.VIDEO_URL) },
+    )
+
+    override val videoPlayer: androidx.media3.common.Player? get() = hls.player
+
+    // ————————————————————————————— 生命周期（control 线程） —————————————————————————————
 
     override fun start(deviceName: String, requirePin: Boolean) {
-        if (_state.value !is AppleCompatState.Stopped && _state.value !is AppleCompatState.Failed) return
-        if (!UxPlayNative.load()) {
-            _state.value = AppleCompatState.Failed("native library not packaged")
-            WscLog.w(TAG, "libwscairplay.so missing (build with -Pwsc.airplay=true and third_party sources)")
-            return
+        val cfg = Config(deviceName.ifBlank { "Android TV" }, requirePin)
+        control.execute {
+            if (running == cfg) return@execute
+            if (running != null) stopNative()
+            startNative(cfg)
         }
-        val dir = File(context.noBackupFilesDir, "apple-compat").apply { mkdirs() }
-        val rc = UxPlayNative.nativeStart(this, deviceName, hardwareAddress(dir), requirePin, File(dir, "server.pem").absolutePath)
-        _state.value = if (rc == 0) AppleCompatState.Advertising(null) else AppleCompatState.Failed("start failed $rc")
     }
 
     override fun stop() {
-        if (UxPlayNative.load()) runCatching { UxPlayNative.nativeStop() }
-        advertisers.keys.toList().forEach(::unregisterService)
-        releaseDecoder()
-        _state.value = AppleCompatState.Stopped
+        control.execute {
+            if (running != null) stopNative()
+            _state.value = AppleCompatState.Stopped
+        }
+    }
+
+    override fun disconnect() {
+        control.execute {
+            val cfg = running ?: return@execute
+            WscLog.i(TAG, "disconnect requested by receiver")
+            endSession(AppleEndReason.RECEIVER_STOPPED)
+            // UxPlay 没有线程安全的“踢掉当前客户端”接口：重启服务（mDNS 注册会短暂撤销再恢复）
+            stopNative()
+            startNative(cfg)
+        }
+    }
+
+    private fun startNative(cfg: Config) {
+        if (!UxPlayNative.load()) {
+            _state.value = AppleCompatState.Failed("当前版本未包含兼容 Apple 设备模块")
+            WscLog.w(TAG, "native library not packaged in this build")
+            return
+        }
+        val dir = File(context.noBackupFilesDir, "apple-compat").apply { mkdirs() }
+        val flags = UxPlayFlags.of(requirePin = cfg.requirePin, hls = true, h265 = false)
+        val rc = runCatching {
+            UxPlayNative.nativeStart(this, cfg.name, hardwareAddress(dir), flags, File(dir, "server.pem").absolutePath, Locale.getDefault().language)
+        }.getOrElse {
+            WscLog.e(TAG, "nativeStart threw", it)
+            -100
+        }
+        if (rc == 0) {
+            running = cfg
+            synchronized(sessionLock) { pin = null }
+            _state.value = AppleCompatState.Advertising(null)
+            WscLog.i(TAG, "advertising (pin=${cfg.requirePin})")
+        } else {
+            running = null
+            _state.value = AppleCompatState.Failed(UxPlayStartError.describe(rc))
+            WscLog.w(TAG, "start failed: ${UxPlayStartError.describe(rc)}")
+        }
+    }
+
+    private fun stopNative() {
+        // httpd 线程可能正阻塞在确认弹窗上；先取消，nativeStop 才能尽快等到线程退出
+        pendingAdmission?.cancel()
+        endSession(AppleEndReason.RECEIVER_STOPPED)
+        runCatching { UxPlayNative.nativeStop() }.onFailure { WscLog.w(TAG, "nativeStop failed", it) }
+        synchronized(advertisers) { advertisers.keys.toList() }.forEach(::unregisterService)
+        video.release()
+        audio.release()
+        hls.release()
+        synchronized(sessionLock) {
+            openConnections = 0
+            peerName = null
+            pin = null
+        }
+        running = null
     }
 
     override fun setVideoSurface(surface: Surface?) {
-        this.surface = surface
-        if (surface == null) releaseDecoder()
+        video.setSurface(surface)
     }
 
     /** UxPlay 需要一个稳定的 6 字节“硬件地址”作为设备标识；随机生成并保存（不读取真实 MAC）。 */
     private fun hardwareAddress(dir: File): ByteArray {
         val f = File(dir, "hwaddr")
-        f.takeIf { it.exists() }?.readBytes()?.takeIf { it.size == 6 }?.let { return it }
-        return Ids.randomBytes(6).also { it[0] = ((it[0].toInt() and 0xFC) or 0x02).toByte(); f.writeBytes(it) }
+        f.takeIf { it.exists() }?.readBytes()?.takeIf(AppleDeviceAddress::isValid)?.let { return it }
+        return AppleDeviceAddress.normalize(Ids.randomBytes(6)).also { f.writeBytes(it) }
     }
 
-    // —— 原生回调 ——
+    // ————————————————————————————— 会话状态 —————————————————————————————
+
+    private fun beginSession(kind: AppleSessionKind, width: Int = 0, height: Int = 0, codec: String? = null) = synchronized(sessionLock) {
+        val s = session
+        val next = if (s == null) {
+            WscLog.i(TAG, "session started: $kind")
+            AppleSession(Ids.newSessionId(), peerName ?: "Apple 设备", peerModel, kind, System.currentTimeMillis(), width = width, height = height, codec = codec)
+        } else {
+            // 音频 → 镜像、镜像 → 视频网址等切换视为同一会话
+            if (s.kind != kind) WscLog.i(TAG, "session switched ${s.kind} -> $kind")
+            s.copy(kind = kind, width = if (width > 0) width else s.width, height = if (height > 0) height else s.height, codec = codec ?: s.codec)
+        }
+        session = next
+        pin = null
+        _state.value = AppleCompatState.Active(next)
+    }
+
+    private fun markFirstFrame(decoder: String) = synchronized(sessionLock) {
+        val s = session ?: return
+        if (s.firstFrameAt != null) return
+        val next = s.copy(firstFrameAt = System.currentTimeMillis(), codec = listOfNotNull(s.codec, decoder.ifBlank { null }).joinToString(" / "))
+        session = next
+        _state.value = AppleCompatState.Active(next)
+    }
+
+    /** 结束当前会话；[onlyKind] 非空时只在当前会话是该类型时结束。 */
+    private fun endSession(reason: AppleEndReason, onlyKind: AppleSessionKind? = null) {
+        val ended = synchronized(sessionLock) {
+            val s = session ?: return
+            if (onlyKind != null && s.kind != onlyKind) return
+            session = null
+            _state.value = if (_state.value is AppleCompatState.Stopped) AppleCompatState.Stopped else AppleCompatState.Advertising(null)
+            s
+        }
+        WscLog.i(TAG, "session ended: ${ended.kind} ($reason)")
+        when (ended.kind) {
+            AppleSessionKind.MIRROR -> video.release()
+            AppleSessionKind.VIDEO_URL -> hls.release()
+            AppleSessionKind.AUDIO -> Unit
+        }
+        audio.release()
+        _ended.tryEmit(AppleSessionSummary(ended, System.currentTimeMillis(), reason))
+    }
+
+    // ————————————————————————————— 原生回调 —————————————————————————————
 
     override fun registerService(type: String, name: String, port: Int, keys: Array<String>, values: Array<String>) {
         unregisterService(type)
-        val info = android.net.nsd.NsdServiceInfo().apply {
+        val info = NsdServiceInfo().apply {
             serviceName = name
             serviceType = type
             this.port = port
-            keys.indices.forEach { i -> setAttribute(keys[i], values.getOrElse(i) { "" }) }
+            keys.indices.forEach { i -> runCatching { setAttribute(keys[i], values.getOrElse(i) { "" }) } }
         }
-        val l = object : android.net.nsd.NsdManager.RegistrationListener {
-            override fun onServiceRegistered(serviceInfo: android.net.nsd.NsdServiceInfo) = WscLog.i(TAG, "registered $type")
-            override fun onRegistrationFailed(serviceInfo: android.net.nsd.NsdServiceInfo, errorCode: Int) = WscLog.w(TAG, "register $type failed $errorCode")
-            override fun onServiceUnregistered(serviceInfo: android.net.nsd.NsdServiceInfo) = Unit
-            override fun onUnregistrationFailed(serviceInfo: android.net.nsd.NsdServiceInfo, errorCode: Int) = Unit
+        val l = object : NsdManager.RegistrationListener {
+            override fun onServiceRegistered(serviceInfo: NsdServiceInfo) = WscLog.i(TAG, "registered $type")
+            override fun onRegistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) = WscLog.w(TAG, "register $type failed $errorCode")
+            override fun onServiceUnregistered(serviceInfo: NsdServiceInfo) = Unit
+            override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) = Unit
         }
-        advertisers[type] = l
-        runCatching { nsd.registerService(info, android.net.nsd.NsdManager.PROTOCOL_DNS_SD, l) }
+        synchronized(advertisers) { advertisers[type] = l }
+        runCatching { nsd.registerService(info, NsdManager.PROTOCOL_DNS_SD, l) }.onFailure { WscLog.w(TAG, "registerService $type", it) }
     }
 
     override fun unregisterService(type: String) {
-        advertisers.remove(type)?.let { runCatching { nsd.unregisterService(it) } }
+        synchronized(advertisers) { advertisers.remove(type) }?.let { runCatching { nsd.unregisterService(it) } }
     }
 
-    override fun onConnectionInit() = WscLog.i(TAG, "client connected")
+    override fun onConnectionInit() {
+        synchronized(sessionLock) { openConnections++ }
+    }
+
     override fun onConnectionDestroy() {
-        WscLog.i(TAG, "client disconnected")
-        releaseDecoder()
-        _state.value = AppleCompatState.Advertising(pin)
+        val last = synchronized(sessionLock) {
+            openConnections = (openConnections - 1).coerceAtLeast(0)
+            openConnections == 0
+        }
+        if (last) {
+            endSession(AppleEndReason.PEER_STOPPED)
+            synchronized(sessionLock) {
+                peerName = null
+                if (pin != null) {
+                    pin = null
+                    if (_state.value is AppleCompatState.Advertising) _state.value = AppleCompatState.Advertising(null)
+                }
+            }
+        }
+    }
+
+    override fun onConnectionReset(reason: Int) {
+        WscLog.w(TAG, "connection reset (reason $reason)")
+        endSession(if (reason == 2) AppleEndReason.UNSUPPORTED else AppleEndReason.CONNECTION_LOST)
     }
 
     override fun onDisplayPin(pin: String) {
-        this.pin = pin
-        _state.value = AppleCompatState.Advertising(pin)
+        synchronized(sessionLock) {
+            this.pin = pin
+            if (session == null) _state.value = AppleCompatState.Advertising(pin)
+        }
+        WscLog.i(TAG, "pairing PIN displayed")
     }
 
     override fun onClientRequest(deviceId: String, model: String, name: String): Boolean {
-        peerName = name.ifBlank { model }
-        // TODO(F15-consent): 接入接收端 ConsentBroker（R-09 单路规则）；原生回调在 UxPlay 线程上同步等待结果
-        return true
+        val display = name.ifBlank { model.ifBlank { "Apple 设备" } }
+        val policy = admission
+        val ok = if (policy == null) {
+            true
+        } else {
+            runBlocking(Dispatchers.Default) {
+                val job = async { withTimeoutOrNull(ADMISSION_TIMEOUT_MS) { policy.admit(display, model, deviceId) } ?: false }
+                pendingAdmission = job
+                try {
+                    job.await()
+                } catch (_: CancellationException) {
+                    false // 服务停止 / 断开时取消等待（确认弹窗随之撤销）
+                } finally {
+                    pendingAdmission = null
+                }
+            }
+        }
+        if (ok) {
+            synchronized(sessionLock) {
+                peerName = display
+                peerModel = model
+                pin = null
+            }
+        }
+        WscLog.i(TAG, "client request ($model) ${if (ok) "admitted" else "refused"}")
+        return ok
     }
 
     override fun onVideoCodec(h265: Boolean, width: Int, height: Int) {
-        releaseDecoder()
-        val s = surface ?: return
-        runCatching {
-            val mime = if (h265) MediaFormat.MIMETYPE_VIDEO_HEVC else MediaFormat.MIMETYPE_VIDEO_AVC
-            decoder = MediaCodec.createDecoderByType(mime).apply {
-                val fmt = MediaFormat.createVideoFormat(mime, width.coerceAtLeast(16), height.coerceAtLeast(16))
-                fmt.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
-                configure(fmt, s, null, 0)
-                start()
-            }
-            _state.value = AppleCompatState.Mirroring(peerName)
-        }.onFailure { WscLog.w(TAG, "decoder init failed", it) }
+        video.configure(h265, width, height)
+        beginSession(AppleSessionKind.MIRROR, width, height, if (h265) "H.265" else "H.264")
     }
 
     override fun onVideoData(data: ByteArray, ntpTimeLocal: Long, h265: Boolean) {
-        val d = decoder ?: return
-        runCatching {
-            val idx = d.dequeueInputBuffer(10_000)
-            if (idx >= 0) {
-                d.getInputBuffer(idx)?.apply { clear(); put(data) }
-                d.queueInputBuffer(idx, 0, data.size, ntpTimeLocal / 1000, 0)
+        video.submit(data, ntpTimeLocal / 1000, h265) // UxPlay 时间单位为 ns
+    }
+
+    override fun onVideoFlush() {
+        video.flush()
+    }
+
+    override fun onVideoReset(type: Int) {
+        when (type) {
+            RESET_RTP_SHUTDOWN, RESET_RTP_TO_HLS_TEARDOWN -> {
+                video.release()
+                if (type == RESET_RTP_SHUTDOWN) endSession(AppleEndReason.PEER_STOPPED, AppleSessionKind.MIRROR)
             }
-            val info = MediaCodec.BufferInfo()
-            var out = d.dequeueOutputBuffer(info, 0)
-            while (out >= 0) {
-                d.releaseOutputBuffer(out, true)
-                out = d.dequeueOutputBuffer(info, 0)
-            }
+            RESET_HLS_SHUTDOWN, RESET_HLS_EOS -> endSession(AppleEndReason.PEER_STOPPED, AppleSessionKind.VIDEO_URL)
+            RESET_NOHOLD -> endSession(AppleEndReason.RECEIVER_STOPPED)
+            else -> Unit
         }
     }
 
     override fun onMirrorRunning(running: Boolean) {
-        if (!running) releaseDecoder()
+        if (running) beginSession(AppleSessionKind.MIRROR) else endSession(AppleEndReason.PEER_STOPPED, AppleSessionKind.MIRROR)
     }
+
+    override fun onAudioFormat(ct: Int, samplesPerFrame: Int, usingScreen: Boolean, isMedia: Boolean) {
+        audio.setFormat(ct)
+        if (!usingScreen) {
+            val idle = synchronized(sessionLock) { session == null }
+            if (idle) beginSession(AppleSessionKind.AUDIO, codec = RaopAudioCodec.fromCt(ct).name)
+        }
+    }
+
+    override fun onAudioPcm(pcm: ShortArray, count: Int) {
+        audio.writePcm(pcm, count)
+        markAudioStarted()
+    }
+
+    override fun onAudioCompressed(data: ByteArray, ct: Int) {
+        audio.writeCompressed(data, ct)
+        markAudioStarted()
+    }
+
+    private fun markAudioStarted() {
+        val needs = synchronized(sessionLock) { session?.let { it.kind == AppleSessionKind.AUDIO && it.firstFrameAt == null } == true }
+        if (needs) markFirstFrame("")
+    }
+
+    override fun onAudioVolume(volumeDb: Float) {
+        audio.setVolumeDb(volumeDb)
+    }
+
+    override fun onAudioFlush() {
+        audio.flush()
+    }
+
+    override fun onAudioMetadata(data: ByteArray) {
+        val track = DmapMetadata.parse(data) ?: return
+        synchronized(sessionLock) {
+            val s = session ?: return
+            val next = s.copy(trackTitle = track.title, trackArtist = track.artist)
+            session = next
+            _state.value = AppleCompatState.Active(next)
+        }
+    }
+
+    override fun onAudioCoverArt(data: ByteArray) = Unit // M1 不显示封面
+
+    override fun onHlsPlay(location: String, startPosition: Float) {
+        WscLog.i(TAG, "video URL requested")
+        hls.play(location, startPosition)
+    }
+
+    override fun onHlsSeek(position: Float) {
+        hls.seek(position)
+    }
+
+    override fun onHlsRate(rate: Float) {
+        hls.setRate(rate)
+    }
+
+    override fun onHlsStop() = endSession(AppleEndReason.PEER_STOPPED, AppleSessionKind.VIDEO_URL)
+
+    override fun onHlsPlaylistRemove(): Float = hls.pauseForPlaylistRemove()
+
+    override fun hlsPlaybackInfo(out: DoubleArray): Boolean = hls.fillPlaybackInfo(out)
 
     override fun onLog(level: Int, message: String) {
-        if (level <= 3) WscLog.w("uxplay", message) else WscLog.d("uxplay", message)
-    }
-
-    private fun releaseDecoder() {
-        decoder?.let { runCatching { it.stop() }; runCatching { it.release() } }
-        decoder = null
+        val m = UxPlayLogRedactor.redact(message)
+        when {
+            level <= LOGGER_ERR -> WscLog.e(UXPLAY_TAG, m)
+            level <= LOGGER_WARNING -> WscLog.w(UXPLAY_TAG, m)
+            else -> WscLog.i(UXPLAY_TAG, m)
+        }
     }
 
     private companion object {
         const val TAG = "AppleCompat"
+        const val UXPLAY_TAG = "uxplay"
+        const val ADMISSION_TIMEOUT_MS = 35_000L
+        const val LOGGER_ERR = 3
+        const val LOGGER_WARNING = 4
+
+        // UxPlay reset_type_t
+        const val RESET_NOHOLD = 0
+        const val RESET_RTP_SHUTDOWN = 1
+        const val RESET_HLS_SHUTDOWN = 2
+        const val RESET_HLS_EOS = 3
+        const val RESET_RTP_TO_HLS_TEARDOWN = 5
     }
 }
