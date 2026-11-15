@@ -1,0 +1,19 @@
+name: Feature request / 功能建议
+description: Suggest an idea / 提一个想法
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The app will stay offline: no internet access, analytics, ads or accounts, and dependencies must be GPL-3.0 compatible.
+        本应用坚持不联网、无统计、无广告、无账号，依赖必须与 GPL-3.0 兼容。
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does it solve? / 想解决什么问题？
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed solution / 建议的做法

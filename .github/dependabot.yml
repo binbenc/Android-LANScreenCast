@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin-and-build:
+        patterns: ["org.jetbrains.kotlin*", "com.android.*", "com.google.devtools.ksp*", "com.google.dagger*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+# Native submodules (UxPlay, libplist, OpenSSL, FFmpeg) are pinned on purpose and updated manually.

@@ -1,8 +1,10 @@
-# 局域投屏
+# 局域投屏 — 开源的安卓局域网投屏、屏幕镜像与 DLNA 推送工具
 
 [English](README.md) | **简体中文**
 
-一款免费、开源（GPL-3.0）的局域网投屏应用：不联网、无广告、无账号、不收集任何数据。
+[![CI](https://github.com/binbenc/Android-LANScreenCast/actions/workflows/ci.yml/badge.svg)](https://github.com/binbenc/Android-LANScreenCast/actions/workflows/ci.yml) ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue) ![Platform: Android 10+](https://img.shields.io/badge/platform-Android%2010%2B%20%7C%20Android%20TV-green) ![Offline](https://img.shields.io/badge/internet-not%20required-brightgreen) ![No ads](https://img.shields.io/badge/ads-none-brightgreen)
+
+**局域投屏**（英文名 LAN Screen Cast）是一款免费、开源（GPL-3.0）的安卓**局域网投屏 / 无线投屏**应用：把手机、平板的画面镜像到电视、电视盒子、平板或另一台手机；把视频、照片、音乐推送到支持 **DLNA / UPnP** 的智能电视；也能接收视频 App 和 iPhone、iPad 的投屏。只要连同一个 Wi‑Fi 就能用：不联网、不走云端、无广告、无账号、不收集任何数据。
 
 同一个 APK 既能当**发送端**，也能当**接收端**。手机、平板默认是发送端，电视默认是接收端。
 
@@ -39,6 +41,29 @@
 - 应用本身不访问互联网。只有两种例外，都由用户主动发起：用户推送给电视的网址，以及 Apple 设备发来的视频网址。这两种网址都由电视或播放器直接打开，应用本身不访问。
 
 详见 [`docs/PRIVACY.md`](docs/PRIVACY.md)。
+
+## 常见问题
+
+**不联网怎么把安卓手机投屏到电视？**
+两台设备都装上局域投屏，连同一个 Wi‑Fi。在电视上打开它，电视就是接收端；然后在手机上选这台电视即可。所有数据只在局域网内传输。
+
+**电视没装这个应用能投吗？**
+可以推送媒体。大多数智能电视和电视盒子自带 DLNA/UPnP 接收功能，本应用可以把视频、照片、音乐和视频网址推过去。完整的屏幕镜像需要接收端也装本应用。
+
+**iPhone、iPad 能用它投到安卓电视吗？**
+能。在接收端设置里打开“兼容 Apple 设备（非官方）”，iPhone、iPad 就能用系统自带的“屏幕镜像”连接。该功能为非官方实现，未获 Apple 认可。
+
+**能当视频 App 的 DLNA 投屏接收端吗？**
+能。接收端会以 DLNA 媒体渲染器的身份广播自己，视频 App 里的“投屏”或“TV”按钮可以搜到它。
+
+**安全吗？**
+屏幕镜像始终加密：TLS 1.3 双向认证并校验证书指纹，首次连接还要输入 PIN 确认。DLNA 协议本身不加密，所以有新的 DLNA 发送方时，接收端会先询问是否接受。
+
+**延迟有多低？**
+游戏档在良好 Wi‑Fi 下的目标是端到端约 100 ms，真机实测数据还在补充。
+
+**需要 Google Play 服务或 root 吗？**
+都不需要，也没有统计和崩溃上报。
 
 ## 运行要求
 

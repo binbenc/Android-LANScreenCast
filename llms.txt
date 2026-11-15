@@ -1,0 +1,28 @@
+# LAN Screen Cast (局域投屏)
+
+> Free, open-source (GPL-3.0) Android app for screen mirroring and media casting over a local network (same Wi‑Fi), with no internet access, ads, account or data collection. One APK acts as both sender (phones/tablets) and receiver (Android TV, TV boxes, tablets, phones). Status: pre-release; implemented and emulator-tested, not yet verified on real devices.
+
+Key facts:
+- Screen mirroring: WebRTC (H.264) with host-only ICE (no STUN/TURN). Playback audio is captured via AudioPlaybackCapture; the microphone is never used. The connection uses mutual TLS 1.3 with certificate pinning, plus SPAKE2 PIN pairing on the first connection.
+- Connecting: mDNS/SSDP discovery, QR code, 8-digit cast code, or manual IP.
+- Quality presets: Smooth, Balanced, High and Game. Game is 720p60 with a minimal jitter buffer and a low-latency decoder, and can be switched mid-session.
+- DLNA/UPnP: works as a media renderer (receiver) for video apps, and as a controller that pushes local video, photos, music or URLs to any DLNA TV. Unsupported videos are transcoded with Media3 Transformer.
+- System share sheet: share files or links from any app straight to a TV. Direct Share targets point to recently used TVs.
+- Compatible with Apple devices (unofficial): iPhone and iPad can mirror via Screen Mirroring, using UxPlay through JNI. Off by default.
+- Also includes: elder mode (large UI, one-tap cast to TVs pinned by a family member), optional reverse control (accessibility service, confirmed every session), a TV remote-friendly UI, and local-only diagnostics.
+- Requirements: Android 10+ (minSdk 29). Built with Kotlin, Jetpack Compose and Compose for TV, Hilt, Ktor and libwebrtc.
+
+## Docs
+- [README (English)](https://github.com/binbenc/Android-LANScreenCast/blob/main/README.md): overview, features, FAQ, build instructions
+- [README (简体中文)](https://github.com/binbenc/Android-LANScreenCast/blob/main/README.zh-CN.md): Chinese overview and FAQ
+- [Privacy statement](https://github.com/binbenc/Android-LANScreenCast/blob/main/docs/PRIVACY.md): what the app does and does not access
+- [Wire protocol](https://github.com/binbenc/Android-LANScreenCast/blob/main/protocol/PROTOCOL.md): signaling messages, pairing and state machine, with test vectors in protocol/vectors
+
+## Design documents (Chinese)
+- [PRD](https://github.com/binbenc/Android-LANScreenCast/blob/main/docs/prd/PRD-局域网投屏-v1.0.md): requirements and locked decisions
+- [Technical design](https://github.com/binbenc/Android-LANScreenCast/blob/main/docs/tech/技术方案-v1.0.md): architecture and implementation choices
+- [Development progress](https://github.com/binbenc/Android-LANScreenCast/blob/main/docs/dev/开发进度.md): feature status and on-device test checklist
+
+## Optional
+- [License (GPL-3.0)](https://github.com/binbenc/Android-LANScreenCast/blob/main/LICENSE)
+- [Third-party native components](https://github.com/binbenc/Android-LANScreenCast/blob/main/protocol-impl/airplay/src/main/cpp/third_party/README.md): UxPlay, libplist, OpenSSL and FFmpeg pins and licenses

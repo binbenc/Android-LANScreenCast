@@ -1,0 +1,58 @@
+name: Bug report / 问题反馈
+description: Something doesn't work as expected / 功能不正常
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please don't include Wi‑Fi names, IP addresses or personal data. Diagnostic logs exported from the app are already sanitized.
+        请不要填写 Wi‑Fi 名称、IP 地址或个人信息。应用内导出的诊断日志已做脱敏。
+  - type: dropdown
+    id: feature
+    attributes:
+      label: Feature / 功能
+      options:
+        - Screen mirroring / 屏幕镜像
+        - DLNA receiver / DLNA 接收
+        - DLNA push / DLNA 推送
+        - Share sheet / 分享菜单推送
+        - Apple-compatible receiver / 兼容 Apple 设备
+        - Game mode / 游戏模式
+        - Elder mode / 长辈模式
+        - Reverse control / 反向控制
+        - Other / 其他
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect? / 发生了什么，期望是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      placeholder: "1. …\n2. …"
+    validations:
+      required: true
+  - type: input
+    id: sender
+    attributes:
+      label: Sender device & Android version / 发送端设备与系统版本
+      placeholder: e.g. Pixel 8, Android 15
+  - type: input
+    id: receiver
+    attributes:
+      label: Receiver device & version / 接收端设备与系统版本
+      placeholder: e.g. Xiaomi TV box, Android 11 / LG TV (built-in DLNA)
+  - type: input
+    id: version
+    attributes:
+      label: App version / 应用版本
+  - type: textarea
+    id: logs
+    attributes:
+      label: Diagnostic log (optional) / 诊断日志（可选）
+      description: Settings → Export log / 设置 → 导出日志
+      render: text

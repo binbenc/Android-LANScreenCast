@@ -1,8 +1,10 @@
-# LAN Screen Cast
+# LAN Screen Cast — open-source Android screen mirroring & DLNA casting over local Wi‑Fi
 
 **English** | [简体中文](README.zh-CN.md)
 
-A free, open-source (GPL-3.0) screen casting app for your local network. It never contacts the internet, shows no ads, needs no account and collects no data.
+[![CI](https://github.com/binbenc/Android-LANScreenCast/actions/workflows/ci.yml/badge.svg)](https://github.com/binbenc/Android-LANScreenCast/actions/workflows/ci.yml) ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue) ![Platform: Android 10+](https://img.shields.io/badge/platform-Android%2010%2B%20%7C%20Android%20TV-green) ![Offline](https://img.shields.io/badge/internet-not%20required-brightgreen) ![No ads](https://img.shields.io/badge/ads-none-brightgreen)
+
+**LAN Screen Cast** (Chinese name: 局域投屏) is a free, open-source (GPL-3.0) Android app for **screen mirroring and casting over your local network**. Mirror an Android phone or tablet to an Android TV, TV box, tablet or another phone; push videos, photos and music to any **DLNA / UPnP** TV; and receive casts from video apps and iPhone/iPad. It works **offline on the same Wi‑Fi**: no internet, no cloud, no ads, no account, no data collection.
 
 One APK works as both **sender** and **receiver**: phones and tablets send by default, TVs receive by default.
 
@@ -39,6 +41,29 @@ One APK works as both **sender** and **receiver**: phones and tablets send by de
 - The app never connects to the internet. There are two exceptions, both started by you: a URL you push to a TV, and a video URL sent by an Apple device. In both cases the TV or player fetches the URL directly; the app itself does not.
 
 See [`docs/PRIVACY.md`](docs/PRIVACY.md).
+
+## FAQ
+
+**How do I mirror my Android phone to a TV without internet?**
+Install LAN Screen Cast on both devices and connect them to the same Wi‑Fi. Open it on the TV, which becomes the receiver. Then pick the TV on the phone. Everything stays on your local network.
+
+**Can I cast to a TV that doesn't have this app?**
+Yes, for media. Most smart TVs and TV boxes have a built-in DLNA/UPnP renderer, and the app can push videos, photos, music and video URLs to them. Full screen mirroring needs the app on the receiving device.
+
+**Can an iPhone or iPad cast to an Android TV with this app?**
+Yes. Turn on "Compatible with Apple devices (unofficial)" in the receiver's settings. The iPhone or iPad can then use its built-in Screen Mirroring. This feature is unofficial and not endorsed by Apple.
+
+**Does it work as a DLNA receiver for video apps?**
+Yes. The receiver advertises itself as a DLNA media renderer, so video apps with a "cast" or "TV" button can find it.
+
+**Is it secure?**
+Mirroring is always encrypted with mutual TLS 1.3 and certificate pinning, and the first connection is confirmed with a PIN. DLNA itself is unencrypted, as the protocol defines, so the receiver asks before accepting a new DLNA sender.
+
+**How low is the latency?**
+The Game preset targets about 100 ms end to end on a good Wi‑Fi network. Real-device measurements are still pending.
+
+**Does it need Google Play services or root?**
+No to both. It also has no analytics and no crash reporting.
 
 ## Requirements
 
