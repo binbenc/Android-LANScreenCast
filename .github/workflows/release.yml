@@ -60,7 +60,7 @@ jobs:
             for apk in app/build/outputs/apk/release/*-release-unsigned.apk; do
               abi="$(basename "$apk" | sed -E 's/^app-(.*)-release-unsigned\.apk$/\1/')"
               out="dist/LANScreenCast-${VERSION}-${abi}.apk"
-              "$APKSIGNER" sign --ks "$RUNNER_TEMP/release.keystore" \
+              "$APKSIGNER" sign --v4-signing-enabled false --ks "$RUNNER_TEMP/release.keystore" \
                 --ks-pass env:STORE_PASSWORD --ks-key-alias "$KEY_ALIAS" \
                 --key-pass "env:${KEY_PASS_VAR}" \
                 --out "$out" "$apk"
