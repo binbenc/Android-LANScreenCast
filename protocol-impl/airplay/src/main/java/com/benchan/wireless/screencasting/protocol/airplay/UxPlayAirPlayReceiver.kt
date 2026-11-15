@@ -10,6 +10,7 @@ import com.benchan.wireless.screencasting.protocol.airplay.api.AirPlayReceiver
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleAdmission
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleCompatState
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleEndReason
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleFailure
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSession
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionKind
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionSummary
@@ -118,7 +119,7 @@ class UxPlayAirPlayReceiver @Inject constructor(
 
     private fun startNative(cfg: Config) {
         if (!UxPlayNative.load()) {
-            _state.value = AppleCompatState.Failed("当前安装包不包含这项功能，请安装完整版本")
+            _state.value = AppleCompatState.Failed(AppleFailure.NOT_PACKAGED)
             WscLog.w(TAG, "native library not packaged in this build")
             return
         }
@@ -137,7 +138,7 @@ class UxPlayAirPlayReceiver @Inject constructor(
             WscLog.i(TAG, "advertising (pin=${cfg.requirePin})")
         } else {
             running = null
-            _state.value = AppleCompatState.Failed(UxPlayStartError.userMessage(rc))
+            _state.value = AppleCompatState.Failed(UxPlayStartError.failure(rc))
             WscLog.w(TAG, "start failed: ${UxPlayStartError.describe(rc)}")
         }
     }
@@ -176,7 +177,7 @@ class UxPlayAirPlayReceiver @Inject constructor(
         val s = session
         val next = if (s == null) {
             WscLog.i(TAG, "session started: $kind")
-            AppleSession(Ids.newSessionId(), peerName ?: "Apple 设备", peerModel, kind, System.currentTimeMillis(), width = width, height = height, codec = codec)
+            AppleSession(Ids.newSessionId(), peerName ?: context.getString(R.string.apple_compat_default_peer), peerModel, kind, System.currentTimeMillis(), width = width, height = height, codec = codec)
         } else {
             // 音频 → 镜像、镜像 → 视频网址等切换视为同一会话
             if (s.kind != kind) WscLog.i(TAG, "session switched ${s.kind} -> $kind")
@@ -271,7 +272,7 @@ class UxPlayAirPlayReceiver @Inject constructor(
     }
 
     override fun onClientRequest(deviceId: String, model: String, name: String): Boolean {
-        val display = name.ifBlank { model.ifBlank { "Apple 设备" } }
+        val display = name.ifBlank { model.ifBlank { context.getString(R.string.apple_compat_default_peer) } }
         val policy = admission
         val ok = if (policy == null) {
             true

@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.core.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.core.ui.R
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -108,9 +111,9 @@ fun PinCells(
         }
     }
     val description = if (secret || value.isEmpty()) {
-        "已输入 ${value.length} 位，共 $length 位"
+        pluralStringResource(R.plurals.core_ui_pin_entered_count, length, value.length, length)
     } else {
-        "已输入 ${value.toList().joinToString(" ")}，共 $length 位"
+        pluralStringResource(R.plurals.core_ui_pin_entered_digits, length, value.toList().joinToString(" "), length)
     }
     BoxWithConstraints(modifier.semantics { contentDescription = description }) {
         val scale = PinCellsDefaults.scaleFor(maxWidth, metrics, length, groups)
@@ -166,7 +169,9 @@ fun NumericKeypad(
     digitsEnabled: Boolean = true,
 ) {
     val c = MaterialTheme.colorScheme
-    val rows = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf("取消", "0", "⌫"))
+    val rows = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(KEY_CANCEL, "0", KEY_BACKSPACE))
+    val cancelLabel = stringResource(R.string.core_ui_action_cancel)
+    val deleteLabel = stringResource(R.string.core_ui_action_delete)
     Column(
         modifier.fillMaxWidth().background(c.surfaceContainer).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -175,8 +180,8 @@ fun NumericKeypad(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { key ->
                     val action: () -> Unit = when (key) {
-                        "取消" -> onCancel
-                        "⌫" -> onBackspace
+                        KEY_CANCEL -> onCancel
+                        KEY_BACKSPACE -> onBackspace
                         else -> { { onDigit(key[0]) } }
                     }
                     val isDigit = key.length == 1 && key[0].isDigit()
@@ -185,13 +190,13 @@ fun NumericKeypad(
                         enabled = !isDigit || digitsEnabled,
                         modifier = Modifier.weight(1f).heightIn(min = 52.dp)
                             .background(if (key.length == 1 && key[0].isDigit()) c.surfaceContainerLowest else c.surfaceContainer, RoundedCornerShape(8.dp))
-                            .semantics { if (key == "⌫") contentDescription = "删除" },
+                            .semantics { if (key == KEY_BACKSPACE) contentDescription = deleteLabel },
                     ) {
-                        if (key == "⌫") {
+                        if (key == KEY_BACKSPACE) {
                             Icon(Icons.AutoMirrored.Rounded.Backspace, null, tint = c.onSurface)
                         } else {
                             Text(
-                                key,
+                                if (key == KEY_CANCEL) cancelLabel else key,
                                 style = if (key.length == 1) MaterialTheme.typography.titleLarge else MaterialTheme.typography.labelLarge,
                                 color = if (!isDigit || digitsEnabled) c.onSurface else c.outline, // 不可用用 outline，不叠透明度
                             )
@@ -203,3 +208,7 @@ fun NumericKeypad(
         Spacer(Modifier.height(4.dp))
     }
 }
+
+/** 键盘上的非数字键标识（显示文字走字符串资源）。 */
+private const val KEY_CANCEL = "cancel"
+private const val KEY_BACKSPACE = "⌫"

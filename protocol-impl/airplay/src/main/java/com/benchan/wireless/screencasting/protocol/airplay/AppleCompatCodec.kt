@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.protocol.airplay
 
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleFailure
 import kotlin.math.pow
 
 /*
@@ -180,10 +181,10 @@ object UxPlayStartError {
         else -> "unknown error $rc"
     }
 
-    /** 界面文案：说明原因 + 下一步，不出现返回码 / 协议名（C5）。错误码只进日志。 */
-    fun userMessage(rc: Int): String = when (rc) {
-        -1, -5 -> "无法在局域网中公布本机。请确认电视已连接 Wi‑Fi 或网线，然后在设置中关闭再打开该开关"
-        -4 -> "网络端口被其他应用占用。请重启电视后再试"
-        else -> "启动时出错了。请在设置中关闭再打开该开关；仍不行请重启电视，或导出日志反馈"
+    /** 界面用的失败原因（界面层映射为“原因 + 下一步”，不出现返回码 / 协议名，C5）。错误码只进日志。 */
+    fun failure(rc: Int): AppleFailure = when (rc) {
+        -1, -5 -> AppleFailure.PUBLISH_FAILED
+        -4 -> AppleFailure.PORT_IN_USE
+        else -> AppleFailure.START_ERROR
     }
 }

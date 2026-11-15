@@ -13,17 +13,19 @@ One APK works as both **sender** and **receiver**: phones and tablets send by de
 ## Screenshots
 
 <p align="center">
-  <img src="docs/assets/screenshots/02-tv-receiver.png" alt="TV receiver waiting for a cast, with QR code and cast code" width="720">
+  <img src="docs/assets/screenshots/en/02-tv-receiver.png" alt="TV receiver waiting for a cast, with QR code and cast code" width="420">
+  <img src="docs/assets/screenshots/en/04-tv-mirroring.png" alt="TV showing the mirrored phone screen, letterboxed" width="420">
 </p>
 
 <p align="center">
-  <img src="docs/assets/screenshots/01-device-list.png" alt="Phone: discovered TVs with mirror and push actions" width="200">
-  <img src="docs/assets/screenshots/03-casting-game-mode.png" alt="Phone: mirroring in Game mode with live latency" width="200">
-  <img src="docs/assets/screenshots/04-elder-mode.png" alt="Elder mode home with large buttons" width="200">
-  <img src="docs/assets/screenshots/05-settings-dark.png" alt="Settings in dark mode" width="200">
+  <img src="docs/assets/screenshots/en/01-device-list.png" alt="Phone: discovered TVs with Mirror and Push actions" width="160">
+  <img src="docs/assets/screenshots/en/03-casting-game-mode.png" alt="Phone: mirroring in Game mode with live latency" width="160">
+  <img src="docs/assets/screenshots/en/05-push-remote.png" alt="Phone: DLNA push remote with playlist, seek and volume" width="160">
+  <img src="docs/assets/screenshots/en/06-elder-mode.png" alt="Elder mode home with large buttons" width="160">
+  <img src="docs/assets/screenshots/en/07-settings-dark.png" alt="Settings in dark mode" width="160">
 </p>
 
-<p align="center"><sub>TV receiver · device list · mirroring in Game mode · elder mode · dark theme (UI currently in Chinese; captured on emulators)</sub></p>
+<p align="center"><sub>TV receiver · TV mirroring a phone · device list · Game mode · DLNA push remote · Elder mode · dark theme (captured on emulators)</sub></p>
 
 ## Features
 
@@ -84,6 +86,7 @@ No to both. It also has no analytics and no crash reporting.
 
 - Android 10 (API 29) or later, on phones, tablets and Android TV.
 - Sender and receiver must be on the same local network.
+- UI languages: English (default) and Simplified Chinese, following the system language. On Android 13+ you can also pick the app language in system settings.
 
 ## Building
 

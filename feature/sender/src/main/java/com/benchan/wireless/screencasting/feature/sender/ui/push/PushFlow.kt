@@ -30,6 +30,10 @@ import com.benchan.wireless.screencasting.protocol.upnp.dmc.PushEvent
 import com.benchan.wireless.screencasting.protocol.upnp.dmc.PushPhase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import android.content.res.Resources
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.sender.R
 
 /** P15 互斥确认的三种情况（镜像入口一律走 [StopPushThen]）。 */
 internal sealed interface PushMutex {
@@ -123,6 +127,7 @@ private fun PushFlowState.openContent(target: PushTarget, vm: PushViewModel, rep
 internal fun PushFullScreen(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCallbacks, snackbar: SnackbarHostState, scope: CoroutineScope): Boolean {
     val session by vm.session.collectAsStateWithLifecycle()
     val s = session
+    val res = LocalResources.current
     val t = vm.pendingTarget ?: s?.target
     if (flow.url && t != null) {
         BackHandler { flow.url = false; flow.content = true }
@@ -172,7 +177,7 @@ internal fun PushFullScreen(flow: PushFlowState, vm: PushViewModel, cb: PushFlow
             onBack = { flow.remoteOpen = false },
             onChangeContent = { flow.openContent(s.target, vm, replace = true) },
             onShowPlaylist = { flow.playlist = true },
-            onFailureAction = { a -> onFailureAction(a, s, flow, vm, cb, snackbar, scope) },
+            onFailureAction = { a -> onFailureAction(a, s, flow, vm, cb, snackbar, scope, res) },
             onCancelLoading = {
                 vm.cancelLoading()
                 flow.remoteOpen = false
@@ -181,7 +186,7 @@ internal fun PushFullScreen(flow: PushFlowState, vm: PushViewModel, cb: PushFlow
             onCancelTranscode = {
                 vm.cancelTranscode()
                 scope.launch {
-                    val r = snackbar.showSnackbar("已取消转换", actionLabel = "直接尝试原文件", duration = SnackbarDuration.Long)
+                    val r = snackbar.showSnackbar(res.getString(R.string.push_transcode_cancelled), actionLabel = res.getString(R.string.push_action_try_original), duration = SnackbarDuration.Long)
                     if (r == SnackbarResult.ActionPerformed) vm.tryOriginal()
                 }
             },
@@ -194,7 +199,7 @@ internal fun PushFullScreen(flow: PushFlowState, vm: PushViewModel, cb: PushFlow
 
 private fun onFailureAction(
     a: PushCopy.Action, s: PushSessionState, flow: PushFlowState, vm: PushViewModel, cb: PushFlowCallbacks,
-    snackbar: SnackbarHostState, scope: CoroutineScope,
+    snackbar: SnackbarHostState, scope: CoroutineScope, res: Resources,
 ) {
     when (a) {
         PushCopy.Action.TRANSCODE -> vm.offerTranscodeFor(s.engine.index)
@@ -207,7 +212,7 @@ private fun onFailureAction(
             val row = s.target.description.wscId?.let(cb.rowForWscId)
             if (row == null) {
                 // 找不到这台设备的镜像入口：说明原因，不静默（第 1 轮 PM P2-20）
-                scope.launch { snackbar.showSnackbar("暂时没找到 ${s.target.name} 的镜像入口，请回到设备列表重新选择") }
+                scope.launch { snackbar.showSnackbar(res.getString(R.string.push_no_mirror_entry, s.target.name)) }
             } else {
                 vm.stop(); vm.dismiss(); flow.remoteOpen = false
                 cb.connectMirror(row)
@@ -227,6 +232,7 @@ private fun onFailureAction(
 internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCallbacks, snackbar: SnackbarHostState, scope: CoroutineScope) {
     val session by vm.session.collectAsStateWithLifecycle()
     val s = session
+    val res = LocalResources.current
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(PushViewModel.MAX_ITEMS)) { uris ->
         val t = vm.pendingTarget ?: return@rememberLauncherForActivityResult
         if (uris.isEmpty()) { flow.content = true; return@rememberLauncherForActivityResult }
@@ -244,11 +250,11 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
             when (e) {
                 is PushUiEvent.Skipped -> {
                     val parts = listOfNotNull(
-                        e.cloudFiles.takeIf { it > 0 }?.let { "有 $it 个文件需要先下载到手机" },
-                        e.unreadable.takeIf { it > 0 }?.let { "有 $it 个文件无法读取，请重新选择" },
-                        if (e.truncated) "最多推送 100 项，已保留前 100 项" else null,
+                        e.cloudFiles.takeIf { it > 0 }?.let { res.getQuantityString(R.plurals.push_skipped_cloud, it, it) },
+                        e.unreadable.takeIf { it > 0 }?.let { res.getQuantityString(R.plurals.push_skipped_unreadable, it, it) },
+                        if (e.truncated) res.getString(R.string.push_skipped_truncated) else null,
                     )
-                    snackbar.showSnackbar(parts.joinToString("；"))
+                    snackbar.showSnackbar(parts.joinToString(res.getString(R.string.push_list_separator)))
                 }
                 is PushUiEvent.FormatWarning -> flow.formatWarning = e.go
             }
@@ -258,8 +264,8 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
     LaunchedEffect(Unit) {
         vm.engineEvents.collect { e ->
             when (e) {
-                PushEvent.NoResponse -> snackbar.showSnackbar("电视没有响应")
-                PushEvent.SeekUnsupported -> snackbar.showSnackbar("这台电视不支持拖动进度")
+                PushEvent.NoResponse -> snackbar.showSnackbar(res.getString(R.string.push_no_response))
+                PushEvent.SeekUnsupported -> snackbar.showSnackbar(res.getString(R.string.push_seek_unsupported_tv))
                 else -> Unit
             }
         }
@@ -268,7 +274,7 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
     LaunchedEffect(s?.skipped) {
         val sk = s?.skipped ?: return@LaunchedEffect
         if (System.currentTimeMillis() - sk.at < 5_000) {
-            val r = snackbar.showSnackbar("第 ${sk.index + 1} 项无法播放，已跳到下一项", actionLabel = "查看", duration = SnackbarDuration.Short)
+            val r = snackbar.showSnackbar(res.getString(R.string.push_item_skipped, sk.index + 1), actionLabel = res.getString(R.string.push_view), duration = SnackbarDuration.Short)
             if (r == SnackbarResult.ActionPerformed) flow.playlist = true
         }
     }
@@ -278,7 +284,7 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
         if (!flow.remoteOpen) {
             vm.dismiss()
             if (ended.reason != PushEndReason.USER_STOPPED || ended.failure != null) {
-                scope.launch { snackbar.showSnackbar(PushCopy.endTitle(ended, s.target.name).first) }
+                scope.launch { snackbar.showSnackbar(PushCopy.endTitle(ended, s.target.name).first.resolve(res)) }
             }
         }
     }
@@ -329,12 +335,16 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
             },
         )
     }
-    val transcodeTail = if (vm.transcodingNow) "正在进行的视频转换也会取消。" else ""
+    val transcodeTail = if (vm.transcodingNow) stringResource(R.string.push_mutex_transcode_tail) else ""
     when (val m = flow.mutex) {
         is PushMutex.StopMirror -> PushMutexDialog(
-            "先停止屏幕镜像？",
-            (vm.mirrorTargetName?.let { "正在把屏幕镜像到 $it。" } ?: "正在镜像屏幕。") + "镜像和推送不能同时进行，推送到 ${m.target.name} 前会先停止镜像。",
-            "停止镜像并推送",
+            stringResource(R.string.push_mutex_stop_mirror_title),
+            stringResource(
+                R.string.push_mutex_stop_mirror_body,
+                vm.mirrorTargetName?.let { stringResource(R.string.push_mutex_mirroring_to, it) } ?: stringResource(R.string.push_mutex_mirroring),
+                m.target.name,
+            ),
+            stringResource(R.string.push_mutex_stop_mirror_ok),
             onCancel = { flow.mutex = null },
         ) {
             flow.mutex = null
@@ -342,9 +352,9 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
             flow.proceed(m.target, vm)
         }
         is PushMutex.StopPushThen -> PushMutexDialog(
-            "先结束推送？",
-            "正在推送到 ${s?.target?.name ?: "电视"}。开始镜像会结束推送，电视会停止播放。$transcodeTail",
-            "结束推送并镜像",
+            stringResource(R.string.push_mutex_stop_push_title),
+            stringResource(R.string.push_mutex_stop_push_body, s?.target?.name ?: stringResource(R.string.push_word_tv), transcodeTail),
+            stringResource(R.string.push_mutex_stop_push_ok),
             onCancel = { flow.mutex = null },
         ) {
             flow.mutex = null
@@ -353,9 +363,9 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
             m.go()
         }
         is PushMutex.SwitchTv -> PushMutexDialog(
-            "改为推送到 ${m.target.name}？",
-            "${s?.target?.name ?: "当前电视"}会停止播放。$transcodeTail",
-            "改为推送到 ${m.target.name}",
+            stringResource(R.string.push_mutex_switch_title, m.target.name),
+            stringResource(R.string.push_mutex_switch_body, s?.target?.name ?: stringResource(R.string.push_word_current_tv), transcodeTail),
+            stringResource(R.string.push_mutex_switch_ok, m.target.name),
             onCancel = { flow.mutex = null },
         ) {
             flow.mutex = null
@@ -367,7 +377,7 @@ internal fun PushOverlays(flow: PushFlowState, vm: PushViewModel, cb: PushFlowCa
     }
     flow.formatWarning?.let { go ->
         PushMutexDialog(
-            "电视可能不支持这个格式，仍要尝试？", "电视声明的格式里没有它。可以先试一下，放不了的话 20 秒内会告诉你。", "仍要尝试",
+            stringResource(R.string.push_format_warning_title), stringResource(R.string.push_format_warning_body), stringResource(R.string.push_format_warning_ok),
             onCancel = { flow.formatWarning = null },
         ) {
             flow.formatWarning = null

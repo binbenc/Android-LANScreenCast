@@ -130,7 +130,7 @@ internal class ControlOverlay(
         capsule.addView(l)
         // “继续”（D-3 兜底）：只在因敏感界面暂停时出现，只有手机本人能点（远端注入落在胶囊内被丢弃）
         val cont = TextView(context).apply {
-            text = "继续"
+            text = context.getString(R.string.ctl_overlay_continue)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             typeface = Typeface.create(Typeface.DEFAULT, 600, false)
             gravity = Gravity.CENTER
@@ -142,7 +142,7 @@ internal class ControlOverlay(
         }
         capsule.addView(cont, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(32)).apply { marginStart = dp(4) })
         val r = TextView(context).apply {
-            text = "收回"
+            text = context.getString(R.string.ctl_overlay_revoke)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             typeface = Typeface.create(Typeface.DEFAULT, 600, false)
             gravity = Gravity.CENTER
@@ -208,7 +208,7 @@ internal class ControlOverlay(
             setTextColor(fg.toArgb())
             visibility = if (s.canContinue) View.VISIBLE else View.GONE
         }
-        root?.contentDescription = if (s.canContinue) "控制已暂停，此界面不可远程控制" else s.label
+        root?.contentDescription = if (s.canContinue) context.getString(R.string.ctl_overlay_paused_desc) else s.label
         root?.let { v ->
             // 敏感暂停：默认点击仍为“收回控制”，另加自定义操作“继续控制”（避免读屏用户误触“继续”）
             if (continueActionId != View.NO_ID) {
@@ -216,11 +216,11 @@ internal class ControlOverlay(
                 continueActionId = View.NO_ID
             }
             if (s.canContinue) {
-                continueActionId = androidx.core.view.ViewCompat.addAccessibilityAction(v, "继续控制") { _, _ -> onContinue(); true }
+                continueActionId = androidx.core.view.ViewCompat.addAccessibilityAction(v, context.getString(R.string.ctl_overlay_continue_action)) { _, _ -> onContinue(); true }
             }
             // TalkBack：把点按动作命名为“收回控制”（UX 建议 A8）
             androidx.core.view.ViewCompat.replaceAccessibilityAction(
-                v, androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK, "收回控制",
+                v, androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK, context.getString(R.string.ctl_overlay_revoke_action),
             ) { _, _ -> onRevoke(); true }
         }
     }

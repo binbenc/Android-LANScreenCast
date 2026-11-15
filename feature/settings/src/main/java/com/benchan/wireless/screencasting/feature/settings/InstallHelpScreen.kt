@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.feature.settings.apkshare.ApkSharePageText
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
 import com.benchan.wireless.screencasting.core.ui.components.tvInitialFocus
 import com.benchan.wireless.screencasting.core.ui.components.tvSafeArea
@@ -82,9 +85,9 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
     }
     val c = MaterialTheme.colorScheme
     Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
-        SettingsTopBar("把接收端安装到电视", onBack, initialFocus = apk == null)
+        SettingsTopBar(stringResource(R.string.settings_install_receiver), onBack, initialFocus = apk == null)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("同一个安装包既是发送端也是接收端。电视安装后打开，会自动进入“等待投屏”。", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.settings_install_intro), style = MaterialTheme.typography.bodyMedium)
             if (apk == null) {
                 // 从应用商店以拆分安装包（App Bundle）安装时，本机没有可以独立安装的完整安装包（D7）
                 Row(
@@ -93,8 +96,7 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                 ) {
                     Icon(Icons.Rounded.WarningAmber, null, tint = WscTheme.extended.onWarningContainer)
                     Text(
-                        "本机的应用是以拆分安装包形式安装的（例如来自应用商店），无法直接分享给电视。" +
-                            "请从项目发布页下载 universal（通用）安装包，用 U 盘或电视浏览器安装。",
+                        stringResource(R.string.settings_install_split_warning),
                         style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer,
                     )
                 }
@@ -106,22 +108,23 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                 ) {
                     Icon(Icons.Rounded.WarningAmber, null, tint = WscTheme.extended.onWarningContainer)
                     Text(
-                        "本机安装的是只含 ${apk.abis.joinToString()} 的安装包，很多电视盒子是 32 位系统，可能装不上。" +
-                            "可改用发布页上的 universal（通用）安装包，或用 U 盘安装对应版本。",
+                        stringResource(R.string.settings_install_abi_warning, apk.abis.joinToString()),
                         style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer,
                     )
                 }
             }
             val currentUrl = url
             if (currentUrl == null) {
-                Text("方法一：手机临时分享安装包（推荐）", style = MaterialTheme.typography.titleMedium)
-                Text("手机和电视要连同一个路由器。分享只在局域网内可见，离开本页或 10 分钟后自动停止。", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.settings_install_method_share), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_install_method_share_detail), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                val pageText = apkPageText(context)
+                val startFailed = stringResource(R.string.settings_install_start_failed)
                 Button(
                     enabled = apk != null && lan != null,
                     onClick = {
                         val a = apk ?: return@Button
                         scope.launch {
-                            val s = ApkShareServer(a, "局域投屏")
+                            val s = ApkShareServer(a, context.applicationInfo.loadLabel(context.packageManager).toString(), text = pageText)
                             runCatching { s.start() }.onSuccess { port ->
                                 server = s
                                 url = "http://${lan?.ip}:$port/${s.token}"
@@ -129,25 +132,25 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                             }.onFailure {
                                 // 技术细节只写日志（C5）
                                 WscLog.w("InstallHelp", "start apk share failed", it)
-                                error = "无法开启分享，请确认手机已连接 Wi‑Fi 后重试，或改用 U 盘安装"
+                                error = startFailed
                             }
                         }
                     },
                     modifier = Modifier.tvInitialFocus(apk != null).tvFocusRing().heightIn(min = 48.dp),
-                ) { Text("开始分享") }
-                if (lan == null) Text("请先连接 Wi‑Fi", color = c.error)
+                ) { Text(stringResource(R.string.settings_install_start)) }
+                if (lan == null) Text(stringResource(R.string.settings_install_need_wifi), color = c.error)
                 error?.let { Text(it, color = c.error) }
             } else {
-                Text("在电视的浏览器地址栏输入：", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_install_enter_url), style = MaterialTheme.typography.titleMedium)
                 Text(currentUrl, fontFamily = FontFamily.Monospace, fontSize = 22.sp, color = c.primary)
-                QrCode(currentUrl, Modifier.size(180.dp), description = "安装包下载地址二维码（给其他手机或平板用）")
-                Text("已下载 $downloads 次", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                OutlinedButton(onClick = { server?.stop(); server = null; url = null }, modifier = Modifier.tvFocusRing()) { Text("停止分享") }
+                QrCode(currentUrl, Modifier.size(180.dp), description = stringResource(R.string.settings_install_qr_desc))
+                Text(pluralStringResource(R.plurals.settings_install_downloads, downloads, downloads), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                OutlinedButton(onClick = { server?.stop(); server = null; url = null }, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_install_stop)) }
             }
-            Text("方法二：U 盘", style = MaterialTheme.typography.titleMedium)
-            Text("把安装包拷到 U 盘，插到电视上，用电视的“文件管理”打开安装。部分电视需要先在系统设置里允许“安装未知来源应用”。", style = MaterialTheme.typography.bodyMedium)
-            Text("电视实在装不了？", style = MaterialTheme.typography.titleMedium)
-            Text("很多电视自带 DLNA 接收：不用安装本应用，也可以在设备列表的“电视自带投屏”分组里直接推送手机里的视频、照片和音乐（不能镜像屏幕）。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.settings_install_method_usb), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_install_method_usb_detail), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.settings_install_fallback_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_install_fallback_detail), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
         }
     }
 }
@@ -160,3 +163,12 @@ private fun installedApk(context: Context): ApkInfo? {
     if (!info.splitSourceDirs.isNullOrEmpty()) return null
     return ApkInfo.inspect(File(info.sourceDir))
 }
+
+/** 电视浏览器里下载页的文案：跟随手机当前语言（en / zh）。 */
+private fun apkPageText(context: Context): ApkSharePageText = ApkSharePageText(
+    lang = context.getString(R.string.settings_apk_page_lang),
+    titleFormat = context.getString(R.string.settings_apk_page_title),
+    intro = context.getString(R.string.settings_apk_page_intro),
+    downloadFormat = context.getString(R.string.settings_apk_page_download),
+    help = context.getString(R.string.settings_apk_page_help),
+)

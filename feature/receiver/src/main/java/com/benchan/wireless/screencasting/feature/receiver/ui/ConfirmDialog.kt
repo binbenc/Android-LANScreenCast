@@ -36,6 +36,10 @@ import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import com.benchan.wireless.screencasting.feature.receiver.R
 import com.benchan.wireless.screencasting.core.data.report.CastProtocol
 import com.benchan.wireless.screencasting.core.ui.components.TvButton
 import com.benchan.wireless.screencasting.core.ui.theme.PinStyleTv
@@ -62,9 +66,9 @@ internal fun ConfirmDialog(request: ConfirmRequest, onRespond: (Boolean) -> Unit
     BackHandler { onRespond(false) }
     val remaining = ((request.deadlineAt - now) / 1000).coerceAtLeast(0)
     val protocolLabel = when (request.protocol) {
-        CastProtocol.WSC -> "屏幕镜像"
-        CastProtocol.DLNA, CastProtocol.DLNA_PUSH -> "视频推送（DLNA）"
-        CastProtocol.AIRPLAY -> "兼容 Apple 设备"
+        CastProtocol.WSC -> stringResource(R.string.rx_protocol_mirror)
+        CastProtocol.DLNA, CastProtocol.DLNA_PUSH -> stringResource(R.string.rx_protocol_dlna)
+        CastProtocol.AIRPLAY -> stringResource(R.string.rx_protocol_apple)
     }
     ModalScrim {
         Column(
@@ -75,21 +79,22 @@ internal fun ConfirmDialog(request: ConfirmRequest, onRespond: (Boolean) -> Unit
         ) {
             Icon(Icons.Rounded.Smartphone, null, Modifier.size(32.dp), tint = c.primary)
             Text(
-                if (request.replacing) "${request.peerName} 请求替换当前投屏" else "${request.peerName} 请求投屏",
-                style = MaterialTheme.typography.headlineSmall,
+                stringResource(if (request.replacing) R.string.rx_confirm_title_replace else R.string.rx_confirm_title, request.peerName),
+                style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // “首次连接”用 warning 提醒注意来源（D2）
-                if (request.firstTime) Text("首次连接", style = MaterialTheme.typography.bodyMedium, color = WscTheme.extended.warning)
+                if (request.firstTime) Text(stringResource(R.string.rx_confirm_first_time), style = MaterialTheme.typography.bodyMedium, color = WscTheme.extended.warning)
                 Text(
                     listOf(request.peerAddress, protocolLabel).joinToString(" · ", prefix = if (request.firstTime) "· " else ""),
                     style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant,
                 )
             }
             request.pin?.let { pin ->
+                val pinDesc = stringResource(R.string.rx_confirm_pin_desc, pin.toList().joinToString(" "))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "PIN ${pin.toList().joinToString(" ")}" },
+                    modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = pinDesc },
                 ) {
                     pin.forEach { ch ->
                         Box(Modifier.size(width = 64.dp, height = 76.dp).background(c.surfaceContainerHigh, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
@@ -97,14 +102,14 @@ internal fun ConfirmDialog(request: ConfirmRequest, onRespond: (Boolean) -> Unit
                         }
                     }
                 }
-                Text("请在手机上输入此 PIN。配对后这台手机下次可直接投屏。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.rx_confirm_pin_hint), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant, textAlign = TextAlign.Center)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                TvButton("拒绝", { onRespond(false) }, Modifier.focusRequester(rejectFocus))
+                TvButton(stringResource(R.string.rx_reject), { onRespond(false) }, Modifier.focusRequester(rejectFocus))
                 // “允许”用 primary 填充表达主操作；默认焦点仍在“拒绝”
-                TvButton("允许", { onRespond(true) }, emphasis = true, leading = { Icon(Icons.Rounded.Check, null, Modifier.size(20.dp)) })
+                TvButton(stringResource(R.string.rx_allow), { onRespond(true) }, emphasis = true, leading = { Icon(Icons.Rounded.Check, null, Modifier.size(20.dp)) })
             }
-            Text("$remaining 秒后自动拒绝", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(pluralStringResource(R.plurals.rx_confirm_auto_reject, remaining.toInt(), remaining.toInt()), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }
 }

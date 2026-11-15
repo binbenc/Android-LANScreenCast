@@ -6,6 +6,7 @@ import com.benchan.wireless.screencasting.core.data.dlna.DlnaRendererStore
 import com.benchan.wireless.screencasting.core.data.dlna.LocalDlnaIdentity
 import com.benchan.wireless.screencasting.core.discovery.dlna.DlnaMerge
 import com.benchan.wireless.screencasting.core.discovery.dlna.DlnaRendererResolver
+import com.benchan.wireless.screencasting.core.discovery.dlna.MdnsDlnaLink
 import com.benchan.wireless.screencasting.core.discovery.mdns.BrowseEvent
 import com.benchan.wireless.screencasting.core.discovery.mdns.NsdBrowser
 import com.benchan.wireless.screencasting.core.discovery.ssdp.SsdpHit
@@ -93,7 +94,10 @@ class DeviceDiscovery @Inject constructor(
                         val session = launch {
                             browser.browse(network.lanNetwork()).collect { e ->
                                 when (e) {
-                                    is BrowseEvent.Found -> upsert(e.device)
+                                    is BrowseEvent.Found -> {
+                                        upsert(e.device)
+                                        e.dlnaPort?.let { p -> launch { onMdnsDlna(e.device, p) } }
+                                    }
                                     is BrowseEvent.Lost -> Unit // 不立即移除，避免列表闪烁；以 SSDP / 探测补充
                                     is BrowseEvent.Failed -> WscLog.w(TAG, "mdns failed ${e.errorCode}")
                                 }
@@ -170,15 +174,36 @@ class DeviceDiscovery @Inject constructor(
                 val ref = resolver.resolve(loc, hit.host, null) ?: return
                 if (isSelf(ref, hit.host)) return
                 // 本应用接收端：DMR 信息挂到 WSC 行上（D13-1：可以推送）
-                _devices.update { list -> list.map { if (it.deviceId == hit.device.deviceId) it.copy(dlna = ref) else it } }
+                attachDlna(hit.device.deviceId, ref)
             }
             is SsdpHit.Renderer -> {
                 if (isSelf(null, hit.host)) return
                 val ref = resolver.resolve(hit.location, hit.host, hit.server) ?: return
                 if (isSelf(ref, hit.host)) return
+                dlnaStore.updateLocation(ref.udn, ref.description.location)
                 upsert(DlnaRendererResolver.toDevice(ref, DiscoverySource.SSDP, System.currentTimeMillis()))
             }
         }
+    }
+
+    /**
+     * mDNS TXT 带 `dlna` 端口（本应用接收端开着 DLNA 接收）：直接拉 `http://<host>:<port>/dlna/description.xml`，
+     * 校验 UDN 与 wsc:id 后把 DMR 挂到这条 WSC 行上。SSDP 不通的网络里也能推送；端口变化后地址随之更新。
+     */
+    private suspend fun onMdnsDlna(device: DiscoveredDevice, port: Int) {
+        val loc = MdnsDlnaLink.descriptionUrl(device.host, port)
+        val ref = resolver.resolve(loc, device.host, null) ?: return
+        if (!MdnsDlnaLink.accepts(ref, device.deviceId, device.host, network.lan.value?.ip, runCatching { localDlna.udn }.getOrNull())) {
+            WscLog.w(TAG, "mdns dlna rejected (wscId/udn mismatch or self)")
+            return
+        }
+        attachDlna(device.deviceId, ref)
+    }
+
+    /** DMR 挂到 WSC 行，并把“推送过的电视”里同一 UDN 的描述地址更新成新地址（端口可能变了）。 */
+    private fun attachDlna(wscDeviceId: String, ref: DlnaRendererRef) {
+        _devices.update { list -> list.map { if (it.deviceId == wscDeviceId) it.copy(dlna = ref) else it } }
+        dlnaStore.updateLocation(ref.udn, ref.description.location)
     }
 
     private fun isSelf(ref: DlnaRendererRef?, host: String): Boolean =

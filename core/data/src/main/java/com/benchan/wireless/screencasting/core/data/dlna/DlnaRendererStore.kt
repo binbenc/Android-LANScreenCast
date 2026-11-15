@@ -67,6 +67,17 @@ class DlnaRendererStore @Inject constructor(@ApplicationContext context: Context
     fun recordSuccess(udn: String, audioOnly: Boolean, now: Long = System.currentTimeMillis()) =
         update(udn) { it.copy(lastSuccessAt = now, audioOnly = audioOnly) }
 
+    /**
+     * 发现时看到同一 UDN 的新描述地址（DMR 端口变了）：只更新已记录的设备，地址相同或没有记录时什么都不做。
+     * 不改最近使用时间，不新增记录。
+     */
+    fun updateLocation(udn: String, location: String?) {
+        if (location.isNullOrBlank()) return
+        val old = find(udn) ?: return
+        if (old.location == location) return
+        update(udn) { it.copy(location = location) }
+    }
+
     fun saveQuirks(udn: String, quirks: Map<String, String>) = update(udn) { it.copy(quirks = quirks) }
 
     fun recordFormat(udn: String, key: String, ok: Boolean) = update(udn) {

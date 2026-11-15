@@ -2,6 +2,7 @@ package com.benchan.wireless.screencasting.core.discovery
 
 import com.benchan.wireless.screencasting.core.discovery.dlna.DlnaMerge
 import com.benchan.wireless.screencasting.core.discovery.dlna.DlnaRendererResolver
+import com.benchan.wireless.screencasting.core.discovery.dlna.MdnsDlnaLink
 import com.benchan.wireless.screencasting.protocol.upnp.ProtocolInfo
 import com.benchan.wireless.screencasting.protocol.upnp.RendererDescription
 import com.benchan.wireless.screencasting.protocol.upnp.ServiceEndpoint
@@ -31,6 +32,25 @@ class DlnaMergeTest {
         assertEquals(DeviceProtocol.DLNA_ONLY, d.protocol)
         assertTrue(d.canPush)
         assertFalse(d.canMirror)
+    }
+
+    @Test
+    fun mdnsDlnaLinkBuildsDescriptionUrl() {
+        assertEquals("http://192.168.1.9:49153/dlna/description.xml", MdnsDlnaLink.descriptionUrl("192.168.1.9", 49153))
+    }
+
+    @Test
+    fun mdnsDlnaLinkRequiresMatchingWscIdAndNotSelf() {
+        val host = "192.168.1.9"
+        assertTrue(MdnsDlnaLink.accepts(ref("u-own", host, wscId = "dev-1"), "dev-1", host, "192.168.1.5", "me"))
+        // wsc:id 不符（端口被别的设备占用）或没有 wsc:id（第三方 DMR）
+        assertFalse(MdnsDlnaLink.accepts(ref("u-own", host, wscId = "dev-2"), "dev-1", host, "192.168.1.5", "me"))
+        assertFalse(MdnsDlnaLink.accepts(ref("u-tv", host), "dev-1", host, "192.168.1.5", "me"))
+        // 本机
+        assertFalse(MdnsDlnaLink.accepts(ref("me", host, wscId = "dev-1"), "dev-1", host, "192.168.1.5", "me"))
+        assertFalse(MdnsDlnaLink.accepts(ref("u-own", host, wscId = "dev-1"), "dev-1", host, host, "me"))
+        // 空 UDN
+        assertFalse(MdnsDlnaLink.accepts(ref(" ", host, wscId = "dev-1"), "dev-1", host, "192.168.1.5", "me"))
     }
 
     @Test

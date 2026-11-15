@@ -1,6 +1,9 @@
 package com.benchan.wireless.screencasting.feature.sender.push
 
+import android.content.Context
 import android.os.Looper
+import com.benchan.wireless.screencasting.feature.sender.R
+import com.benchan.wireless.screencasting.feature.sender.ui.push.PushCopy
 import androidx.annotation.OptIn
 import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
@@ -22,7 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture
  * 所有调用在主线程。
  */
 @OptIn(UnstableApi::class)
-class RemotePushPlayer(private val controller: DmcController) : SimpleBasePlayer(Looper.getMainLooper()) {
+class RemotePushPlayer(private val context: Context, private val controller: DmcController) : SimpleBasePlayer(Looper.getMainLooper()) {
     private var snapshot: PushSessionState? = null
 
     /** 锁屏通知隐私：用户设了“隐藏敏感内容”时不显示标题。 */
@@ -53,18 +56,14 @@ class RemotePushPlayer(private val controller: DmcController) : SimpleBasePlayer
             if (e.count > 1) add(COMMAND_SEEK_TO_MEDIA_ITEM)
         }.build()
         val items = s.items.map { item ->
-            val label = when (item.kind) {
-                MediaKind.VIDEO -> "视频"
-                MediaKind.AUDIO -> "音乐"
-                MediaKind.IMAGE -> "照片"
-            }
+            val label = context.getString(PushCopy.kindLabelRes(item.kind))
             val count = if (s.items.size > 1) " · ${item.index + 1} / ${s.items.size}" else ""
             // 锁屏隐私跟随系统设置：隐藏敏感内容时不显示文件名（交互稿 P12）
             MediaItemData.Builder(item.index)
                 .setMediaItem(MediaItem.Builder().setMediaId("push-${item.index}").build())
                 // 标题“正在推送到 X”，副标题“文件名 · 3 / 12”（隐私模式下只写类型，交互稿 P12 / 第 1 轮 UX P2-37）
                 .setMediaMetadata(
-                    MediaMetadata.Builder().setTitle("正在推送到 ${s.target.name}")
+                    MediaMetadata.Builder().setTitle(context.getString(R.string.push_notif_title, s.target.name))
                         .setArtist(if (hideTitles) "$label$count" else "${item.title}$count").build(),
                 )
                 .setDurationUs(if (item.index == e.index) e.durationMs?.times(1000) ?: androidx.media3.common.C.TIME_UNSET else androidx.media3.common.C.TIME_UNSET)

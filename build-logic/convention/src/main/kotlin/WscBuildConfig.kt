@@ -28,6 +28,8 @@ internal fun configureAndroidCommon(extension: CommonExtension) {
         // 预编译 libwebrtc / 协议库里的警告不阻断构建；只有我们自己的 error 级问题阻断
         warningsAsErrors = false
         disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion", "OldTargetApi")
+        // 只支持英文（values，默认）与中文（values-zh）：两种语言必须齐全，多出的翻译也算错
+        error += setOf("MissingTranslation", "ExtraTranslation", "MissingQuantity")
     }
     extension.testOptions.unitTests.isReturnDefaultValues = true
 }

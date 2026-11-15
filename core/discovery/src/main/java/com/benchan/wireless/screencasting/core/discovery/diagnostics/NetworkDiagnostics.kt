@@ -11,7 +11,39 @@ import javax.inject.Inject
 /** 诊断项结论：已确认（绿勾）/ 需你确认（琥珀问号）/ 有问题（红）。交互稿 04：不假装能检测无法检测的事。 */
 enum class CheckStatus { CONFIRMED, NEEDS_USER, PROBLEM }
 
-data class DiagnosticCheck(val id: String, val status: CheckStatus, val title: String, val detail: String)
+/**
+ * 一项诊断结论（结构化数据，文案由 UI 层映射到字符串资源，见 feature/settings 的 DiagnosticsScreens）。
+ * [id] 稳定（lan / vpn / prefix / multicast / target / router / isolation / guest），供日志与测试使用。
+ */
+sealed class DiagnosticCheck(val id: String, val status: CheckStatus) {
+    /** 没有连接 Wi‑Fi 或有线网络。 */
+    data object NoLan : DiagnosticCheck("lan", CheckStatus.PROBLEM)
+
+    /** 已连接局域网：[ethernet] 为 true 表示有线；[subnetHint] 例如 "192.168.1.x"。 */
+    data class LanConnected(val ethernet: Boolean, val ip: String, val subnetHint: String) : DiagnosticCheck("lan", CheckStatus.CONFIRMED)
+
+    data object VpnActive : DiagnosticCheck("vpn", CheckStatus.PROBLEM)
+
+    /** 网段大于 /24，投屏码不可用。 */
+    data class LargePrefix(val prefixLength: Int) : DiagnosticCheck("prefix", CheckStatus.NEEDS_USER)
+
+    data class MulticastOk(val responders: Int) : DiagnosticCheck("multicast", CheckStatus.CONFIRMED)
+
+    data object MulticastSilent : DiagnosticCheck("multicast", CheckStatus.NEEDS_USER)
+
+    data class TargetReachable(val host: String, val port: Int) : DiagnosticCheck("target", CheckStatus.CONFIRMED)
+
+    data class TargetUnreachable(val host: String, val port: Int) : DiagnosticCheck("target", CheckStatus.PROBLEM)
+
+    /** 只能由用户确认：是否同一路由器。 */
+    data object AskSameRouter : DiagnosticCheck("router", CheckStatus.NEEDS_USER)
+
+    /** 只能由用户确认：是否开启 AP 隔离。 */
+    data object AskApIsolation : DiagnosticCheck("isolation", CheckStatus.NEEDS_USER)
+
+    /** 只能由用户确认：是否连了访客网络。 */
+    data object AskGuestNetwork : DiagnosticCheck("guest", CheckStatus.NEEDS_USER)
+}
 
 /**
  * 网络诊断（F11，PRD 10“没找到”状态）。能自动判断的只有：是否连着局域网、本机网段、是否开了 VPN、
@@ -28,19 +60,15 @@ class NetworkDiagnostics @Inject constructor(
         val lan = network.lan.value
         val checks = mutableListOf<DiagnosticCheck>()
         if (lan == null) {
-            checks += DiagnosticCheck("lan", CheckStatus.PROBLEM, "没有连接 Wi‑Fi 或有线网络", "请先连接家里的路由器，电视也要连同一个路由器")
+            checks += DiagnosticCheck.NoLan
             return checks
         }
-        val transport = if (lan.transport == LanInfo.Transport.ETHERNET) "有线网络" else "Wi‑Fi"
-        checks += DiagnosticCheck(
-            "lan", CheckStatus.CONFIRMED, "手机已连接 $transport",
-            "本机地址 ${lan.ip}，电视应为 ${lan.subnetHint}",
-        )
+        checks += DiagnosticCheck.LanConnected(lan.transport == LanInfo.Transport.ETHERNET, lan.ip, lan.subnetHint)
         if (lan.vpnActive) {
-            checks += DiagnosticCheck("vpn", CheckStatus.PROBLEM, "检测到 VPN 已开启", "VPN 可能让局域网设备互相看不到，请暂时关闭后重试")
+            checks += DiagnosticCheck.VpnActive
         }
         if (!CastCode.supportsNetwork(lan.prefixLength)) {
-            checks += DiagnosticCheck("prefix", CheckStatus.NEEDS_USER, "当前网段较大（/${lan.prefixLength}）", "投屏码只支持 /24 网段，请改用扫码连接")
+            checks += DiagnosticCheck.LargePrefix(lan.prefixLength)
         }
         multicastLock.acquire(OWNER)
         val responders = try {
@@ -48,22 +76,13 @@ class NetworkDiagnostics @Inject constructor(
         } finally {
             multicastLock.release(OWNER)
         }
-        checks += if (responders > 0) {
-            DiagnosticCheck("multicast", CheckStatus.CONFIRMED, "局域网组播正常", "收到 $responders 台设备的回应")
-        } else {
-            DiagnosticCheck("multicast", CheckStatus.NEEDS_USER, "没有收到任何设备的组播回应", "路由器可能拦截了组播（自动发现），扫码或投屏码不受影响")
-        }
+        checks += if (responders > 0) DiagnosticCheck.MulticastOk(responders) else DiagnosticCheck.MulticastSilent
         target?.let { (host, port) ->
-            val ok = probe.isReachable(host, port)
-            checks += if (ok) {
-                DiagnosticCheck("target", CheckStatus.CONFIRMED, "可以连上 $host", "端口 $port 可达")
-            } else {
-                DiagnosticCheck("target", CheckStatus.PROBLEM, "连不上 $host:$port", "电视可能已关机、退出了接收页面，或不在同一网段")
-            }
+            checks += if (probe.isReachable(host, port)) DiagnosticCheck.TargetReachable(host, port) else DiagnosticCheck.TargetUnreachable(host, port)
         }
-        checks += DiagnosticCheck("router", CheckStatus.NEEDS_USER, "电视和手机连的是同一个路由器吗？", "双频路由的 2.4G 与 5G 有时互不相通")
-        checks += DiagnosticCheck("isolation", CheckStatus.NEEDS_USER, "路由器是否开启了“AP 隔离”？", "也叫无线隔离 / 客户端隔离，开启后设备之间无法互访")
-        checks += DiagnosticCheck("guest", CheckStatus.NEEDS_USER, "是否连接了“访客网络”？", "访客网络通常禁止设备互访，请换到主网络")
+        checks += DiagnosticCheck.AskSameRouter
+        checks += DiagnosticCheck.AskApIsolation
+        checks += DiagnosticCheck.AskGuestNetwork
         return checks
     }
 

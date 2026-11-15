@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import com.benchan.wireless.screencasting.feature.sender.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -71,7 +74,7 @@ private fun PinPageLayout(
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(title) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.sender_back)) } },
         )
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val landscape = maxWidth > maxHeight
@@ -120,7 +123,7 @@ internal fun PinEntryScreen(state: SenderState.AwaitingPin, onSubmit: (String) -
     val remaining = rememberCountdown(state.deadlineAt)
     BackHandler(onBack = onCancel)
     PinPageLayout(
-        title = "连接 ${state.target.name}",
+        title = stringResource(R.string.sender_pin_title, state.target.name),
         onBack = onCancel,
         keypad = { m ->
             NumericKeypad(
@@ -136,13 +139,13 @@ internal fun PinEntryScreen(state: SenderState.AwaitingPin, onSubmit: (String) -
             )
         },
     ) {
-        Text("输入电视上显示的 PIN", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-        Text("用于确认你本人就在电视前。\n只有第一次连接需要。", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.sender_pin_heading), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.sender_pin_body), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
         // PIN 是秘密：读屏只报告位数
         PinCells(pin, 4, Modifier.fillMaxWidth().wrapContentWidth(), error = state.error && pin.isEmpty(), errorKey = errorKey, secret = true)
         if (state.error) {
             Text(
-                if (state.attemptsLeft != null) "PIN 不正确，请再试一次（还可尝试 ${state.attemptsLeft} 次）" else "PIN 不正确，请再试一次",
+                state.attemptsLeft?.let { pluralStringResource(R.plurals.sender_pin_wrong_left, it, it) } ?: stringResource(R.string.sender_pin_wrong),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
@@ -156,7 +159,7 @@ internal fun PinEntryScreen(state: SenderState.AwaitingPin, onSubmit: (String) -
             }
             // 倒计时不设 liveRegion：读屏不会每秒播报（C13）
             Text(
-                "等待 ${state.target.name} 响应 · $remaining 秒",
+                pluralStringResource(R.plurals.sender_pin_waiting, remaining, remaining, state.target.name),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (remaining <= 10) WscTheme.extended.warning else MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -175,8 +178,9 @@ internal fun CastCodeScreen(lan: LanInfo?, onConnect: (CastCode) -> Boolean, onM
     BackHandler(onBack = onBack)
     val networkHint = SenderCopy.castCodeNetworkHint(hasLan = lan != null, prefixSupported = lan != null && CastCode.supportsNetwork(lan.prefixLength))
     val preview = if (lan != null && code.length >= 3) CastCode.resolveHost(lan.address.address, lan.prefixLength, code.take(3)) else null
+    val invalidCode = stringResource(R.string.sender_cast_code_invalid)
     PinPageLayout(
-        title = "输入投屏码",
+        title = stringResource(R.string.sender_cast_code_title),
         onBack = onBack,
         keypad = { m ->
             NumericKeypad(
@@ -187,7 +191,7 @@ internal fun CastCodeScreen(lan: LanInfo?, onConnect: (CastCode) -> Boolean, onM
                         if (code.length == 8) {
                             val parsed = CastCode.parse(code)
                             if (parsed == null || !onConnect(parsed)) {
-                                error = "投屏码无效，请核对电视上显示的 8 位数字"
+                                error = invalidCode
                                 errorKey = System.currentTimeMillis()
                                 code = ""
                             }
@@ -201,20 +205,20 @@ internal fun CastCodeScreen(lan: LanInfo?, onConnect: (CastCode) -> Boolean, onM
             )
         },
     ) {
-        Text("在电视待机页上可以看到 8 位投屏码", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.sender_cast_code_hint), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
         // 投屏码不是秘密：读屏读出已输入的数字
         PinCells(code, 8, Modifier.fillMaxWidth().wrapContentWidth(), groups = listOf(3, 5), error = error != null, errorKey = errorKey, secret = false)
         when {
-            networkHint != null -> Text(networkHint, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+            networkHint != null -> Text(networkHint.asString(), color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
             preview != null -> Row(verticalAlignment = Alignment.Top) {
                 Icon(Icons.Rounded.Info, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.size(8.dp))
-                Text("将连接 $preview\n前三位是电视地址的最后一段", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.sender_cast_code_preview, preview), style = MaterialTheme.typography.bodyMedium)
             }
-            code.length >= 3 -> Text("前三位应在 001~254 之间", color = MaterialTheme.colorScheme.error)
+            code.length >= 3 -> Text(stringResource(R.string.sender_cast_code_range), color = MaterialTheme.colorScheme.error)
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
-        TextButton(onClick = onManualIp) { Text("改为手动输入 IP 地址") }
+        TextButton(onClick = onManualIp) { Text(stringResource(R.string.sender_cast_code_manual_ip)) }
     }
 }
 
@@ -240,8 +244,8 @@ internal fun WaitingScreen(title: String, detail: String, deadlineAt: Long?, onC
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
             Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-            remaining?.let { Text("$it 秒后自动取消", style = MaterialTheme.typography.bodySmall) }
-            TextButton(onClick = onCancel) { Text("取消") }
+            remaining?.let { Text(pluralStringResource(R.plurals.sender_auto_cancel, it, it), style = MaterialTheme.typography.bodySmall) }
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.sender_cancel)) }
         }
     }
 }

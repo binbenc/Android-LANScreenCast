@@ -100,7 +100,7 @@ class DirectShareShortcuts @Inject constructor(
             val stale = (existing + removedTokens.map { PREFIX + it }).distinct().filterNot { it in keep }
             if (stale.isNotEmpty()) {
                 ShortcutManagerCompat.removeDynamicShortcuts(context, stale)
-                runCatching { ShortcutManagerCompat.disableShortcuts(context, stale, "这台电视已从推送列表移除") }
+                runCatching { ShortcutManagerCompat.disableShortcuts(context, stale, context.getString(R.string.share_shortcut_disabled)) }
             }
             val launch = SenderIntents.main(context)?.component
             picks.forEachIndexed { rank, p ->
@@ -110,7 +110,7 @@ class DirectShareShortcuts @Inject constructor(
                 }
                 val info = ShortcutInfoCompat.Builder(context, PREFIX + tokenFor(p.udn))
                     .setShortLabel(p.name)
-                    .setLongLabel("推送到 ${p.name}")
+                    .setLongLabel(context.getString(R.string.share_header_push_to, p.name))
                     .setIcon(IconCompat.createWithResource(context, if (p.audioOnly) R.drawable.ic_share_speaker else if (p.ownApp) R.drawable.ic_share_mirror else R.drawable.ic_share_tv))
                     .setCategories(setOf(if (p.audioOnly) CATEGORY_AUDIO else CATEGORY_TV))
                     .setRank(rank)

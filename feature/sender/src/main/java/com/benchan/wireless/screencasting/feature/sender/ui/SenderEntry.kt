@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import com.benchan.wireless.screencasting.feature.sender.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.benchan.wireless.screencasting.feature.sender.share.ShareCopy
 
 /** 从本应用以外进入发送端首页的一次性意图（F14 分享页 / Direct Share 桌面快捷方式）。 */
 sealed interface SenderEntry {
@@ -55,7 +55,7 @@ fun ListNoticeCard(
             }
             onClose?.let {
                 androidx.compose.material3.IconButton(onClick = it) {
-                    androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Close, contentDescription = "不用了，不再提示", tint = c.onPrimaryContainer)
+                    androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Close, contentDescription = androidx.compose.ui.res.stringResource(R.string.sender_notice_dismiss), tint = c.onPrimaryContainer)
                 }
             }
         }
@@ -72,4 +72,4 @@ fun ListNoticeCard(
 }
 
 @Composable
-internal fun MirrorHintCard(onDismiss: () -> Unit) = ListNoticeCard(ShareCopy.MIRROR_HINT, null, listOf("知道了" to onDismiss))
+internal fun MirrorHintCard(onDismiss: () -> Unit) = ListNoticeCard(androidx.compose.ui.res.stringResource(R.string.share_mirror_hint), null, listOf(androidx.compose.ui.res.stringResource(R.string.sender_hint_dismiss) to onDismiss))

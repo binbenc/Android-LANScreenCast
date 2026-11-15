@@ -1,4 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default (English). Chinese in values-zh. Prefix for app-module strings: app_. Apple compatibility is always "Compatible with Apple devices (unofficial)". -->
 <resources>
-    <!-- 产品正式名称待定（PRD Q6），交互稿占位名“局域投屏” -->
-    <string name="app_name">局域投屏</string>
+    <!-- Final product name TBD (PRD Q6); placeholder name -->
+    <string name="app_name">LAN Screen Cast</string>
+
+    <!-- Onboarding -->
+    <string name="app_onboarding_headline">Send your phone screen\nto the big screen, quietly</string>
+    <string name="app_onboarding_subtitle">Direct LAN connection · GPL‑3.0 open source, auditable code</string>
+    <string name="app_onboarding_no_ads_title">No ads, free forever</string>
+    <string name="app_onboarding_no_ads_detail">No ad, analytics or crash-reporting SDKs of any kind</string>
+    <string name="app_onboarding_no_account_title">No account needed</string>
+    <string name="app_onboarding_no_account_detail">Ready to use right away; never asks for your phone number</string>
+    <string name="app_onboarding_offline_title">Never connects to the internet</string>
+    <string name="app_onboarding_offline_detail">The picture stays on your home network, and Screen mirroring is encrypted end to end</string>
+    <string name="app_onboarding_use_as">Use this device to</string>
+    <string name="app_onboarding_mode_sender_title">Cast to another screen</string>
+    <string name="app_onboarding_mode_sender_subtitle">Sender</string>
+    <string name="app_onboarding_mode_receiver_title">Receive casts</string>
+    <string name="app_onboarding_mode_receiver_subtitle">Use this device as a screen</string>
+    <!-- Appended to a mode subtitle: "Sender · Recommended for this device" -->
+    <string name="app_onboarding_mode_recommended">%1$s · Recommended for this device</string>
+    <string name="app_onboarding_start">Get started</string>
+    <string name="app_onboarding_tv_missing">TV doesn\'t have the Receiver yet?</string>
+    <string name="app_onboarding_install_help">How to install it</string>
+
+    <!-- Elder mode notices on the device list (E02 / E11) -->
+    <string name="app_elder_exit_notice">Elder mode is off. You can turn it back on in Settings</string>
+    <string name="app_elder_got_it">Got it</string>
+    <string name="app_elder_recommend_title">Text too small? Try Elder mode</string>
+    <string name="app_elder_recommend_detail">Big text and big buttons; cast to your TV with one tap</string>
+    <string name="app_elder_recommend_no">No thanks</string>
+    <string name="app_elder_recommend_yes">Take a look</string>
+    <string name="app_elder_no_new_tv">New TVs can\'t be connected in Elder mode. Ask a family member to set it up</string>
+    <string name="app_elder_use_home_buttons">In Elder mode, use the big buttons on the home screen to show photos and videos</string>
 </resources>

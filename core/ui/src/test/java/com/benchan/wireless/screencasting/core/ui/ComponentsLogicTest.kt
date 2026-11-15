@@ -2,8 +2,9 @@ package com.benchan.wireless.screencasting.core.ui
 
 import androidx.compose.ui.unit.dp
 import com.benchan.wireless.screencasting.core.ui.components.PinCellsDefaults
-import com.benchan.wireless.screencasting.core.ui.components.histogramDescription
+import com.benchan.wireless.screencasting.core.ui.components.latencyGradeCounts
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -30,7 +31,8 @@ class ComponentsLogicTest {
     @Test
     fun histogramDescriptionHasData() {
         val h = IntArray(32).also { it[5] = 3; it[12] = 2; it[20] = 1; it[31] = 4 }.toList()
-        assertEquals("延迟分布：极佳 3 次，良好 2 次，一般 1 次，较差 4 次", histogramDescription(h))
-        assertEquals("延迟分布：暂无数据", histogramDescription(List(32) { 0 }))
+        // EXCELLENT / GOOD / FAIR / POOR
+        assertEquals(listOf(3, 2, 1, 4), latencyGradeCounts(h)!!.toList())
+        assertNull(latencyGradeCounts(List(32) { 0 }))
     }
 }

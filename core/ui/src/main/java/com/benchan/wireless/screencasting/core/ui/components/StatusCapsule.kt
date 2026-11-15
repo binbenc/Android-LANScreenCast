@@ -1,5 +1,9 @@
 package com.benchan.wireless.screencasting.core.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import com.benchan.wireless.screencasting.core.ui.text.displayLabel
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.core.ui.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +39,8 @@ fun formatMbps(kbps: Int): String = String.format(Locale.US, "%.1f Mbps", kbps
 fun formatMs(ms: Int): String = "$ms ms"
 
 /** 估算延迟的显示（F18：端到端延迟只是分段统计的估算值，界面一律写“约”，PRD 8.1.3 E）。 */
-fun formatApproxMs(ms: Int): String = "约 $ms ms"
+@Composable
+fun formatApproxMs(ms: Int): String = stringResource(R.string.core_ui_approx_ms, ms)
 
 /**
  * 状态胶囊（交互稿 03 / 07）：高 32dp、内边距 12dp，分段以 1dp outlineVariant 分隔；
@@ -57,17 +62,22 @@ fun StatusCapsule(
 ) {
     val ext = WscTheme.extended
     val colors = MaterialTheme.colorScheme
-    val desc = buildString {
-        if (reconnectingLabel != null) append(reconnectingLabel)
-        else if (switchingLabel != null) append("切换中，").append(switchingLabel)
-        else {
-            append("延迟").append(latencyMs?.let { "约 $it 毫秒（估算）" } ?: "未知")
-            grade?.let { append("，").append(it.label) }
-            bitrateKbps?.let { append("，码率 ").append(String.format(Locale.US, "%.1f", it / 1000.0)).append(" 兆比特每秒") }
-            resolutionLabel?.let { append("，").append(it.replace("p", "p ")).append(" 帧") }
-            if (noAudio) append("，无声音")
-            if (controlled) append("，被控制中")
-        }
+    val sep = stringResource(R.string.core_ui_list_separator)
+    val switchingDesc = switchingLabel?.let { stringResource(R.string.core_ui_capsule_desc_switching, it) }
+    val latencyDesc = latencyMs?.let { pluralStringResource(R.plurals.core_ui_capsule_desc_latency, it, it) } ?: stringResource(R.string.core_ui_capsule_desc_latency_unknown)
+    val gradeLabel = grade?.displayLabel()
+    val bitrateDesc = bitrateKbps?.let { stringResource(R.string.core_ui_capsule_desc_bitrate, String.format(Locale.US, "%.1f", it / 1000.0)) }
+    val resolutionDesc = resolutionLabel?.let { stringResource(R.string.core_ui_capsule_desc_resolution, it.replace("p", "p ")) }
+    val noAudioText = stringResource(R.string.core_ui_capsule_no_audio)
+    val controlledText = stringResource(R.string.core_ui_capsule_controlled)
+    val switchingText = stringResource(R.string.core_ui_capsule_switching)
+    val desc = when {
+        reconnectingLabel != null -> reconnectingLabel
+        switchingDesc != null -> switchingDesc
+        else -> listOfNotNull(
+            latencyDesc, gradeLabel, bitrateDesc, resolutionDesc,
+            noAudioText.takeIf { noAudio }, controlledText.takeIf { controlled },
+        ).joinToString(sep)
     }
     Row(
         modifier = modifier
@@ -87,14 +97,14 @@ fun StatusCapsule(
         }
         if (switchingLabel != null) {
             CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = colors.primary)
-            Text("切换中", style = MaterialTheme.typography.labelLarge, color = colors.onSurface)
+            Text(switchingText, style = MaterialTheme.typography.labelLarge, color = colors.onSurface)
             Text(switchingLabel, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
             return@Row
         }
         val c = ext.latency(grade)
         Dot(c)
-        Text(latencyMs?.let(::formatApproxMs) ?: "— ms", style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"), color = colors.onSurface)
-        grade?.let { Text(it.label, style = MaterialTheme.typography.labelLarge, color = c) }
+        Text(latencyMs?.let { formatApproxMs(it) } ?: "— ms", style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"), color = colors.onSurface)
+        gradeLabel?.let { Text(it, style = MaterialTheme.typography.labelLarge, color = c) }
         if (bitrateKbps != null) {
             Divider()
             Text(formatMbps(bitrateKbps), style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"), color = colors.onSurfaceVariant)
@@ -106,12 +116,12 @@ fun StatusCapsule(
         if (noAudio) {
             Divider()
             Icon(Icons.Rounded.VolumeOff, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
-            Text("无声音", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+            Text(noAudioText, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
         }
         if (controlled) {
             Divider()
             Icon(Icons.Rounded.TouchApp, null, Modifier.size(16.dp), tint = colors.primary)
-            Text("被控制中", style = MaterialTheme.typography.labelLarge, color = colors.primary)
+            Text(controlledText, style = MaterialTheme.typography.labelLarge, color = colors.primary)
         }
     }
 }

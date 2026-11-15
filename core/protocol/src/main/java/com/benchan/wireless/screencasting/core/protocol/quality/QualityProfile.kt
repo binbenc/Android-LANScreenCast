@@ -1,6 +1,8 @@
 package com.benchan.wireless.screencasting.core.protocol.quality
 
+import com.benchan.wireless.screencasting.core.common.l10n.L10n
 import kotlinx.serialization.Serializable
+import java.util.Locale
 
 /** 画质档位对应的降级偏好（映射到 WebRTC RtpParameters.DegradationPreference）。 */
 enum class Degradation { MAINTAIN_FRAMERATE, MAINTAIN_RESOLUTION, BALANCED }
@@ -12,7 +14,6 @@ enum class Degradation { MAINTAIN_FRAMERATE, MAINTAIN_RESOLUTION, BALANCED }
  */
 @Serializable
 enum class QualityProfile(
-    val label: String,
     val longEdge: Int,
     val shortEdge: Int,
     val fps: Int,
@@ -22,10 +23,10 @@ enum class QualityProfile(
     /** 是否把音频与视频放进同一个 MediaStream 做唇音同步（游戏档关闭）。 */
     val avSync: Boolean,
 ) {
-    SMOOTH("流畅", 1280, 720, 30, 4_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, true),
-    BALANCED("均衡", 1920, 1080, 30, 8_000_000, 1_000_000, Degradation.BALANCED, true),
-    HD("高清", 1920, 1080, 60, 15_000_000, 2_000_000, Degradation.MAINTAIN_RESOLUTION, true),
-    GAME("游戏", 1280, 720, 60, 8_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, false);
+    SMOOTH(1280, 720, 30, 4_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, true),
+    BALANCED(1920, 1080, 30, 8_000_000, 1_000_000, Degradation.BALANCED, true),
+    HD(1920, 1080, 60, 15_000_000, 2_000_000, Degradation.MAINTAIN_RESOLUTION, true),
+    GAME(1280, 720, 60, 8_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, false);
 
     /** 游戏模式（F18）：接收端最低缓冲 + 低延迟解码 + 音画分组，“自动调节”不切出该档。 */
     val lowLatency: Boolean get() = this == GAME
@@ -33,8 +34,29 @@ enum class QualityProfile(
     /** 首帧起始码率 = 上限的 50%（技术方案 3.2：抬高 GCC 起始码率）。 */
     val startBitrateBps: Int get() = maxBitrateBps / 2
 
-    /** 交互稿 07 的说明文字，例如“1080p · 30 帧 · 最高 8 Mbps”。 */
-    val summary: String get() = "${shortEdge}p · $fps 帧 · 最高 ${maxBitrateBps / 1_000_000} Mbps"
+    /**
+     * 档位名（Smooth/Balanced/High/Game，中文环境为 流畅/均衡/高清/游戏）。
+     * Android UI 请优先用 `core/ui` 的 `QualityProfile.labelRes` / `displayLabel()`（字符串资源）；这里供纯 JVM 代码与兼容旧调用点。
+     */
+    val label: String get() = label(Locale.getDefault())
+
+    fun label(locale: Locale): String = when (this) {
+        SMOOTH -> L10n.text("Smooth", "流畅", locale)
+        BALANCED -> L10n.text("Balanced", "均衡", locale)
+        HD -> L10n.text("High", "高清", locale)
+        GAME -> L10n.text("Game", "游戏", locale)
+    }
+
+    /**
+     * 交互稿 07 的说明文字，例如“1080p · 30 fps · up to 8 Mbps”（中文“1080p · 30 帧 · 最高 8 Mbps”）。
+     * Android UI 请优先用 `core/ui` 的 `displaySummary()`。
+     */
+    val summary: String get() = summary(Locale.getDefault())
+
+    fun summary(locale: Locale): String {
+        val mbps = maxBitrateBps / 1_000_000
+        return L10n.text("${shortEdge}p · $fps fps · up to $mbps Mbps", "${shortEdge}p · $fps 帧 · 最高 $mbps Mbps", locale)
+    }
 
     companion object {
         val DEFAULT = BALANCED

@@ -4,7 +4,9 @@
 
 ## 1. 发现
 
-- mDNS 服务类型 `_wsc._tcp`，TXT：`v`=协议版本、`id`=设备 ID（随机 UUID）、`n`=设备名（UTF-8，≤200 字节）、`caps`=`h264,opus`（HELLO 里的 `caps` 另可带 `ctl`，见第 6 节）、`fp`=证书 SHA-256 指纹前 8 字节（base64url）。
+- mDNS 服务类型 `_wsc._tcp`，TXT：`v`=协议版本、`id`=设备 ID（随机 UUID）、`n`=设备名（UTF-8，≤200 字节）、`caps`=`h264,opus`（HELLO 里的 `caps` 另可带 `ctl`，见第 6 节）、`fp`=证书 SHA-256 指纹前 8 字节（base64url）；可选 `dlna`=本机 DLNA 接收（DMR）的 HTTP 端口（十进制，1–65535）。
+  - `dlna` 只在 DLNA 接收开着时出现；启停或端口变化时接收端重新注册服务以更新 TXT。旧版接收端没有该键，发送端按原逻辑（只靠 SSDP）处理；值非法时视为没有。
+  - 发送端看到 `dlna` 时拉取 `http://<mDNS 解析出的 IPv4>:<dlna>/dlna/description.xml`，描述须有非空 UDN 且 `wsc:id` 等于 TXT 的 `id`（并排除本机），才把该 DMR 并入这台设备的 WSC 行（与 SSDP 带 `X-WSC-ID` 的效果相同）。SSDP 组播不通的网络里自家接收端也能推送。
 - SSDP（DLNA DMR 的响应 / NOTIFY）附带扩展头：`X-WSC-PORT`、`X-WSC-ID`、`X-WSC-FP`、`X-WSC-NAME`（URL 编码）、`X-WSC-V`。
 - 二维码：`wsc://IP:port?fp=<完整指纹 base64url>&n=<16 字节随机数 base64url>&v=1&name=<URL 编码设备名>`，`n` 一次有效、60 秒过期。
 - 投屏码：8 位数字 = 接收端 IPv4 末段（3 位补零）+ 5 位一次性 PIN；只在 /24~/30 网段可用。

@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import androidx.compose.ui.platform.LocalResources
+import com.benchan.wireless.screencasting.feature.sender.R
+import androidx.compose.ui.res.stringResource
 import com.benchan.wireless.screencasting.core.protocol.control.ControlReason
 import com.benchan.wireless.screencasting.feature.control.ControlEvent
 import android.Manifest
@@ -91,6 +94,7 @@ fun SenderScreen(
     pushVm: PushViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val res = LocalResources.current
     val activity = LocalActivity.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val devices by viewModel.devices.collectAsStateWithLifecycle()
@@ -135,7 +139,7 @@ fun SenderScreen(
         // 推送中先确认结束推送（P15，第 1 轮 PM P0-3）
         val go = {
             val ok = viewModel.quickConnectRecent()
-            if (!ok) snackbarScope.launch { snackbar.showSnackbar("还没有最近使用的设备，请先从列表选择") }
+            if (!ok) snackbarScope.launch { snackbar.showSnackbar(res.getString(R.string.sender_no_recent)) }
         }
         if (s is SenderState.Idle || s is SenderState.Ended) push.guardMirror(pushVm) { go() }
         // 处理完立即复位（复位会重启本 effect，所以 Snackbar 放到独立作用域），保证每次点图块都能再次触发（B3）
@@ -155,7 +159,7 @@ fun SenderScreen(
                         .let { d -> (d.recent + d.nearby + d.dlna).first { it.device.dlna?.udn == e.udn } }
                 }
                 val target = row?.let { pushVm.targetFor(it.device, viewModel.searchStartedAt) }
-                if (target != null) push.beginPushTo(target, pushVm) else snackbarScope.launch { snackbar.showSnackbar("没有找到这台电视，请确认电视已开机、和手机连的是同一个路由器") }
+                if (target != null) push.beginPushTo(target, pushVm) else snackbarScope.launch { snackbar.showSnackbar(res.getString(R.string.sender_push_target_missing)) }
             }
         }
     }
@@ -164,7 +168,7 @@ fun SenderScreen(
             val link = deepLink
             onDeepLinkConsumed()
             push.guardMirror(pushVm) {
-                if (!viewModel.connectQr(link)) snackbarScope.launch { snackbar.showSnackbar("无法识别的连接链接") }
+                if (!viewModel.connectQr(link)) snackbarScope.launch { snackbar.showSnackbar(res.getString(R.string.sender_bad_link)) }
             }
         }
     }
@@ -235,10 +239,10 @@ fun SenderScreen(
             val canAskAgain = activity?.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) == true
             snackbarScope.launch {
                 if (canAskAgain) {
-                    val r = snackbar.showSnackbar(SenderCopy.CAMERA_DENIED, actionLabel = SenderCopy.CAMERA_DENIED_ACTION, duration = SnackbarDuration.Long)
+                    val r = snackbar.showSnackbar(res.getString(R.string.sender_camera_denied), actionLabel = res.getString(R.string.sender_camera_denied_action), duration = SnackbarDuration.Long)
                     if (r == SnackbarResult.ActionPerformed) sub = SubRoute.CAST_CODE
                 } else {
-                    val r = snackbar.showSnackbar(SenderCopy.CAMERA_PERMANENTLY_DENIED, actionLabel = SenderCopy.OPEN_SETTINGS, duration = SnackbarDuration.Long)
+                    val r = snackbar.showSnackbar(res.getString(R.string.sender_camera_permanently_denied), actionLabel = res.getString(R.string.sender_open_settings), duration = SnackbarDuration.Long)
                     if (r == SnackbarResult.ActionPerformed) openAppDetailsSettings(context)
                 }
             }
@@ -257,10 +261,10 @@ fun SenderScreen(
         viewModel.events.collect { e ->
             when (e) {
                 is SenderEvent.AutoDowngraded -> {
-                    val r = snackbar.showSnackbar("网络较差，已切换为“流畅”", actionLabel = "撤销", duration = SnackbarDuration.Long)
+                    val r = snackbar.showSnackbar(res.getString(R.string.sender_auto_downgraded), actionLabel = res.getString(R.string.sender_undo), duration = SnackbarDuration.Long)
                     if (r == SnackbarResult.ActionPerformed) viewModel.undoAutoDowngrade()
                 }
-                SenderEvent.Recovered -> snackbar.showSnackbar("已恢复")
+                SenderEvent.Recovered -> snackbar.showSnackbar(res.getString(R.string.sender_recovered))
                 is SenderEvent.PinIncorrect -> Unit
             }
         }
@@ -271,16 +275,16 @@ fun SenderScreen(
             if (e is ControlEvent.Ended) {
                 // 结束原因分别提示（PM 走查 G5）；未授权过的锁屏 / 拒绝不提示（协调器只在真正被控制过时发事件）
                 when (e.reason) {
-                    ControlReason.REVOKED -> snackbar.showSnackbar("已收回控制，投屏继续")
-                    ControlReason.RECEIVER_END -> snackbar.showSnackbar("对方已退出控制")
+                    ControlReason.REVOKED -> snackbar.showSnackbar(res.getString(R.string.sender_control_revoked_continue))
+                    ControlReason.RECEIVER_END -> snackbar.showSnackbar(res.getString(R.string.sender_control_receiver_end))
                     ControlReason.SERVICE_OFF -> {
-                        val r = snackbar.showSnackbar("无障碍服务已被系统关闭，控制已结束", actionLabel = "去开启", duration = SnackbarDuration.Long)
+                        val r = snackbar.showSnackbar(res.getString(R.string.sender_control_service_off), actionLabel = res.getString(R.string.sender_control_turn_on), duration = SnackbarDuration.Long)
                         if (r == SnackbarResult.ActionPerformed) {
                             runCatching { context.startActivity(android.content.Intent(context, com.benchan.wireless.screencasting.feature.control.ui.AccessibilityGuideActivity::class.java)) }
                         }
                     }
                     ControlReason.SESSION_END -> Unit
-                    else -> snackbar.showSnackbar("已收回控制")
+                    else -> snackbar.showSnackbar(res.getString(R.string.sender_control_revoked))
                 }
             }
         }
@@ -294,7 +298,7 @@ fun SenderScreen(
             is SenderState.Connecting -> sub = SubRoute.NONE
             is SenderState.Casting -> if (lockTipPending || mirrorHint) {
                 mirrorHint = false
-                if (lockTipPending) snackbarScope.launch { snackbar.showSnackbar(SenderCopy.LOCK_SCREEN_TIP) }
+                if (lockTipPending) snackbarScope.launch { snackbar.showSnackbar(res.getString(R.string.sender_lock_screen_tip)) }
                 lockTipPending = false
             }
             is SenderState.Ended -> {
@@ -304,10 +308,10 @@ fun SenderScreen(
                     val action = SenderCopy.endedAction(s.reason)
                     // acknowledge() 会把状态切回 Idle 并重启本 LaunchedEffect；Snackbar 必须在不随 state 取消的作用域里显示
                     snackbarScope.launch {
-                        val shown = s.detail ?: text
+                        val shown = s.detail ?: text.resolve(res)
                         val r = snackbar.showSnackbar(
                             shown,
-                            actionLabel = action?.label,
+                            actionLabel = action?.label?.let(res::getString),
                             withDismissAction = action != null,
                             duration = if (action != null || SenderCopy.isLongText(shown)) SnackbarDuration.Long else SnackbarDuration.Short,
                         )
@@ -343,7 +347,7 @@ fun SenderScreen(
             val list = @Composable {
                 ListContent(
                     viewModel, devices, ::openScanner, { sub = SubRoute.CAST_CODE }, { manualIp = true },
-                    onDisabledDevice = { _ -> snackbarScope.launch { snackbar.showSnackbar("这台设备暂时不能连接") } },
+                    onDisabledDevice = { _ -> snackbarScope.launch { snackbar.showSnackbar(res.getString(R.string.sender_device_disabled)) } },
                     onOpenSettings, onOpenDiagnostics, onOpenInstallHelp,
                     onDevice = { row -> push.guardMirror(pushVm) { viewModel.connect(row) } },
                     onPush = { row -> push.beginPush(row, pushVm, pushCb) },
@@ -359,10 +363,10 @@ fun SenderScreen(
             }
             if (!pushFull) when (val s = state) {
                 // 连接中整页替换列表（不再叠在列表上被点穿重复连接，B4）
-                is SenderState.Connecting -> WaitingScreen("正在连接 ${s.target.name}…", "加密通道建立中", null, viewModel::cancel)
+                is SenderState.Connecting -> WaitingScreen(stringResource(R.string.sender_connecting_to, s.target.name), stringResource(R.string.sender_connecting_detail), null, viewModel::cancel)
                 is SenderState.AwaitingPin -> PinEntryScreen(s, viewModel::submitPin, viewModel::cancel)
-                is SenderState.AwaitingTvConfirm -> WaitingScreen("等待 ${s.target.name} 确认…", "请在电视上选择“允许”", s.deadlineAt, viewModel::cancel)
-                is SenderState.Starting -> WaitingScreen("正在建立连接…", "首帧通常在 2 秒内出现", null, viewModel::stop)
+                is SenderState.AwaitingTvConfirm -> WaitingScreen(stringResource(R.string.sender_waiting_confirm, s.target.name), stringResource(R.string.sender_waiting_confirm_detail), s.deadlineAt, viewModel::cancel)
+                is SenderState.Starting -> WaitingScreen(stringResource(R.string.sender_starting), stringResource(R.string.sender_starting_detail), null, viewModel::stop)
                 is SenderState.Casting -> {
                     BackHandler(enabled = false) {}
                     CastingScreen(

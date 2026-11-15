@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.core.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.core.ui.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +34,7 @@ fun TrustedBadge(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Icon(Icons.Rounded.VerifiedUser, null, Modifier.size(12.dp), tint = c.onTertiaryContainer)
-        Text("已信任", style = MaterialTheme.typography.labelSmall, color = c.onTertiaryContainer)
+        Text(stringResource(R.string.core_ui_badge_trusted), style = MaterialTheme.typography.labelSmall, color = c.onTertiaryContainer)
     }
 }
 
@@ -40,7 +42,7 @@ fun TrustedBadge(modifier: Modifier = Modifier) {
 fun NewDeviceBadge(modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
     Box(modifier.border(1.dp, c.outline, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-        Text("新设备", style = MaterialTheme.typography.labelSmall, color = c.onSurfaceVariant)
+        Text(stringResource(R.string.core_ui_badge_new_device), style = MaterialTheme.typography.labelSmall, color = c.onSurfaceVariant)
     }
 }
 
@@ -61,7 +63,7 @@ fun EncryptedLabel(protocol: String, modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Icon(Icons.Rounded.Lock, null, Modifier.size(14.dp), tint = c.tertiary)
-        Text("已加密 · $protocol", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        Text(stringResource(R.string.core_ui_encrypted, protocol), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
     }
 }
 

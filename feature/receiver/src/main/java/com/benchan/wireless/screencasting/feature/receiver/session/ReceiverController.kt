@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.feature.receiver.session
 
+import com.benchan.wireless.screencasting.feature.receiver.R
 import android.content.Context
 import android.os.Build
 import com.benchan.wireless.screencasting.core.common.Base64Url
@@ -175,7 +176,7 @@ class ReceiverController @Inject constructor(
                     ReceiverService.start(context, p.title ?: p.controlPoint)
                     if (!wasPlaying) {
                         // 后台提醒只显示来源，不外露播放内容（视频标题）
-                        alertIfBackground(dlnaLabels[p.controlPoint] ?: ReceiverCopy.DLNA_UNKNOWN_APP)
+                        alertIfBackground(dlnaLabels[p.controlPoint] ?: ReceiverCopy.DLNA_UNKNOWN_APP.resolve(context))
                         // 确定是视频时：约 10 秒内画面仍未挂上就停止，避免后台只放声音；音频 / MIME 缺失保持现状（R1）
                         if (p.isKnownVideo) watchVideoDisplay("dlna") {
                             if (dlna.playback.value != null) {
@@ -190,6 +191,8 @@ class ReceiverController @Inject constructor(
                 wasPlaying = p != null
             }
         }
+        // DLNA 接收启停 / 端口变化 → 更新 mDNS TXT 的 `dlna=<端口>`（关闭时去掉该键），发送端 SSDP 不通时也能直连本机 DMR
+        scope.launch { dlna.httpPort.collect { advertiser.setDlnaPort(it) } }
         // DLNA 播放失败不再静默回待机（C2）
         scope.launch { dlna.playbackFailed.collect { _standby.update { it.copy(notice = ReceiverCopy.DLNA_PLAYBACK_FAILED) } } }
         // 界面不在前台（开机自启后台监听）时，确认请求用通知把界面拉起来（B2）
@@ -275,9 +278,9 @@ class ReceiverController @Inject constructor(
     private fun onAppleEnded(e: AppleSessionSummary) {
         val name = e.session.peerName
         val notice = when (e.reason) {
-            AppleEndReason.PEER_STOPPED -> "$name 已停止投屏"
-            AppleEndReason.CONNECTION_LOST -> "$name 已断开（网络中断）"
-            AppleEndReason.UNSUPPORTED -> "该内容不支持播放（可能受版权保护）"
+            AppleEndReason.PEER_STOPPED -> uiText(R.string.rx_notice_apple_stopped, name)
+            AppleEndReason.CONNECTION_LOST -> uiText(R.string.rx_notice_apple_lost, name)
+            AppleEndReason.UNSUPPORTED -> uiText(R.string.rx_notice_apple_unsupported)
             AppleEndReason.RECEIVER_STOPPED -> null
         }
         if (notice != null) _standby.update { it.copy(notice = notice) }
@@ -310,7 +313,7 @@ class ReceiverController @Inject constructor(
         val needConfirm = replacing || (s.dlnaConfirmUnknown && !known)
         if (needConfirm) {
             // UA 第一个词常是 “Linux/Dalvik” 之类，识别不出时显示“局域网内的视频 App”，IP 在副标题里（C3）
-            val name = ReceiverCopy.dlnaPeerLabel(userAgent)
+            val name = ReceiverCopy.dlnaPeerLabel(userAgent).resolve(context)
             dlnaLabels[remote] = name
             // 按来源 IP 限频：30 秒内最多 5 次确认请求，防止局域网内刷屏（P3）
             if (!dlnaGuard.tryRequest(remote)) {
@@ -772,9 +775,9 @@ class ReceiverController @Inject constructor(
             val a = activeFor()
             if (a != null) {
                 val notice = when (b.reason) {
-                    ByeReason.SCREEN_LOCKED -> "发送端已锁屏"
-                    ByeReason.PROJECTION_STOPPED -> "$peerName 已停止投屏"
-                    else -> "$peerName 已断开"
+                    ByeReason.SCREEN_LOCKED -> uiText(R.string.rx_notice_sender_locked)
+                    ByeReason.PROJECTION_STOPPED -> uiText(R.string.rx_notice_stopped, peerName)
+                    else -> uiText(R.string.rx_notice_disconnected, peerName)
                 }
                 endActive(a, null, notice)
             }
@@ -792,7 +795,7 @@ class ReceiverController @Inject constructor(
             a.reconnectTimer?.cancel()
             a.reconnectTimer = scope.launch {
                 delay(WscProtocol.RECONNECT_WINDOW_MS)
-                if (active === a && a.inbound === this@Inbound) endActive(a, null, "$peerName 已断开")
+                if (active === a && a.inbound === this@Inbound) endActive(a, null, uiText(R.string.rx_notice_disconnected, peerName))
             }
         }
     }
@@ -923,7 +926,7 @@ class ReceiverController @Inject constructor(
             delay(WscProtocol.RECONNECT_WINDOW_MS)
             if (active === a && _session.value?.reconnecting == true && a.signalingLostAt == 0L) {
                 WscLog.w(TAG, "no media for ${WscProtocol.RECONNECT_WINDOW_MS}ms, ending session")
-                endActive(a, null, "${a.peerName} 已断开")
+                endActive(a, null, uiText(R.string.rx_notice_disconnected, a.peerName))
             }
         }
     }
@@ -1078,7 +1081,7 @@ class ReceiverController @Inject constructor(
         }
     }
 
-    private suspend fun endActive(a: Active, bye: ByeReason?, notice: String?) {
+    private suspend fun endActive(a: Active, bye: ByeReason?, notice: UiText?) {
         if (active !== a) return
         // 不可取消（E1）：endActive 常在 reconnectTimer / displayWatchdog 里被调用而又会取消它们，
         // 不加保护时第一个挂起点（关闭 RTC）就会抛 CancellationException，后续清理全部被跳过
@@ -1096,7 +1099,7 @@ class ReceiverController @Inject constructor(
             if (dlna.playback.value == null && !appleBusy()) ReceiverService.stop(context)
             _session.value = null
             _standby.update { it.copy(notice = notice) }
-            writeReport(a, bye?.name ?: notice ?: "ended")
+            writeReport(a, bye?.name ?: notice?.resolve(context) ?: "ended")
             WscLog.i(TAG, "mirror session ${a.sid} ended (${bye ?: notice})")
             if (!keepListening()) shutdownListener()
         }

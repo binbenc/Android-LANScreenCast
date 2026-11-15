@@ -71,6 +71,10 @@ import com.benchan.wireless.screencasting.protocol.dlna.dmc.PushItemInfo
 import com.benchan.wireless.screencasting.protocol.dlna.dmc.PushTarget
 import com.benchan.wireless.screencasting.protocol.dlna.dmc.TranscodeUi
 import com.benchan.wireless.screencasting.protocol.upnp.MediaKind
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.sender.R
+import com.benchan.wireless.screencasting.feature.sender.ui.asString
 
 /** P02 首次推送确认卡（每台设备一次）。 */
 @Composable
@@ -80,17 +84,18 @@ internal fun PushConfirmDialog(target: PushTarget, onCancel: () -> Unit, onConfi
     val model = listOfNotNull(d.manufacturer, d.modelName).joinToString(" · ")
     val titleFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { titleFocus.requestFocus() } }
+    val ipLabel = stringResource(R.string.push_a11y_ip, target.host)
     AlertDialog(
         onDismissRequest = onCancel,
         icon = { Icon(Icons.Rounded.PlayCircleOutline, null, tint = c.secondary) },
         // 默认焦点在标题（不在确认按钮，第 1 轮 UX P2-20）
-        title = { Text("是你面前的这台电视吗？", Modifier.focusRequester(titleFocus).focusable().semantics { heading() }) },
+        title = { Text(stringResource(R.string.push_confirm_title), Modifier.focusRequester(titleFocus).focusable().semantics { heading() }) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("公寓、酒店里可能有同名的电视。请核对名称和型号，避免推到别人家的电视上。", style = MaterialTheme.typography.bodyMedium, color = c.onSurface)
+                Text(stringResource(R.string.push_confirm_body), style = MaterialTheme.typography.bodyMedium, color = c.onSurface)
                 Column(
                     Modifier.fillMaxWidth().background(c.surfaceContainerHighest, RoundedCornerShape(12.dp)).padding(12.dp)
-                        .clearAndSetSemantics { contentDescription = listOfNotNull(target.name, model.ifBlank { null }, "IP ${target.host}").joinToString("，") },
+                        .clearAndSetSemantics { contentDescription = listOfNotNull(target.name, model.ifBlank { null }, ipLabel).joinToString(", ") },
                 ) {
                     Text(target.name, style = MaterialTheme.typography.titleMedium, color = c.onSurface)
                     if (model.isNotBlank()) Text(model, style = MaterialTheme.typography.bodyMedium, color = c.onSurface)
@@ -99,14 +104,14 @@ internal fun PushConfirmDialog(target: PushTarget, onCancel: () -> Unit, onConfi
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Rounded.Info, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
                     Text(
-                        if (d.isOwnApp) "推送不加密，同一 Wi‑Fi 里的其他设备有可能看到推送的内容。" else "电视自带投屏不加密，同一 Wi‑Fi 里的其他设备有可能看到推送的内容。",
+                        stringResource(if (d.isOwnApp) R.string.push_confirm_unencrypted_own else R.string.push_confirm_unencrypted),
                         style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                     )
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("是这台，继续") } },
-        dismissButton = { TextButton(onClick = onCancel) { Text("取消") } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.push_confirm_ok)) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.push_cancel)) } },
     )
 }
 
@@ -128,28 +133,30 @@ internal fun PushContentSheet(
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
             Text(
-                if (replacing) "换成其他内容 · $targetName" else "推送到 $targetName",
+                stringResource(if (replacing) R.string.push_content_title_replace else R.string.push_content_title, targetName),
                 Modifier.padding(horizontal = 24.dp).semantics { heading() }, style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                when {
-                    replacing -> "当前播放会被替换"
-                    ownApp -> "DLNA 本应用接收端 · 原画质，手机可以锁屏"
-                    else -> "DLNA 电视自带投屏 · 原画质，手机可以锁屏"
-                },
+                stringResource(
+                    when {
+                        replacing -> R.string.push_content_sub_replace
+                        ownApp -> R.string.push_content_sub_own
+                        else -> R.string.push_content_sub_tv
+                    },
+                ),
                 Modifier.padding(horizontal = 24.dp, vertical = 4.dp), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant,
             )
             Spacer(Modifier.size(8.dp))
-            if (!audioOnly) SheetRow(Icons.Rounded.PhotoLibrary, "照片和视频", "从相册选，可以多选，最多 100 项", onPicker)
-            SheetRow(Icons.Rounded.Folder, "文件", if (audioOnly) "音乐文件" else "视频、音乐、图片，例如下载目录、U 盘", onFiles)
-            SheetRow(Icons.Rounded.Link, "网址", if (audioOnly) "音乐文件的地址" else "电视直接联网打开视频文件地址", onUrl)
+            if (!audioOnly) SheetRow(Icons.Rounded.PhotoLibrary, stringResource(R.string.push_content_media), stringResource(R.string.push_content_media_desc), onPicker)
+            SheetRow(Icons.Rounded.Folder, stringResource(R.string.push_content_files), stringResource(if (audioOnly) R.string.push_content_files_desc_audio else R.string.push_content_files_desc), onFiles)
+            SheetRow(Icons.Rounded.Link, stringResource(R.string.push_content_url), stringResource(if (audioOnly) R.string.push_content_url_desc_audio else R.string.push_content_url_desc), onUrl)
             Row(
                 Modifier.padding(horizontal = 24.dp, vertical = 12.dp).fillMaxWidth()
                     .background(c.surfaceContainerHigh, RoundedCornerShape(12.dp)).padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(Icons.Rounded.Shield, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
-                Text("不需要存储权限。只有你选中的文件会分享给这台电视，推送结束后立即停止分享。", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.push_content_privacy), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
             }
         }
     }
@@ -196,43 +203,47 @@ internal fun TranscodeOfferSheet(
         ) {
             when (t.phase) {
                 TranscodeUi.Phase.PHONE_UNSUPPORTED -> {
-                    Text("这台手机也无法转换这个视频", Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-                    Text("手机没有这种格式的解码器", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-                    Button(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text("直接尝试原文件") }
-                    FilledTonalButton(onClick = onChangeFile, Modifier.fillMaxWidth()) { Text("换一个文件") }
+                    Text(stringResource(R.string.push_tc_phone_unsupported_title), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.push_tc_phone_unsupported_detail), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+                    Button(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_action_try_original)) }
+                    FilledTonalButton(onClick = onChangeFile, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_action_change_file)) }
                 }
                 TranscodeUi.Phase.NO_SPACE -> {
-                    Text("手机空间不足", Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.push_tc_no_space_title), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                     Text(
-                        "转换需要约 ${PushCopy.size(t.requiredBytes) ?: "—"}，当前可用 ${PushCopy.size(t.availableBytes) ?: "—"}",
+                        stringResource(R.string.push_tc_no_space_detail, PushCopy.size(t.requiredBytes) ?: "—", PushCopy.size(t.availableBytes) ?: "—"),
                         style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant,
                     )
-                    Button(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text("直接尝试原文件") }
-                    FilledTonalButton(onClick = onDismiss, Modifier.fillMaxWidth()) { Text("取消") }
+                    Button(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_action_try_original)) }
+                    FilledTonalButton(onClick = onDismiss, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_cancel)) }
                 }
                 else -> {
-                    Text("$tvName 可能放不了这个视频", Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.push_fail_needs_transcode_title, tvName), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                     if (t.videoOnlyAvailable) {
                         Text(
-                            "视频里的声音格式" + (PushCopy.codecName(t.audioCodec)?.let { "（$it）" } ?: "") + "电视和这台手机都处理不了，只能转换画面。",
+                            stringResource(R.string.push_tc_audio_unsupported, PushCopy.codecName(t.audioCodec)?.let { stringResource(R.string.push_paren, it.asString()) } ?: ""),
                             style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant,
                         )
                     } else {
-                        Text(PushCopy.transcodeReason(t, tvName, title), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+                        Text(PushCopy.transcodeReason(t, tvName, title).asString(), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
                         Column(Modifier.fillMaxWidth().background(c.surfaceContainerHigh, RoundedCornerShape(12.dp)).padding(12.dp)) {
-                            Text("转换后推送", style = MaterialTheme.typography.titleSmall)
-                            val cost = listOfNotNull(PushCopy.minutes(t.estimatedDurationMs), PushCopy.size(t.requiredBytes)?.let { "占用约 $it 空间" }).joinToString("，")
+                            Text(stringResource(R.string.push_action_transcode), style = MaterialTheme.typography.titleSmall)
+                            val costParts = listOfNotNull(
+                                PushCopy.minutes(t.estimatedDurationMs)?.asString(),
+                                PushCopy.size(t.requiredBytes)?.let { stringResource(R.string.push_tc_space_cost, it) },
+                            )
+                            val cost = if (costParts.size == 2) stringResource(R.string.push_join_comma, costParts[0], costParts[1]) else costParts.firstOrNull()
+                            val max = stringResource(if (t.hdr) R.string.push_tc_max_1080_hdr else R.string.push_tc_max_1080)
                             Text(
-                                "在手机上转成电视普遍支持的格式，转完自动推送。" + (if (cost.isNotEmpty()) "$cost。" else "") +
-                                    "最高 1080p" + (if (t.hdr) "；颜色可能和原视频略有差别（HDR 转为普通画面）。" else "。"),
+                                if (cost != null) stringResource(R.string.push_tc_body_cost, cost, max) else stringResource(R.string.push_tc_body, max),
                                 style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                             )
-                            Text("转换会占用较多电量并让手机发热，建议接上充电器。", style = MaterialTheme.typography.bodySmall, color = c.onSurface)
+                            Text(stringResource(R.string.push_tc_battery_note), style = MaterialTheme.typography.bodySmall, color = c.onSurface)
                         }
                     }
                     if (t.batteryLow) {
                         Text(
-                            "电量 ${t.batteryPercent ?: "低于 20"}%，未在充电。转换中途可能没电",
+                            t.batteryPercent?.let { stringResource(R.string.push_tc_battery_low, it) } ?: stringResource(R.string.push_tc_battery_low_unknown, 20),
                             Modifier.fillMaxWidth().background(c.errorContainer, RoundedCornerShape(12.dp)).padding(12.dp),
                             color = c.onErrorContainer, style = MaterialTheme.typography.bodyMedium,
                         )
@@ -243,23 +254,23 @@ internal fun TranscodeOfferSheet(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Checkbox(checked = autoForList, onCheckedChange = null)
-                            Text("本次列表里其他需要转换的视频也自动转换", style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.push_tc_auto_list), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     if (t.videoOnlyAvailable) {
                         Button(onClick = { onTranscode(true, autoForList) }, Modifier.fillMaxWidth()) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("只转换画面（无声音）")
-                                Text("电视上会没有声音", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.push_tc_video_only))
+                                Text(stringResource(R.string.push_tc_video_only_note), style = MaterialTheme.typography.labelSmall)
                             }
                         }
-                        FilledTonalButton(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text("直接尝试原文件") }
-                        TextButton(onClick = onChangeFile, Modifier.fillMaxWidth()) { Text("换一个文件") }
+                        FilledTonalButton(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_action_try_original)) }
+                        TextButton(onClick = onChangeFile, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_action_change_file)) }
                     } else {
-                        Button(onClick = { onTranscode(false, autoForList) }, Modifier.fillMaxWidth()) { Text("转换后推送") }
-                        FilledTonalButton(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text("直接尝试原文件") }
+                        Button(onClick = { onTranscode(false, autoForList) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_action_transcode)) }
+                        FilledTonalButton(onClick = onTryOriginal, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_action_try_original)) }
                         Text(
-                            "原文件放不了的话，20 秒内会告诉你", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
+                            stringResource(R.string.push_tc_original_hint), Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                         )
                     }
@@ -288,20 +299,22 @@ internal fun PlaylistSheet(
     LaunchedEffect(Unit) { listState.scrollToItem((current - 2).coerceAtLeast(0)) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
-            Text("播放列表", Modifier.padding(horizontal = 24.dp).semantics { heading() }, style = MaterialTheme.typography.titleMedium, color = c.onSurface)
+            Text(stringResource(R.string.push_playlist_title), Modifier.padding(horizontal = 24.dp).semantics { heading() }, style = MaterialTheme.typography.titleMedium, color = c.onSurface)
             Text(
-                "${items.size} 项 · 播完自动播下一个", Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                pluralStringResource(R.plurals.push_playlist_sub, items.size, items.size), Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.labelMedium, fontFamily = FontFamily.Monospace, color = c.onSurfaceVariant,
             )
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp), state = listState) {
                 itemsIndexed(items, key = { _, it -> it.index }) { i, item ->
                     val isCurrent = i == current
+                    val kindLabel = stringResource(PushCopy.kindLabelRes(item.kind))
                     val sub = when {
-                        transcodingIndex == i -> "正在转换 $transcodeProgress%"
-                        item.failed -> "电视无法播放 · 已跳过"
-                        isCurrent -> "正在播放"
-                        else -> PushCopy.kindLabel(item.kind)
+                        transcodingIndex == i -> stringResource(R.string.push_playlist_transcoding, transcodeProgress)
+                        item.failed -> stringResource(R.string.push_playlist_failed)
+                        isCurrent -> stringResource(R.string.push_playlist_playing)
+                        else -> kindLabel
                     }
+                    val itemA11y = stringResource(R.string.push_a11y_playlist_item, i + 1, items.size, item.title, kindLabel, sub)
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 64.dp)
                             .background(if (isCurrent) c.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
@@ -321,7 +334,7 @@ internal fun PlaylistSheet(
                         Column(
                             Modifier.weight(1f).semantics(mergeDescendants = true) {
                                 selected = isCurrent
-                                contentDescription = "第 ${i + 1} 项，共 ${items.size} 项，${item.title}，${PushCopy.kindLabel(item.kind)}，$sub"
+                                contentDescription = itemA11y
                             },
                         ) {
                             Text(
@@ -339,14 +352,14 @@ internal fun PlaylistSheet(
                             )
                         }
                         if (item.failed && item.kind == MediaKind.VIDEO && !item.remote) {
-                            OutlinedButton(onClick = { onTranscode(i) }) { Text("转换") }
+                            OutlinedButton(onClick = { onTranscode(i) }) { Text(stringResource(R.string.push_transcode)) }
                         }
                     }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)) {
-                FilledTonalButton(onClick = onChangeContent) { Text("换内容") }
-                TextButton(onClick = onDismiss) { Text("关闭") }
+                FilledTonalButton(onClick = onChangeContent) { Text(stringResource(R.string.push_change_content)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.push_close)) }
             }
         }
     }
@@ -369,7 +382,7 @@ internal fun PushMutexDialog(title: String, text: String, confirm: String, onCan
         title = { Text(title, Modifier.semantics { heading() }) },
         text = { Text(text) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirm) } },
-        dismissButton = { TextButton(onClick = onCancel, modifier = Modifier.focusRequester(cancelFocus)) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onCancel, modifier = Modifier.focusRequester(cancelFocus)) { Text(stringResource(R.string.push_cancel)) } },
     )
 }
 
@@ -391,11 +404,11 @@ internal fun DlnaDeviceDetailDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOfNotNull(d.manufacturer, d.modelName).joinToString(" · ").takeIf { it.isNotBlank() }?.let { Text(it, color = c.onSurface) }
                 Row {
-                    Text("IP 地址 ", color = c.onSurfaceVariant)
+                    Text(stringResource(R.string.push_detail_ip) + " ", color = c.onSurfaceVariant)
                     Text(target.host, fontFamily = FontFamily.Monospace, color = c.onSurface)
                 }
                 Text(
-                    if (d.isOwnApp) "这台设备已安装本应用，可以镜像，也可以推送。" else "这台电视不能镜像手机屏幕。在电视上安装本应用后就可以镜像。",
+                    stringResource(if (d.isOwnApp) R.string.push_detail_own else R.string.push_detail_tv),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -403,9 +416,9 @@ internal fun DlnaDeviceDetailDialog(
         // 按钮纵向排列：200% 字号也不挤（第 1 轮 UX P2-23）
         confirmButton = {
             Column(horizontalAlignment = Alignment.End) {
-                if (!d.isOwnApp) TextButton(onClick = { onDismiss(); onInstallHelp() }) { Text("获取安装方法") }
-                if (pushedBefore) TextButton(onClick = { onForget(); onDismiss() }) { Text("忘记这台设备") }
-                TextButton(onClick = onDismiss) { Text("关闭") }
+                if (!d.isOwnApp) TextButton(onClick = { onDismiss(); onInstallHelp() }) { Text(stringResource(R.string.push_detail_install)) }
+                if (pushedBefore) TextButton(onClick = { onForget(); onDismiss() }) { Text(stringResource(R.string.push_detail_forget)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.push_close)) }
             }
         },
     )
@@ -416,9 +429,9 @@ internal fun DlnaDeviceDetailDialog(
 internal fun UnencryptedInfoDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("电视自带投屏不加密") },
-        text = { Text("电视自带投屏不支持加密。推送的照片和视频在局域网内以明文传输，在酒店、公共 Wi‑Fi 里，同一网络的其他人有可能截获。屏幕镜像不受影响，全程加密。") },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("知道了") } },
+        title = { Text(stringResource(R.string.push_unencrypted_title)) },
+        text = { Text(stringResource(R.string.push_unencrypted_body)) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.push_got_it)) } },
     )
 }
 

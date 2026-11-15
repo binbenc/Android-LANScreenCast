@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown when an Apple sender doesn't report a device name. Never use the Apple protocol trademark (PRD 12). -->
+    <string name="apple_compat_default_peer">Apple device</string>
+</resources>

@@ -57,8 +57,8 @@ internal object ControlNotifications {
         )
         val n = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_control)
-            .setContentTitle("$peer 请求操作本机")
-            .setContentText("点按查看并确认 · $secondsLeft 秒后自动拒绝")
+            .setContentTitle(context.getString(R.string.ctl_request_title, peer))
+            .setContentText(context.resources.getQuantityString(R.plurals.ctl_request_text, secondsLeft, secondsLeft))
             .setPriority(if (silent) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setOngoing(true)
@@ -69,7 +69,7 @@ internal object ControlNotifications {
         if (!silent) n.setFullScreenIntent(open, true)
         n
             .setTimeoutAfter((secondsLeft + 1) * 1_000L)
-            .addAction(0, "拒绝", deny)
+            .addAction(0, context.getString(R.string.ctl_deny), deny)
         runCatching { context.getSystemService(NotificationManager::class.java).notify(REQUEST_ID, n.build()) }
     }
 
@@ -87,8 +87,8 @@ internal object ControlNotifications {
         )
         val n = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_control)
-            .setContentTitle("$peer 请求操作本机")
-            .setContentText("需要先开启无障碍服务，点按查看开启步骤")
+            .setContentTitle(context.getString(R.string.ctl_request_title, peer))
+            .setContentText(context.getString(R.string.ctl_guide_text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOnlyAlertOnce(true)
             .setAutoCancel(true)
@@ -107,8 +107,8 @@ internal object ControlNotifications {
         )
         val n = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_control)
-            .setContentTitle("无障碍服务已被系统关闭，控制已结束")
-            .setContentText("点按查看如何重新开启")
+            .setContentTitle(context.getString(R.string.ctl_service_stopped_title))
+            .setContentText(context.getString(R.string.ctl_service_stopped_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setSilent(true)
             .setAutoCancel(true)

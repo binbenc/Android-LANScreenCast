@@ -88,6 +88,11 @@ import com.benchan.wireless.screencasting.feature.receiver.session.ControlNotice
 import com.benchan.wireless.screencasting.feature.receiver.session.ReceiverControl
 import com.benchan.wireless.screencasting.feature.receiver.session.pausedText
 import kotlinx.coroutines.delay
+import com.benchan.wireless.screencasting.feature.receiver.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.text.style.TextAlign
+import com.benchan.wireless.screencasting.feature.receiver.session.asString
 
 /**
  * 交互稿 R07：控制中的触摸层。单指：按下 / 移动 / 抬起原样转发（长按、滑动由时间与轨迹自然形成）；
@@ -309,6 +314,7 @@ internal fun Ripple(spot: RippleSpot, onDone: () -> Unit) {
 @Composable
 internal fun ControlEdgeHandle(controlling: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
+    val openBarDesc = stringResource(R.string.rx_ctl_open_bar)
     val density = LocalDensity.current
     val open by rememberUpdatedState(onOpen)
     var dragged by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
@@ -326,7 +332,7 @@ internal fun ControlEdgeHandle(controlling: Boolean, onOpen: () -> Unit, modifie
                 }
             }
             .clickable(onClick = onOpen)
-            .semantics { contentDescription = "打开控制条" },
+            .semantics { contentDescription = openBarDesc },
         contentAlignment = Alignment.CenterEnd,
     ) {
         Box(
@@ -353,7 +359,11 @@ internal fun ControlBadge(control: ReceiverControl, modifier: Modifier = Modifie
     ) {
         Box(Modifier.size(8.dp).background(if (paused) WscTheme.extended.warning else c.primary, CircleShape))
         Text(
-            if (paused) "控制已暂停 · ${pausedText(control.reason)}" else if (modeLabel != null) "控制中 · $modeLabel" else "控制中",
+            when {
+                paused -> stringResource(R.string.rx_ctl_badge_paused, pausedText(control.reason).asString())
+                modeLabel != null -> stringResource(R.string.rx_ctl_badge_active_mode, modeLabel)
+                else -> stringResource(R.string.rx_ctl_badge_active)
+            },
             style = MaterialTheme.typography.labelLarge.copy(fontSize = if (tv) 15.sp else 13.sp), color = c.onScrim,
         )
     }
@@ -396,22 +406,23 @@ internal fun ControlBar(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = c.primary)
                     Column(Modifier.weight(1f)) {
-                        Text("等待 $peer 确认…", Modifier.semantics { heading() }, style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.rx_ctl_waiting, peer), Modifier.semantics { heading() }, style = MaterialTheme.typography.labelLarge)
                         // 倒计时不实时播报，只在剩 10 秒时播报一次（UX 走查 G5）
                         Text(
-                            "请在对方手机上点「允许本次」" + (left?.let { " · $it 秒" } ?: ""),
+                            if (left != null) stringResource(R.string.rx_ctl_waiting_detail_countdown, left.toInt()) else stringResource(R.string.rx_ctl_waiting_detail),
                             style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"), color = c.onSurfaceVariant,
                         )
-                        Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (left != null && left in 1..10) "还剩 10 秒" else "" })
+                        val tenLeft = stringResource(R.string.rx_ctl_ten_seconds_left)
+                        Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (left != null && left in 1..10) tenLeft else "" })
                     }
                     CloseButton(onClose)
                 }
                 Spacer(Modifier.height(12.dp))
-                FilledTonalButton(onClick = { act(actions::cancelRequest) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("取消请求") }
+                FilledTonalButton(onClick = { act(actions::cancelRequest) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.rx_ctl_cancel_request)) }
             }
             control.controlling -> {
                 val paused = control.phase == ControlPhase.PAUSED
-                StateLine(if (paused) WscTheme.extended.warning else c.primary, if (paused) "控制已暂停 · ${pausedText(control.reason)}" else "正在控制 $peer", onClose)
+                StateLine(if (paused) WscTheme.extended.warning else c.primary, if (paused) stringResource(R.string.rx_ctl_badge_paused, pausedText(control.reason).asString()) else stringResource(R.string.rx_ctl_controlling, peer), onClose)
                 Spacer(Modifier.height(12.dp))
                 // “输入文字”（B 期）：对方 Android 13+ 可用；对方版本不够时为不可用样式，按下说明原因（D2：已实现但版本不满足才显示灰色）
                 val textOk = com.benchan.wireless.screencasting.core.protocol.control.ControlFeatures.TEXT in control.feat
@@ -421,18 +432,19 @@ internal fun ControlBar(
                 val compact = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 val large = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
                 val cell = if (large) Modifier.heightIn(min = 48.dp) else Modifier.heightIn(min = 48.dp)
+                val notSupported = stringResource(R.string.rx_ctl_peer_os_unsupported)
                 val buttons: @Composable (Modifier) -> Unit = { w ->
                     FilledTonalButton(
                         onClick = { act { if (textOk) onTextInput() else actions.notifyUnsupported(com.benchan.wireless.screencasting.core.protocol.control.ControlFeatures.TEXT, force = true) } },
                         enabled = !paused,
-                        modifier = w.then(cell).semantics { if (!textOk) stateDescription = "对方系统版本不支持" },
+                        modifier = w.then(cell).semantics { if (!textOk) stateDescription = notSupported },
                         colors = if (textOk) tonalDisabled else ButtonDefaults.filledTonalButtonColors(
                             containerColor = c.surfaceContainer, contentColor = c.outline, disabledContainerColor = c.surfaceContainer, disabledContentColor = c.outline,
                         ),
                         contentPadding = compact,
-                    ) { Text("输入文字", maxLines = 1) }
-                    FilledTonalButton(onClick = { act(actions::exit) }, modifier = w.then(cell), colors = tonalDisabled, contentPadding = compact) { Text("退出控制", maxLines = 1) }
-                    FilledTonalButton(onClick = { act(onShowStats) }, modifier = w.then(cell), colors = tonalDisabled, contentPadding = compact) { Text("连接信息", maxLines = 1) }
+                    ) { Text(stringResource(R.string.rx_ctl_input_text), maxLines = 2, textAlign = TextAlign.Center) }
+                    FilledTonalButton(onClick = { act(actions::exit) }, modifier = w.then(cell), colors = tonalDisabled, contentPadding = compact) { Text(stringResource(R.string.rx_ctl_exit), maxLines = 2, textAlign = TextAlign.Center) }
+                    FilledTonalButton(onClick = { act(onShowStats) }, modifier = w.then(cell), colors = tonalDisabled, contentPadding = compact) { Text(stringResource(R.string.rx_ctl_connection_info), maxLines = 2, textAlign = TextAlign.Center) }
                 }
                 if (large) {
                     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -443,16 +455,16 @@ internal fun ControlBar(
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { act { actions.key(RemoteKey.BACK) } }, enabled = !paused, colors = textDisabled, contentPadding = compact) { Text("返回") }
-                    TextButton(onClick = { act { actions.key(RemoteKey.HOME) } }, enabled = !paused, colors = textDisabled, contentPadding = compact) { Text("主页") }
-                    TextButton(onClick = { act { actions.key(RemoteKey.RECENTS) } }, enabled = !paused, colors = textDisabled, contentPadding = compact) { Text("最近任务") }
+                    TextButton(onClick = { act { actions.key(RemoteKey.BACK) } }, enabled = !paused, colors = textDisabled, contentPadding = compact) { Text(stringResource(R.string.rx_key_back)) }
+                    TextButton(onClick = { act { actions.key(RemoteKey.HOME) } }, enabled = !paused, colors = textDisabled, contentPadding = compact) { Text(stringResource(R.string.rx_key_home)) }
+                    TextButton(onClick = { act { actions.key(RemoteKey.RECENTS) } }, enabled = !paused, colors = textDisabled, contentPadding = compact) { Text(stringResource(R.string.rx_key_recents)) }
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { act(onDisconnect) }, colors = ButtonDefaults.textButtonColors(contentColor = c.error), contentPadding = compact) { Text("断开投屏") }
+                    TextButton(onClick = { act(onDisconnect) }, colors = ButtonDefaults.textButtonColors(contentColor = c.error), contentPadding = compact) { Text(stringResource(R.string.rx_disconnect)) }
                 }
             }
             else -> {
                 val cooldownLeft = ((control.cooldownUntil - now + 999) / 1_000).coerceAtLeast(0)
-                StateLine(c.outline, "$peer · 未控制", onClose)
+                StateLine(c.outline, stringResource(R.string.rx_ctl_not_controlling, peer), onClose)
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     // 对方未开启时按钮仍可点，点后给出原因（R08），而不是置灰让人猜；只有冷却期内不可用（不可用态 outline / surfaceContainer，UX 走查 G3）
@@ -462,13 +474,13 @@ internal fun ControlBar(
                     ) {
                         Icon(Icons.Rounded.TouchApp, null, Modifier.size(18.dp))
                         Spacer(Modifier.size(8.dp))
-                        Text("请求控制")
+                        Text(stringResource(R.string.rx_ctl_request))
                     }
-                    FilledTonalButton(onClick = { act(onDisconnect) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("断开投屏") }
+                    FilledTonalButton(onClick = { act(onDisconnect) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.rx_disconnect)) }
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (cooldownLeft > 0) "$cooldownLeft 秒后可以再次请求" else "对方会在手机上确认，只在本次投屏有效",
+                    if (cooldownLeft > 0) pluralStringResource(R.plurals.rx_ctl_denied_cooldown, cooldownLeft.toInt(), cooldownLeft.toInt()) else stringResource(R.string.rx_ctl_request_hint),
                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"), color = c.onSurfaceVariant,
                 )
             }
@@ -489,7 +501,7 @@ private fun StateLine(dot: Color, text: String, onClose: () -> Unit) {
 @Composable
 private fun CloseButton(onClose: () -> Unit) {
     androidx.compose.material3.IconButton(onClick = onClose) {
-        Icon(Icons.Rounded.Close, "收起控制条", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Rounded.Close, stringResource(R.string.rx_ctl_hide_bar), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -505,8 +517,8 @@ internal fun ControlNoticeToast(notice: ControlNotice, modifier: Modifier = Modi
         val (icon, tint) = noticeStyle(notice)
         Icon(icon, null, Modifier.size(18.dp), tint = tint)
         Column {
-            Text(notice.title, style = MaterialTheme.typography.bodyMedium)
-            notice.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant) }
+            Text(notice.title.asString(), style = MaterialTheme.typography.bodyMedium)
+            notice.detail?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant) }
         }
     }
 }

@@ -603,7 +603,7 @@ class SenderControlCoordinator @Inject constructor(
                 bridge.showOverlay(
                     OverlayState(
                         s.phase == ControlPhase.PAUSED,
-                        ControlCopy.overlayLabel(s.phase, s.reason, largeFont = context.resources.configuration.fontScale >= 1.3f),
+                        ControlCopy.overlayLabel(context, s.phase, s.reason, largeFont = context.resources.configuration.fontScale >= 1.3f),
                         canContinue = s.phase == ControlPhase.PAUSED && s.reason == ControlReason.SENSITIVE_APP,
                     ),
                     onRevoke = { revoke() },
@@ -615,7 +615,7 @@ class SenderControlCoordinator @Inject constructor(
         t.ended?.let { reason ->
             // 只有真正被控制过才提示结束（请求阶段锁屏 / 拒绝不提示，PM 走查 G5）
             if (wasControlled) _events.tryEmit(ControlEvent.Ended(reason))
-            if (wasControlled && reason == ControlReason.LOCKED) ControlNotifications.showEnded(context, "已收回控制：手机已锁屏")
+            if (wasControlled && reason == ControlReason.LOCKED) ControlNotifications.showEnded(context, context.getString(R.string.ctl_ended_locked))
             if (wasControlled && reason == ControlReason.SERVICE_OFF) ControlNotifications.showServiceStopped(context)
         }
     }

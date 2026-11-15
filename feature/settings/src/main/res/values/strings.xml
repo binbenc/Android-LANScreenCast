@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- feature/settings strings. Default (English); Chinese in values-zh. Prefix: settings_. Apple compatibility is always "Compatible with Apple devices (unofficial)". -->
+<resources>
+    <!-- 09A Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_group_device">This device</string>
+    <string name="settings_device_name">Device name</string>
+    <string name="settings_default_mode">Default mode</string>
+    <string name="settings_mode_sender">Sender (cast to another screen)</string>
+    <string name="settings_mode_receiver">Receiver (use this device as a screen)</string>
+    <string name="settings_trusted">Trusted devices</string>
+    <plurals name="settings_trusted_detail">
+        <item quantity="one">%1$d device · remove individually</item>
+        <item quantity="other">%1$d devices · remove individually</item>
+    </plurals>
+    <string name="settings_elder">Elder mode</string>
+    <string name="settings_elder_detail">Big text and big buttons; cast to your TV with one tap. Set up by a family member first · %1$s</string>
+    <string name="settings_elder_on">On</string>
+    <string name="settings_elder_off">Off</string>
+    <string name="settings_group_cast">Casting</string>
+    <string name="settings_quality">Quality</string>
+    <string name="settings_quality_row_game">%1$s · 720p · 60 fps · latency first</string>
+    <string name="settings_quality_row_auto">%1$s · steps down automatically when the network gets worse</string>
+    <string name="settings_quality_option">%1$s (%2$s)</string>
+    <string name="settings_quality_option_game">%1$s (720p · 60 fps · latency first; sound may lag slightly)</string>
+    <string name="settings_auto_adjust">Auto adjust</string>
+    <string name="settings_auto_adjust_detail">Drops to “Smooth” automatically when the network gets worse</string>
+    <string name="settings_auto_adjust_game">In Game mode only bitrate and resolution are lowered; the quality stays on Game</string>
+    <string name="settings_audio">Audio</string>
+    <string name="settings_audio_detail">Captures only the sound your phone plays, never the microphone</string>
+    <string name="settings_audio_no_permission">Recording permission not granted; only the picture will be cast</string>
+    <string name="settings_open_system_settings">Open system settings</string>
+    <string name="settings_capture_intro">Show an explanation before screen recording</string>
+    <string name="settings_capture_intro_detail">When off, tapping a device opens the system screen-recording prompt directly</string>
+    <string name="settings_direct_share">Show recently pushed TVs in the share menu</string>
+    <string name="settings_direct_share_detail">When sharing photos and videos, tap a TV\'s name directly</string>
+    <string name="settings_rc">Remote control</string>
+    <string name="settings_rc_detail">Lets a TV, tablet or phone operate this device while casting; you confirm every time</string>
+    <string name="settings_rc_off">Off</string>
+    <string name="settings_rc_on">On</string>
+    <string name="settings_rc_needs_service">On · the accessibility service still needs to be turned on</string>
+    <string name="settings_group_receiver">Receiving (when this device is the screen)</string>
+    <string name="settings_receiver_inactive_note">This device is in Sender mode. The settings below take effect after switching to Receiver</string>
+    <string name="settings_policy">Connection policy</string>
+    <string name="settings_policy_trusted">Trusted devices skip confirmation</string>
+    <string name="settings_policy_always">Always confirm</string>
+    <string name="settings_dlna">DLNA receiving</string>
+    <string name="settings_dlna_detail">The “Cast” button in video apps can choose this device</string>
+    <string name="settings_dlna_confirm">Confirm unknown devices</string>
+    <string name="settings_dlna_confirm_detail">Prevents neighbors or hotel guests from casting by mistake</string>
+    <string name="settings_apple">Compatible with Apple devices (unofficial)</string>
+    <string name="settings_apple_detail">When on, iPhone and iPad can connect to this device with the system “Screen Mirroring”</string>
+    <string name="settings_apple_pin">Require a PIN to connect</string>
+    <string name="settings_apple_pin_detail">Recommended; prevents others from connecting by mistake</string>
+    <string name="settings_apple_disclaimer">Based on a community open-source implementation. Not affiliated with, authorized or certified by Apple Inc. May stop working temporarily after system updates. Copy-protected videos are not supported.</string>
+    <string name="settings_apple_enabled">Turned on. Back on the “Ready to receive” screen, iPhone and iPad can find this device in “Screen Mirroring”</string>
+    <string name="settings_boot">Start at boot</string>
+    <string name="settings_boot_detail">After boot, waits for casts in the background (a persistent “Waiting for casts in the background” notification is shown) and opens the confirmation screen through a notification when someone casts. Some TV systems don\'t allow background launch; in that case open this app first</string>
+    <string name="settings_boot_dialog_title">Turn on Start at boot?</string>
+    <string name="settings_boot_dialog_text">After boot, this app waits for casts in the background, which uses slightly more battery. The system requires apps running in the background to show a persistent notification, “Waiting for casts in the background”; tap “Stop” on it to stop.\n\nWhen someone casts, this app opens the confirmation / playback screen through a notification, so notifications need to be allowed. Some TV systems don\'t show notifications or block apps from starting in the background; in that case you still need to open this app first to receive casts.</string>
+    <string name="settings_group_diagnostics">Diagnostics</string>
+    <string name="settings_report">Cast report</string>
+    <string name="settings_report_summary">Success rate in the last 30 days %1$d%% · average latency %2$s ms</string>
+    <string name="settings_report_empty">No casts yet</string>
+    <string name="settings_network_diag">Network diagnostics</string>
+    <string name="settings_network_diag_detail">Check the subnet, multicast and router settings</string>
+    <string name="settings_export_logs">Export local logs</string>
+    <string name="settings_export_logs_detail">Preview the content before exporting; useful for filing an issue</string>
+    <string name="settings_install_receiver">Install the Receiver on a TV</string>
+    <string name="settings_install_receiver_detail">Your phone temporarily serves the installer on the local network</string>
+    <string name="settings_group_about">About</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_detail">This app never accesses the internet and never reports any data; Screen mirroring is always encrypted</string>
+    <string name="settings_license">Open-source license</string>
+    <string name="settings_license_detail">GPL‑3.0 · Version %1$s</string>
+    <string name="settings_name_hint">Shown in other devices\' lists</string>
+    <string name="settings_save">Save</string>
+
+    <!-- 09B Apple-compatible dialog (no trademark wording) -->
+    <string name="settings_apple_dialog_title">Turn on compatibility with Apple devices?</string>
+    <string name="settings_apple_dialog_intro">When on, this device appears in the “Screen Mirroring” list on iPhone and iPad.</string>
+    <string name="settings_apple_dialog_risks">· This is an unofficial compatibility implementation, not affiliated with, authorized or certified by Apple Inc.\n· It may stop working temporarily after iOS updates\n· Copy-protected (DRM) videos are not supported</string>
+    <string name="settings_apple_dialog_pin_detail">Recommended; prevents others from connecting by mistake</string>
+
+    <!-- Trusted devices -->
+    <string name="settings_trusted_empty">No paired or pushed devices yet. A device appears here after your first Screen mirroring with a PIN, Cast code or QR code, or after your first Push to a TV.</string>
+    <string name="settings_trusted_paired">Paired devices</string>
+    <string name="settings_trusted_last_connected">Last connected %1$s</string>
+    <string name="settings_trusted_device_code">Device code %1$s</string>
+    <string name="settings_remove">Remove</string>
+    <string name="settings_remove_title">Remove this device?</string>
+    <string name="settings_remove_text">After removing it, you\'ll need to enter the PIN again the next time you connect.</string>
+    <string name="settings_pushed_tvs">TVs you\'ve pushed to</string>
+    <string name="settings_pushed_last">Last pushed %1$s</string>
+    <string name="settings_pushed_never">Confirmed, not pushed yet</string>
+    <string name="settings_forget">Forget</string>
+    <string name="settings_forget_desc">Forget %1$s</string>
+    <string name="settings_forget_title">Forget this TV?</string>
+    <string name="settings_forget_text">The next time you push to this TV, you\'ll be asked again to confirm it\'s the one in front of you.</string>
+    <string name="settings_ago_just_now">Just now</string>
+    <plurals name="settings_ago_minutes">
+        <item quantity="one">%1$d minute ago</item>
+        <item quantity="other">%1$d minutes ago</item>
+    </plurals>
+    <plurals name="settings_ago_hours">
+        <item quantity="one">%1$d hour ago</item>
+        <item quantity="other">%1$d hours ago</item>
+    </plurals>
+    <string name="settings_ago_yesterday">Yesterday</string>
+    <plurals name="settings_ago_days">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+
+    <!-- 10 Cast report -->
+    <string name="settings_report_export_logs">Export logs</string>
+    <string name="settings_report_range_30">Last 30 days</string>
+    <string name="settings_report_range_all">All</string>
+    <string name="settings_report_success_rate">Success rate</string>
+    <plurals name="settings_report_success_sub">
+        <item quantity="one">%1$d / %2$d cast</item>
+        <item quantity="other">%1$d / %2$d casts</item>
+    </plurals>
+    <string name="settings_report_disconnects">Disconnects</string>
+    <string name="settings_report_unit_times">times</string>
+    <plurals name="settings_report_recovered">
+        <item quantity="one">%1$d recovered automatically</item>
+        <item quantity="other">%1$d recovered automatically</item>
+    </plurals>
+    <string name="settings_report_avg_latency">Average latency</string>
+    <string name="settings_report_p95_latency">P95 latency</string>
+    <!-- Screen reader: "<title> <value> <unit>, <sub>" -->
+    <string name="settings_report_metric_desc">%1$s %2$s %3$s, %4$s</string>
+    <string name="settings_report_histogram_title">Latency distribution · in ms</string>
+    <string name="settings_report_game_title">Game mode latency (median)</string>
+    <string name="settings_report_game_range">%1$s · %2$s in total</string>
+    <plurals name="settings_report_game_desc">
+        <item quantity="one">Game mode median latency about %1$d millisecond, estimated, %2$s, %3$s</item>
+        <item quantity="other">Game mode median latency about %1$d milliseconds, estimated, %2$s, %3$s</item>
+    </plurals>
+    <string name="settings_report_protocols">Protocols</string>
+    <string name="settings_report_proto_mirroring">Screen mirroring</string>
+    <string name="settings_report_proto_dlna">DLNA receiving</string>
+    <string name="settings_report_proto_apple">Compatible with Apple devices (unofficial)</string>
+    <string name="settings_report_proto_dlna_push">DLNA Push</string>
+    <string name="settings_report_push_success">success rate %1$d%%</string>
+    <string name="settings_report_push_first_play">first play P50 %1$s s</string>
+    <plurals name="settings_report_count">
+        <item quantity="one">%1$d time</item>
+        <item quantity="other">%1$d times</item>
+    </plurals>
+    <string name="settings_report_top_devices">Frequent devices</string>
+    <string name="settings_report_remote_control">Remote control</string>
+    <string name="settings_report_controlled">Controlled by %1$s for %2$s</string>
+    <string name="settings_report_local_only">Data is stored only on this device and is never uploaded</string>
+    <string name="settings_report_clear">Clear records</string>
+    <string name="settings_report_clear_title">Clear all cast records?</string>
+    <string name="settings_report_clear_text">This can\'t be undone. Diagnostic logs are not affected.</string>
+    <string name="settings_report_clear_confirm">Clear</string>
+    <string name="settings_duration_hours">%1$d h</string>
+    <string name="settings_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="settings_duration_minutes">%1$d min</string>
+    <string name="settings_duration_under_minute">less than 1 min</string>
+
+    <!-- F11 Network diagnostics -->
+    <string name="settings_diag_intro">Doesn\'t read the Wi‑Fi name (that needs location permission); only checks the subnet and connectivity.</string>
+    <string name="settings_diag_status_confirmed">Confirmed</string>
+    <string name="settings_diag_status_needs_user">Please check</string>
+    <string name="settings_diag_status_problem">Problem</string>
+    <!-- Screen reader: "<status>: <title> <detail>"; title already ends with sentence punctuation -->
+    <string name="settings_diag_item_desc">%1$s: %2$s %3$s</string>
+    <string name="settings_diag_sentence_end">.</string>
+    <string name="settings_diag_no_lan_title">Not connected to Wi‑Fi or a wired network</string>
+    <string name="settings_diag_no_lan_detail">Connect to your home router first; the TV must be on the same router too</string>
+    <string name="settings_diag_lan_title">Phone is connected to %1$s</string>
+    <string name="settings_diag_transport_wifi">Wi‑Fi</string>
+    <string name="settings_diag_transport_ethernet">a wired network</string>
+    <string name="settings_diag_lan_detail">This device\'s address is %1$s; the TV should be %2$s</string>
+    <string name="settings_diag_vpn_title">A VPN is on</string>
+    <string name="settings_diag_vpn_detail">A VPN can stop devices on the local network from seeing each other. Turn it off for now and try again</string>
+    <string name="settings_diag_prefix_title">The current subnet is large (/%1$d)</string>
+    <string name="settings_diag_prefix_detail">Cast codes only work on /24 subnets; connect by scanning the QR code instead</string>
+    <string name="settings_diag_multicast_ok_title">LAN multicast is working</string>
+    <plurals name="settings_diag_multicast_ok_detail">
+        <item quantity="one">Got a reply from %1$d device</item>
+        <item quantity="other">Got replies from %1$d devices</item>
+    </plurals>
+    <string name="settings_diag_multicast_silent_title">No multicast replies from any device</string>
+    <string name="settings_diag_multicast_silent_detail">The router may be blocking multicast (auto discovery). QR codes and Cast codes are not affected</string>
+    <string name="settings_diag_target_ok_title">Can reach %1$s</string>
+    <string name="settings_diag_target_ok_detail">Port %1$d is reachable</string>
+    <string name="settings_diag_target_fail_title">Can\'t reach %1$s:%2$d</string>
+    <string name="settings_diag_target_fail_detail">The TV may be off, may have left the receiving screen, or may be on a different subnet</string>
+    <string name="settings_diag_router_title">Are the TV and the phone on the same router?</string>
+    <string name="settings_diag_router_detail">On dual-band routers, the 2.4G and 5G networks sometimes can\'t reach each other</string>
+    <string name="settings_diag_isolation_title">Is “AP isolation” turned on in the router?</string>
+    <string name="settings_diag_isolation_detail">Also called wireless isolation or client isolation; when on, devices can\'t reach each other</string>
+    <string name="settings_diag_guest_title">Are you on a “guest network”?</string>
+    <string name="settings_diag_guest_detail">Guest networks usually block devices from reaching each other; switch to the main network</string>
+    <string name="settings_diag_target_section">Test whether the TV can be reached</string>
+    <string name="settings_diag_target_hint">TV address, e.g. 192.168.1.128:8443</string>
+    <string name="settings_diag_rerun">Run again</string>
+
+    <!-- F25 Log export (the exported text itself stays as-is, developer-facing) -->
+    <string name="settings_logs_intro">Below is everything that will be exported; please review it first. After exporting, you choose who to send it to (for example, attach it to a GitHub issue). This app never uploads anything automatically.</string>
+    <plurals name="settings_logs_tv_summary">
+        <item quantity="one">%1$d line (peer device names are anonymized). The full text isn\'t shown on the TV; view it on a phone or computer after exporting.</item>
+        <item quantity="other">%1$d lines (peer device names are anonymized). The full text isn\'t shown on the TV; view it on a phone or computer after exporting.</item>
+    </plurals>
+    <string name="settings_logs_loading">Loading…</string>
+    <string name="settings_logs_clear">Clear run log</string>
+    <string name="settings_logs_chooser">Export diagnostic log</string>
+    <string name="settings_logs_export">Export</string>
+
+    <!-- F26 Install the Receiver on a TV -->
+    <string name="settings_install_intro">The same installer is both the Sender and the Receiver. After installing it on the TV, open it and it goes straight to “Ready to receive”.</string>
+    <string name="settings_install_split_warning">This app was installed as split packages (for example, from an app store), so it can\'t be shared to the TV directly. Download the universal installer from the project\'s release page and install it with a USB drive or the TV\'s browser.</string>
+    <string name="settings_install_abi_warning">The installer on this device only contains %1$s. Many TV boxes run 32-bit systems and may not be able to install it. Use the universal installer from the release page instead, or install the matching version from a USB drive.</string>
+    <string name="settings_install_method_share">Method 1: Share the installer from your phone (recommended)</string>
+    <string name="settings_install_method_share_detail">The phone and the TV must be on the same router. Sharing is visible only on the local network and stops automatically when you leave this page or after 10 minutes.</string>
+    <string name="settings_install_start">Start sharing</string>
+    <string name="settings_install_start_failed">Couldn\'t start sharing. Make sure your phone is connected to Wi‑Fi and try again, or install from a USB drive</string>
+    <string name="settings_install_need_wifi">Connect to Wi‑Fi first</string>
+    <string name="settings_install_enter_url">In the TV browser\'s address bar, enter:</string>
+    <string name="settings_install_qr_desc">QR code for the installer download address (for other phones or tablets)</string>
+    <plurals name="settings_install_downloads">
+        <item quantity="one">Downloaded %1$d time</item>
+        <item quantity="other">Downloaded %1$d times</item>
+    </plurals>
+    <string name="settings_install_stop">Stop sharing</string>
+    <string name="settings_install_method_usb">Method 2: USB drive</string>
+    <string name="settings_install_method_usb_detail">Copy the installer to a USB drive, plug it into the TV, and open it with the TV\'s “File manager” to install. Some TVs require allowing “Install unknown apps” in system settings first.</string>
+    <string name="settings_install_fallback_title">TV still can\'t install it?</string>
+    <string name="settings_install_fallback_detail">Many TVs have built-in DLNA receiving: without installing this app, you can Push videos, photos and music from your phone in the “TV’s built-in casting” group of the device list (Screen mirroring isn\'t available).</string>
+    <!-- Download page served to the TV browser -->
+    <string name="settings_apk_page_lang">en</string>
+    <string name="settings_apk_page_title">%1$s installer</string>
+    <string name="settings_apk_page_intro">A free, open-source (GPL‑3.0) LAN screen-casting Receiver that never goes online. Open it after installing and it goes straight to “Ready to receive”.</string>
+    <string name="settings_apk_page_download">Download installer (%1$d MB)</string>
+    <string name="settings_apk_page_help">After downloading, open it from the TV\'s “File manager” or “Downloads” to install. If installation is blocked, allow this browser / file manager to “Install unknown apps” in system settings.</string>
+</resources>

@@ -40,7 +40,23 @@ sealed interface AppleCompatState {
 
     data class Active(val session: AppleSession) : AppleCompatState
 
-    data class Failed(val reason: String) : AppleCompatState
+    /** 启动失败；界面按 [reason] 显示“原因 + 下一步”（文案在界面层资源里，跟随系统语言）。 */
+    data class Failed(val reason: AppleFailure) : AppleCompatState
+}
+
+/** 启动失败的原因（界面映射为文案；返回码只进日志）。 */
+enum class AppleFailure {
+    /** 无法在局域网中公布本机（mDNS 初始化 / 注册失败）。 */
+    PUBLISH_FAILED,
+
+    /** 网络端口被占用。 */
+    PORT_IN_USE,
+
+    /** 其他启动错误。 */
+    START_ERROR,
+
+    /** 安装包不含原生库（构建开关关闭或 ABI 缺失）。 */
+    NOT_PACKAGED,
 }
 
 /** 会话结束原因（用于待机页提示与本机报告）。 */

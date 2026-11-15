@@ -23,15 +23,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.benchan.wireless.screencasting.core.common.WscLog
 import com.benchan.wireless.screencasting.core.ui.theme.LocalElderTypography
 import com.benchan.wireless.screencasting.core.ui.theme.ProvideElderTypography
+import com.benchan.wireless.screencasting.feature.sender.R
 import com.benchan.wireless.screencasting.feature.sender.service.ScreenCastService
 import com.benchan.wireless.screencasting.feature.sender.session.SenderState
 import com.benchan.wireless.screencasting.feature.sender.session.isTerminal
+import com.benchan.wireless.screencasting.feature.sender.ui.asString
 import com.benchan.wireless.screencasting.feature.sender.ui.push.PushConfirmDialog
 import com.benchan.wireless.screencasting.feature.sender.ui.push.PushViewModel
 import com.benchan.wireless.screencasting.protocol.dlna.dmc.PushSourceKind
@@ -82,6 +86,9 @@ private fun ElderHostContent(
     pushVm: PushViewModel,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
+    val tvWord = stringResource(R.string.elder_tv)
+    val sendTitle = stringResource(R.string.elder_send_family)
     val state by vm.state.collectAsStateWithLifecycle()
     val push by vm.push.collectAsStateWithLifecycle()
     val targets by vm.targets.collectAsStateWithLifecycle()
@@ -94,15 +101,15 @@ private fun ElderHostContent(
     var pushOpen by rememberSaveable { mutableStateOf(false) }
     var lastTarget by remember { mutableStateOf<ElderHomeTarget?>(null) }
     var lastPushTarget by remember { mutableStateOf<PushTarget?>(null) }
-    var helpFor by remember { mutableStateOf<Pair<String?, ElderOutcome>?>(null) }
+    var helpFor by remember { mutableStateOf<Pair<String, ElderOutcome>?>(null) }
     var confirmPush by remember { mutableStateOf<PushTarget?>(null) }
     var stopMirrorFor by remember { mutableStateOf<PushTarget?>(null) }
     // 本机在 E07 点了“停止投屏”：结束后显示 E09（EMU-F6）
     var stoppedByUser by remember { mutableStateOf(false) }
     // 为放照片而停止的镜像：结束页不弹出（直接打开照片选择器）
     var silentEnd by remember { mutableStateOf(false) }
-    // 首页常驻提示（E05 超时等）
-    var homeNotice by remember { mutableStateOf<String?>(null) }
+    // 首页常驻提示（E05 超时等）；存资源 ID，按当前语言显示
+    var homeNotice by remember { mutableStateOf<Int?>(null) }
 
     // 没有进行中的镜像时找电视（最近地址直连 + mDNS + SSDP）；投屏中释放
     val idle = state.isTerminal
@@ -171,7 +178,7 @@ private fun ElderHostContent(
         if (s !is SenderState.Idle && s !is SenderState.Ended) return@LaunchedEffect
         // 冷启动时等首页目标第一次算出来再决定（PM P1-6）；没有能镜像的电视给出说明
         val first = vm.awaitTargets().firstOrNull { it.canMirror }
-        if (first != null) cast(first.target, "TILE") else vm.showFailure("电视", ElderOutcome.NO_TARGET)
+        if (first != null) cast(first.target, "TILE") else vm.showFailure(tvWord, ElderOutcome.NO_TARGET)
     }
     LaunchedEffect(openPushRemote) {
         if (openPushRemote) {
@@ -191,7 +198,7 @@ private fun ElderHostContent(
         }
     }
 
-    val label = attempt?.label ?: lastTarget?.label ?: (state as? SenderState.Casting)?.target?.name ?: "电视"
+    val label = attempt?.label ?: lastTarget?.label ?: (state as? SenderState.Casting)?.target?.name ?: tvWord
 
     // ------------------------------------------------------------------ 页面选择
     helpFor?.let { (l, o) ->
@@ -199,8 +206,8 @@ private fun ElderHostContent(
         val facts = remember(l, o) { vm.helpFacts(l, o) }
         ElderHelpScreen(facts, onSend = {
             vm.onHelpOpened(sent = true)
-            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, ElderHelpText.build(facts))
-            runCatching { context.startActivity(Intent.createChooser(send, "发给家人")) }
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, ElderHelpText.build(facts, resources))
+            runCatching { context.startActivity(Intent.createChooser(send, sendTitle)) }
         }, onBack = { helpFor = null })
         return
     }
@@ -229,12 +236,12 @@ private fun ElderHostContent(
     when (val s = state) {
         is SenderState.Connecting, is SenderState.Starting -> if (showWaiting) {
             BackHandler { cancel() }
-            ElderWaitingScreen(ElderCopy.connecting(label), null, onCancel = ::cancel)
+            ElderWaitingScreen(ElderCopy.connecting(label).asString(), null, onCancel = ::cancel)
             return
         }
         is SenderState.AwaitingTvConfirm -> {
             BackHandler { cancel() }
-            ElderWaitingScreen(ElderCopy.TV_CONFIRM, "等待中…", onCancel = ::cancel)
+            ElderWaitingScreen(ElderCopy.TV_CONFIRM.asString(), stringResource(R.string.elder_waiting), onCancel = ::cancel)
             return
         }
         is SenderState.AwaitingPin -> {
@@ -248,7 +255,7 @@ private fun ElderHostContent(
                 delay(CAPTURE_INTRO_TIMEOUT_MS)
                 WscLog.i("Elder", "capture intro timed out")
                 cancel()
-                homeNotice = "刚才没有开始投屏，想投的时候再按一次"
+                homeNotice = R.string.elder_intro_timeout
             }
             BackHandler { cancel() }
             ElderCaptureIntro(onOk = ::requestProjection, onBack = ::cancel)
@@ -263,7 +270,7 @@ private fun ElderHostContent(
             LaunchedEffect(s) { silentEnd = false; vm.acknowledge() }
         } else if (homeNotice == null || s.reason != com.benchan.wireless.screencasting.feature.sender.session.EndReason.USER_STOPPED) {
             val outcome = ElderOutcomes.of(s.reason, s.failure, lan != null)
-            val l = lastTarget?.label ?: s.target?.name ?: "电视"
+            val l = lastTarget?.label ?: s.target?.name ?: tvWord
             val home = { vm.acknowledge(); vm.clearAttempt(); stoppedByUser = false }
             if (outcome == ElderOutcome.STOPPED || outcome == ElderOutcome.LOCKED) {
                 BackHandler { home() }
@@ -305,7 +312,7 @@ private fun ElderHostContent(
         }
         if (a.finding && state.isTerminal && showWaiting) {
             BackHandler { cancel() }
-            ElderWaitingScreen(ElderCopy.connecting(a.label), null, onCancel = ::cancel)
+            ElderWaitingScreen(ElderCopy.connecting(a.label).asString(), null, onCancel = ::cancel)
             return
         }
     }
@@ -363,11 +370,11 @@ private fun ElderHostContent(
         else -> {
             val casting = state is SenderState.Casting || state is SenderState.Reconnecting
             val active = when {
-                casting -> ElderActive(ElderCopy.castingTo(label), "回到投屏页面", onOpen = { castHidden = false }, onStop = { stoppedByUser = true; castHidden = false; vm.stopCasting() })
-                ps?.isActive == true -> ElderActive("正在放到 ${ps.target.name}", "回到放照片页面", onOpen = { pushOpen = true }, onStop = pushVm::stop)
+                casting -> ElderActive(ElderCopy.castingTo(label).asString(), stringResource(R.string.elder_back_to_cast), onOpen = { castHidden = false }, onStop = { stoppedByUser = true; castHidden = false; vm.stopCasting() })
+                ps?.isActive == true -> ElderActive(stringResource(R.string.elder_showing_on, ps.target.name), stringResource(R.string.elder_back_to_photos), onOpen = { pushOpen = true }, onStop = pushVm::stop)
                 else -> null
             }
-            val notice = (homeNotice ?: externalNotice)?.let { text ->
+            val notice = (homeNotice?.let { stringResource(it) } ?: externalNotice)?.let { text ->
                 text to { if (homeNotice != null) homeNotice = null else onExternalNoticeDismissed() }
             }
             ElderHomeScreen(
@@ -402,17 +409,17 @@ private fun ElderHostContent(
     stopMirrorFor?.let { t ->
         AlertDialog(
             onDismissRequest = { stopMirrorFor = null },
-            text = { Text("要先停止投屏，才能放照片和视频。现在停止投屏吗？", style = LocalElderTypography.current.body) },
+            text = { Text(stringResource(R.string.elder_stop_mirror_question), style = LocalElderTypography.current.body) },
             // 主按钮在上（UX P1-12）
             confirmButton = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ElderButton("停止投屏，放照片", {
+                    ElderButton(stringResource(R.string.elder_stop_and_photos), {
                         stopMirrorFor = null
                         silentEnd = true
                         vm.stopCasting()
                         launchPicker(t, mirrorStopped = true)
                     })
-                    ElderButton("不了", { stopMirrorFor = null }, kind = ElderButtonKind.OUTLINED)
+                    ElderButton(stringResource(R.string.elder_no_thanks), { stopMirrorFor = null }, kind = ElderButtonKind.OUTLINED)
                 }
             },
         )

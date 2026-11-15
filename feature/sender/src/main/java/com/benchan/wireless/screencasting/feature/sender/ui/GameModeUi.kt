@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import androidx.compose.ui.text.style.TextOverflow
+import com.benchan.wireless.screencasting.feature.sender.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -105,7 +108,7 @@ internal fun QualitySection(state: SenderState.Casting, onQuality: (QualityProfi
     val c = MaterialTheme.colorScheme
     val switching = sw.switching
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("画质", style = MaterialTheme.typography.titleSmall, color = c.primary)
+        Text(stringResource(R.string.sender_quality_title), style = MaterialTheme.typography.titleSmall, color = c.primary)
         val select: (QualityProfile) -> Unit = { p ->
             if (state.switchingTo == null) {
                 val needsIntro = p.lowLatency && !state.gameIntroAcknowledged
@@ -129,9 +132,10 @@ internal fun QualitySection(state: SenderState.Casting, onQuality: (QualityProfi
         // 这台接收端以前测过游戏模式：做决定前也显示（层级 ⑤，UX 走查 P2-1）
         state.measuredGameLatencyMs?.takeIf { switching == null }?.let { ms ->
             val gameNow = state.profile == QualityProfile.GAME
-            val text = SenderCopy.measuredLatency(ms, gameNow)
+            val text = SenderCopy.measuredLatency(ms, gameNow).asString()
+            val a11y = SenderCopy.measuredLatencyA11y(ms, gameNow).asString()
             Row(
-                Modifier.offset(y = (-4).dp).semantics(mergeDescendants = true) { contentDescription = SenderCopy.measuredLatencyA11y(ms, gameNow) },
+                Modifier.offset(y = (-4).dp).semantics(mergeDescendants = true) { contentDescription = a11y },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(Icons.Rounded.History, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
@@ -151,7 +155,7 @@ internal fun QualitySection(state: SenderState.Casting, onQuality: (QualityProfi
 private fun DescriptionLine(state: SenderState.Casting, switching: QualityProfile?) {
     val c = MaterialTheme.colorScheme
     var last by remember { mutableStateOf<QualityProfile?>(null) }
-    var done by remember { mutableStateOf<String?>(null) }
+    var done by remember { mutableStateOf<UiText?>(null) }
     LaunchedEffect(switching) {
         val target = last
         last = switching
@@ -163,10 +167,10 @@ private fun DescriptionLine(state: SenderState.Casting, switching: QualityProfil
     }
     val audioOn = (state.audio == AudioState.ON || state.audio == AudioState.SILENT_SUSPECTED) && state.audioSplit
     val (text, live, color) = when {
-        switching != null && state.switchingRollback -> Triple(SenderCopy.qualityRestoring(switching), true, c.onSurface)
-        switching != null -> Triple(SenderCopy.qualitySwitching(switching), true, c.onSurface)
-        done != null -> Triple(done!!, true, c.onSurface)
-        else -> Triple(SenderCopy.qualityDescription(state.profile, audioOn, state.fpsCapped), false, c.onSurfaceVariant)
+        switching != null && state.switchingRollback -> Triple(SenderCopy.qualityRestoring(switching).asString(), true, c.onSurface)
+        switching != null -> Triple(SenderCopy.qualitySwitching(switching).asString(), true, c.onSurface)
+        done != null -> Triple(done!!.asString(), true, c.onSurface)
+        else -> Triple(SenderCopy.qualityDescription(state.profile, audioOn, state.fpsCapped).asString(), false, c.onSurfaceVariant)
     }
     Text(
         text, style = MaterialTheme.typography.bodySmall, color = color,
@@ -185,6 +189,8 @@ private fun androidx.compose.material3.SingleChoiceSegmentedButtonRowScope.Quali
 ) {
     val isTarget = switching == p
     val locked = switching != null && !isTarget
+    val switchingDesc = stringResource(R.string.sender_quality_state_switching)
+    val lockedDesc = stringResource(R.string.sender_quality_state_locked)
     SegmentedButton(
         selected = if (switching != null) isTarget else current == p,
         onClick = { onClick(p) },
@@ -207,9 +213,9 @@ private fun androidx.compose.material3.SingleChoiceSegmentedButtonRowScope.Quali
             }
         },
         modifier = Modifier.heightIn(min = 48.dp).semantics {
-            if (isTarget) stateDescription = "正在切换" else if (locked) stateDescription = "不可用，正在切换"
+            if (isTarget) stateDescription = switchingDesc else if (locked) stateDescription = lockedDesc
         },
-    ) { Text(p.label) }
+    ) { Text(stringResource(p.labelRes), maxLines = 1, overflow = TextOverflow.Ellipsis) }
 }
 
 /**
@@ -234,13 +240,13 @@ private fun HintCard(h: GameHint, game: GameActions) {
         ) {
             Icon(hintIcon(h.type), null, Modifier.size(18.dp), tint = if (h.warning) fg else c.onSurfaceVariant)
             Column(Modifier.weight(1f).padding(end = 8.dp)) {
-                Text(copy.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = fg)
-                copy.detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = if (h.warning) fg else c.onSurfaceVariant) }
+                Text(copy.title.asString(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = fg)
+                copy.detail?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = if (h.warning) fg else c.onSurfaceVariant) }
             }
         }
         // 按钮放不下时换行（200% 字号）
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            copy.action?.let { label ->
+            copy.action?.let { labelRes ->
                 TextButton(onClick = {
                     if (h.type == GameHintType.LEGACY_RECEIVER) {
                         game.onHintDismiss(h.type)
@@ -248,9 +254,9 @@ private fun HintCard(h: GameHint, game: GameActions) {
                     } else {
                         game.onHintAction(h.type)
                     }
-                }, modifier = Modifier.heightIn(min = 48.dp)) { Text(label) }
+                }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(labelRes)) }
             }
-            TextButton(onClick = { game.onHintDismiss(h.type) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(SenderCopy.HINT_DISMISS) }
+            TextButton(onClick = { game.onHintDismiss(h.type) }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.sender_hint_dismiss)) }
         }
     }
 }

@@ -36,6 +36,8 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import com.benchan.wireless.screencasting.protocol.dlna.DlnaPlayback
+import com.benchan.wireless.screencasting.feature.receiver.R
+import androidx.compose.ui.res.stringResource
 
 /**
  * DLNA 推送播放页（F09）：Media3 PlayerView（SurfaceView），遥控器可暂停、拖动进度；连按两次返回停止。
@@ -49,13 +51,14 @@ internal fun DlnaPlaybackScreen(playback: DlnaPlayback, player: Player?, onStop:
         onDispose { onDisplay(false) }
     }
     val context = LocalContext.current
+    val backAgain = stringResource(R.string.rx_back_again_stop)
     var lastBack by remember { mutableLongStateOf(0L) }
     // 根部弹层可见时把返回键让给弹层（S-d）
     BackHandler(enabled = !LocalModalOverlayVisible.current) {
         val now = System.currentTimeMillis()
         if (now - lastBack < 2_000) onStop() else {
             lastBack = now
-            Toast.makeText(context, "再按一次返回键停止播放", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, backAgain, Toast.LENGTH_SHORT).show()
         }
     }
     ImmersiveSystemBars()
@@ -84,7 +87,7 @@ internal fun DlnaPlaybackScreen(playback: DlnaPlayback, player: Player?, onStop:
             )
         }
         FadingSourceTag(
-            listOfNotNull(playback.title, (if (playback.imageUri != null) "照片推送" else "视频推送") + " · 来自 ${playback.controlPoint}").joinToString("  ·  "),
+            listOfNotNull(playback.title, stringResource(if (playback.imageUri != null) R.string.rx_dlna_tag_photo else R.string.rx_dlna_tag_video, playback.controlPoint)).joinToString("  ·  "),
             tag,
             Modifier.align(Alignment.TopStart),
         )
@@ -103,7 +106,7 @@ private fun PushedImage(uri: String, title: String?) {
         when (val v = state) {
             null -> CircularProgressIndicator(color = MaterialTheme.colorScheme.onScrim)
             is Bitmap -> Image(v.asImageBitmap(), title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-            else -> Text("这张照片无法显示", color = MaterialTheme.colorScheme.onScrim, style = MaterialTheme.typography.titleMedium)
+            else -> Text(stringResource(R.string.rx_dlna_photo_failed), color = MaterialTheme.colorScheme.onScrim, style = MaterialTheme.typography.titleMedium)
         }
     }
 }

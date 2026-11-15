@@ -57,7 +57,7 @@ data class DeviceRow(
 }
 
 /** 推送中的列表顶部横幅（交互稿 P01）。 */
-data class PushBanner(val targetName: String, val status: String)
+data class PushBanner(val targetName: String, val status: UiText)
 
 data class DeviceListUi(
     val recent: List<DeviceRow> = emptyList(),

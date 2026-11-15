@@ -25,7 +25,8 @@ import javax.inject.Inject
 
 /** 浏览事件。 */
 sealed interface BrowseEvent {
-    data class Found(val device: DiscoveredDevice) : BrowseEvent
+    /** [dlnaPort]：TXT 的 `dlna` 键（本应用接收端开着 DLNA 接收时才有；旧版接收端为 null）。 */
+    data class Found(val device: DiscoveredDevice, val dlnaPort: Int? = null) : BrowseEvent
     data class Lost(val serviceName: String) : BrowseEvent
     data class Failed(val errorCode: Int) : BrowseEvent
 }
@@ -54,7 +55,7 @@ class NsdBrowser @Inject constructor(@ApplicationContext context: Context) {
 
             override fun onServiceFound(serviceInfo: NsdServiceInfo) {
                 launch {
-                    resolve(serviceInfo)?.let { trySend(BrowseEvent.Found(it)) }
+                    resolve(serviceInfo)?.let { trySend(it) }
                 }
             }
 
@@ -75,10 +76,10 @@ class NsdBrowser @Inject constructor(@ApplicationContext context: Context) {
         awaitClose { runCatching { nsd.stopServiceDiscovery(listener) } }
     }
 
-    private suspend fun resolve(info: NsdServiceInfo): DiscoveredDevice? = resolveMutex.withLock {
+    private suspend fun resolve(info: NsdServiceInfo): BrowseEvent.Found? = resolveMutex.withLock {
         withTimeoutOrNull(RESOLVE_TIMEOUT_MS) {
             val resolved = if (Build.VERSION.SDK_INT >= 34) resolveApi34(info) else resolveLegacy(info)
-            resolved?.let(::toDevice)
+            resolved?.let(::toFound)
         }
     }
 
@@ -122,14 +123,14 @@ class NsdBrowser @Inject constructor(@ApplicationContext context: Context) {
     }
 
     @Suppress("DEPRECATION")
-    private fun toDevice(info: NsdServiceInfo): DiscoveredDevice? {
+    private fun toFound(info: NsdServiceInfo): BrowseEvent.Found? {
         val host = if (Build.VERSION.SDK_INT >= 34) {
             info.hostAddresses.firstOrNull { it is Inet4Address }?.hostAddress
         } else {
             (info.host as? Inet4Address)?.hostAddress
         } ?: return null
         val txt = WscTxt.parse(info.attributes) ?: return null
-        return DiscoveredDevice(
+        val device = DiscoveredDevice(
             deviceId = txt.deviceId,
             name = txt.name.ifBlank { info.serviceName },
             host = host,
@@ -140,6 +141,7 @@ class NsdBrowser @Inject constructor(@ApplicationContext context: Context) {
             sources = setOf(DiscoverySource.MDNS),
             lastSeenAt = System.currentTimeMillis(),
         )
+        return BrowseEvent.Found(device, txt.dlnaPort)
     }
 
     private companion object {

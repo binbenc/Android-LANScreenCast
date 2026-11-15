@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- F14 分享（share/）。英文为默认；中文在 values-zh/strings_share.xml。 -->
+<resources>
+    <!-- F14：分享面板里的名称（不叫“投屏到电视”，免得用户以为会镜像，PRD 8.1.2 B） -->
+    <string name="share_label">Push to TV</string>
+
+    <!-- 面板标题 / 关闭 -->
+    <string name="share_title">Push to TV</string>
+    <string name="share_close">Close without pushing</string>
+    <string name="share_close_continue">Close (push continues)</string>
+    <string name="share_header_push_to">Push to %1$s</string>
+    <string name="share_reselect_title">Pick a TV, then choose again from your gallery</string>
+    <string name="share_change_tv">Choose another TV</string>
+    <string name="share_checking">Checking shared files…</string>
+    <string name="share_tv">TV</string>
+    <string name="share_current_tv">the current TV</string>
+    <!-- 读屏把“ · ”换成的分隔符（引号保留空格） -->
+    <string name="share_spoken_separator">", "</string>
+
+    <!-- 内容摘要“3 个视频 · 3 张照片 · 2 首音乐” -->
+    <plurals name="share_count_videos">
+        <item quantity="one">%d video</item>
+        <item quantity="other">%d videos</item>
+    </plurals>
+    <plurals name="share_count_photos">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+    <plurals name="share_count_music">
+        <item quantity="one">%d song</item>
+        <item quantity="other">%d songs</item>
+    </plurals>
+    <string name="share_url_word">link</string>
+    <string name="share_play_in_order">Plays in the order you shared</string>
+    <string name="share_edit">Edit</string>
+
+    <!-- 提示条 -->
+    <plurals name="share_ignored_title">
+        <item quantity="one">%d file ignored</item>
+        <item quantity="other">%d files ignored</item>
+    </plurals>
+    <string name="share_ignored_detail">Only videos, photos and music can be pushed</string>
+    <plurals name="share_unreadable_title">
+        <item quantity="one">%d file couldn\'t be read and was skipped</item>
+        <item quantity="other">%d files couldn\'t be read and were skipped</item>
+    </plurals>
+    <string name="share_unreadable_no_permission">The app that shared it didn\'t allow reading it</string>
+    <string name="share_unreadable_generic">Can\'t read this file. If it\'s in cloud storage, download it in that app first, then share it again</string>
+    <string name="share_truncated">Up to 100 items can be pushed at once. Using the first 100</string>
+
+    <!-- 阻断结果卡 -->
+    <string name="share_nothing_title">These files can\'t be pushed to a TV</string>
+    <string name="share_nothing_detail">You can push videos, photos, music or a video link. To view PDFs or documents on the TV, open them and use screen mirroring</string>
+    <string name="share_unreadable_block_title">Can\'t read the shared files</string>
+    <string name="share_unreadable_block_detail">%1$s. You can pick a TV first, then choose the files again in this app</string>
+    <string name="share_no_url_title">No link found</string>
+    <string name="share_no_url_detail">You can share a video file, or a video link ending in .mp4 or .m3u8</string>
+    <string name="share_no_space_title">Not enough storage</string>
+    <string name="share_no_space_detail_single">This file needs about %1$s, but only %2$s is free. Free up space and share again, or use screen mirroring</string>
+    <plurals name="share_no_space_detail_multi">
+        <item quantity="one">%1$d file needs about %2$s, but only %3$s is free</item>
+        <item quantity="other">%1$d files need about %2$s, but only %3$s is free</item>
+    </plurals>
+    <string name="share_prepare_failed_title">Couldn\'t prepare files</string>
+    <string name="share_prepare_failed_detail">None of the shared files could be prepared. Share them again, or use screen mirroring</string>
+    <plurals name="share_not_ready">
+        <item quantity="one">%d file isn\'t ready</item>
+        <item quantity="other">%d files aren\'t ready</item>
+    </plurals>
+    <string name="share_prepared">Files are ready</string>
+    <plurals name="share_only_first">
+        <item quantity="one">Push only the first %1$d item (%2$s)</item>
+        <item quantity="other">Push only the first %1$d items (%2$s)</item>
+    </plurals>
+    <string name="share_reselect_in_app">Choose again in this app</string>
+
+    <!-- 推送中某项复制失败 -->
+    <string name="share_copy_no_space_title">Not enough storage to prepare this file</string>
+    <string name="share_copy_no_space_detail">Free up space and share again, or use screen mirroring</string>
+    <string name="share_copy_too_large_title">File is too large to prepare</string>
+    <string name="share_copy_too_large_detail">Cloud files larger than 4 GB need to be downloaded to the phone first, then shared again</string>
+    <string name="share_copy_read_failed_title">Couldn\'t prepare the file</string>
+    <string name="share_copy_read_failed_detail">Reading was interrupted. Try sharing again</string>
+    <string name="share_copy_gone_title">File no longer exists</string>
+    <string name="share_copy_gone_detail">It may have been deleted or moved</string>
+
+    <!-- 准备进度 -->
+    <string name="share_preparing_percent">Preparing files %1$d%%</string>
+    <string name="share_preparing_read">Preparing files · %1$s read</string>
+    <string name="share_bytes_read">%1$s read</string>
+    <string name="share_remaining_10s">About 10 s left</string>
+    <string name="share_remaining_20s">About 20 s left</string>
+    <string name="share_remaining_30s">About 30 s left</string>
+    <string name="share_remaining_1min">About 1 min left</string>
+    <plurals name="share_remaining_long">
+        <item quantity="one">Large file, about %d min left. You can leave now; it plays automatically when ready</item>
+        <item quantity="other">Large file, about %d min left. You can leave now; it plays automatically when ready</item>
+    </plurals>
+    <string name="share_auto_start">Starts automatically once you pick a TV</string>
+
+    <!-- 首次使用说明 -->
+    <string name="share_first_use_title">The TV reads the files you share directly from your phone</string>
+    <string name="share_first_use_transfer">No storage permission needed. Photos and music are copied into this app first, and videos are read by the TV directly from your phone. Copies are deleted and sharing stops as soon as pushing ends. TV’s built-in casting isn\'t encrypted.</string>
+    <string name="share_first_use_copy">No storage permission needed. Files are copied into this app first and deleted as soon as pushing ends. TV’s built-in casting isn\'t encrypted.</string>
+    <string name="share_got_it">Got it</string>
+
+    <!-- 网页地址（S04） -->
+    <string name="share_web_title">This is a web page link. TVs usually can\'t open it</string>
+    <string name="share_web_detail">TVs can only open links to video files (such as .mp4 or .m3u8). To watch this video on the TV, mirror your phone screen to the TV, then go back to the video app and play it.</string>
+    <string name="share_web_mirror">Use screen mirroring</string>
+    <string name="share_web_mirror_note">Requires this app on the TV · Your phone will ask to allow screen recording</string>
+    <string name="share_web_push">Push anyway</string>
+    <string name="share_web_push_note">The TV will open this link over the internet by itself. This app won\'t access it</string>
+    <string name="share_web_mirroring">Mirroring to %1$s. Go back to the video app and play it to see it on the TV.</string>
+    <string name="share_url_cd">Link: %1$s</string>
+    <!-- 本应用设备列表顶部横幅（S04 改用镜像） -->
+    <string name="share_mirror_hint">Pick a TV and start mirroring, then go back to the video app and play</string>
+
+    <!-- 设备列表 -->
+    <string name="share_group_recent">Recently pushed</string>
+    <string name="share_group_family">TVs set up by family</string>
+    <string name="share_group_dlna">TV’s built-in casting</string>
+    <string name="share_group_own">LAN Screen Cast receivers</string>
+    <string name="share_unencrypted">Not encrypted</string>
+    <string name="share_searching_short">Still searching</string>
+    <string name="share_needs_dlna">Turn on \"DLNA receiving\" in this TV\'s settings to push to it</string>
+    <string name="share_audio_only">Music only</string>
+    <string name="share_still_searching">Still searching… Make sure the TV is on and connected to the same router as your phone</string>
+    <string name="share_empty_title">No TVs available for pushing</string>
+    <string name="share_empty_detail">Make sure the TV is on and connected to the same router as your phone. TV’s built-in casting also needs the router to let devices discover each other.</string>
+    <string name="share_no_wifi_title">Phone isn\'t connected to Wi‑Fi</string>
+    <string name="share_no_wifi_detail">Search restarts automatically once you connect to the same router as the TV.</string>
+    <string name="share_open_wifi">Open Wi‑Fi settings</string>
+    <plurals name="share_found_tvs">
+        <item quantity="one">Found %d TV</item>
+        <item quantity="other">Found %d TVs</item>
+    </plurals>
+    <string name="share_rescan">Search again</string>
+    <string name="share_diagnostics">Network diagnostics</string>
+    <string name="share_no_cast_feature">TV has no casting feature?</string>
+    <string name="share_unavailable">Unavailable</string>
+    <string name="share_pushing_state">Pushing. Double-tap to replace the content</string>
+    <string name="share_row_pushing">Pushing · %1$s · Tap to replace the content</string>
+    <string name="share_row_mirroring">Mirroring · Can receive pushes</string>
+    <string name="share_row_last_own">Last used %1$s · LAN Screen Cast receiver</string>
+    <string name="share_row_last_dlna">Last used %1$s · TV’s built-in casting</string>
+    <string name="share_row_trusted">Trusted · Can receive pushes</string>
+    <string name="share_row_can_receive">Can receive pushes</string>
+    <string name="share_row_dlna_unencrypted">TV’s built-in casting · Not encrypted</string>
+
+    <!-- 长辈模式（F24） -->
+    <string name="share_elder_new_tv">To push to a new TV, ask a family member to add it in Elder mode settings</string>
+    <string name="share_elder_needs_setup">This TV can\'t show photos and videos yet. Ask a family member to set it up</string>
+    <string name="share_elder_ok_sub">Can show photos and videos</string>
+    <string name="share_elder_audio_sub">Music only</string>
+    <string name="share_elder_row_pushing">Playing · Tap to switch to what you just shared</string>
+
+    <!-- Direct Share（S08） -->
+    <string name="share_direct_audio_only">%1$s can only play music</string>
+    <string name="share_direct_missed">Couldn\'t find %1$s. Make sure the TV is on and connected to the same router as your phone</string>
+    <string name="share_direct_finding">Looking for %1$s…</string>
+    <string name="share_direct_hint">Up to 5 s · Files are being prepared meanwhile</string>
+    <string name="share_pick_other_tv">Choose another TV</string>
+    <string name="share_shortcut_disabled">This TV was removed from the push list</string>
+
+    <!-- 冲突（S07） -->
+    <string name="share_banner_mirroring_title">Mirroring to %1$s</string>
+    <string name="share_banner_mirroring_detail">Mirroring and pushing can\'t run at the same time</string>
+    <string name="share_banner_pushing_title">Pushing to %1$s</string>
+    <string name="share_banner_pushing_detail">%1$s · Tap to replace the content</string>
+    <string name="share_stop_mirror_title">Stop mirroring and push to %1$s instead?</string>
+    <string name="share_stop_mirror_title_connecting">Cancel the current connection and push to %1$s instead?</string>
+    <string name="share_stop_mirror_body_named">%1$s will stop showing your phone screen.</string>
+    <string name="share_stop_mirror_body">The TV will stop showing your phone screen.</string>
+    <string name="share_stop_mirror_confirm">Stop mirroring and push</string>
+    <string name="share_stop_mirror_confirm_connecting">Push instead</string>
+    <string name="share_replace_title">Replace what\'s playing on %1$s?</string>
+    <string name="share_replace_now">"Now playing “%1$s”. "</string>
+    <string name="share_replace_now_multi">"Now playing “%1$s” (%2$d / %3$d). "</string>
+    <string name="share_replace_body">%1$sIt will play the %2$s you just shared instead. The current playlist won\'t be kept.</string>
+    <string name="share_replace_confirm">Replace</string>
+    <string name="share_switch_title">Stop pushing to %1$s and push to %2$s instead?</string>
+    <string name="share_switch_body">%1$s will stop playing. %2$s</string>
+    <string name="share_switch_confirm">Push to %1$s</string>
+    <string name="share_transcode_tail">The video conversion in progress will also be canceled.</string>
+
+    <!-- 准备与连接（S02）/ 已开始（S03） -->
+    <string name="share_preparing_first">Preparing item 1</string>
+    <string name="share_preparing_file">Preparing file</string>
+    <string name="share_connect_step">Connect to %1$s</string>
+    <string name="share_play_step">Start playback</string>
+    <string name="share_tv_loading">TV is loading…</string>
+    <string name="share_transcoding">Converting video %1$d%%</string>
+    <string name="share_allow_hint">If a prompt appears on the TV, select \"Allow\" with the remote</string>
+    <string name="share_leave_note">Playback starts as soon as item 1 is ready; the rest are prepared while playing. Leaving this screen won\'t stop the push.</string>
+    <string name="share_cancel">Cancel</string>
+    <string name="share_cancel_push">Cancel push</string>
+    <string name="share_done">Done</string>
+    <string name="share_open_remote">Open remote</string>
+    <string name="share_cancelled_toast">Canceled. Nothing was pushed</string>
+    <string name="share_started_photo">Sent to %1$s</string>
+    <string name="share_started_play">Now playing on %1$s</string>
+    <string name="share_item_of">Item %1$d / %2$d · %3$s</string>
+    <plurals name="share_rest_preparing">
+        <item quantity="one">Preparing %d more item</item>
+        <item quantity="other">Preparing %d more items</item>
+    </plurals>
+    <plurals name="share_rest_preparing_percent">
+        <item quantity="one">Preparing %1$d more item %2$d%%</item>
+        <item quantity="other">Preparing %1$d more items %2$d%%</item>
+    </plurals>
+    <plurals name="share_all_ready">
+        <item quantity="one">%d item ready</item>
+        <item quantity="other">All %d items ready</item>
+    </plurals>
+    <string name="share_item_skipped_gone">Item %1$d no longer exists and was skipped</string>
+    <string name="share_item_skipped_interrupted">Reading item %1$d was interrupted, so it was skipped</string>
+    <string name="share_started_note">After leaving, you can pause, switch and stop the push from the notification or lock screen.</string>
+    <string name="share_replaced_snack">Replaced with the newly shared content</string>
+
+    <!-- 修改网址 -->
+    <string name="share_edit_url_title">Edit link</string>
+    <string name="share_url_label">Video link</string>
+    <string name="share_url_confirm">Use this link</string>
+    <!-- 正文 + 追加的一句（英文句间需要空格，中文不需要） -->
+    <string name="share_body_with_tail">%1$s %2$s</string>
+</resources>

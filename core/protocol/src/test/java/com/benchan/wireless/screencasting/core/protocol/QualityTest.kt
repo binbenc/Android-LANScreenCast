@@ -17,6 +17,7 @@ import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGradeTrac
 import com.benchan.wireless.screencasting.core.protocol.quality.NetworkSample
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -55,7 +56,11 @@ class QualityTest {
         assertEquals(15_000_000, QualityProfile.HD.maxBitrateBps)
         assertEquals(60, QualityProfile.GAME.fps)
         assertEquals(false, QualityProfile.GAME.avSync)
-        assertEquals("1080p · 30 帧 · 最高 8 Mbps", QualityProfile.BALANCED.summary)
+        assertEquals("1080p · 30 fps · up to 8 Mbps", QualityProfile.BALANCED.summary(java.util.Locale.US))
+        assertEquals("High", QualityProfile.HD.label(java.util.Locale.UK))
+        // 中文环境选另一套文案（不断言中文字面量）
+        assertNotEquals(QualityProfile.HD.label(java.util.Locale.US), QualityProfile.HD.label(java.util.Locale.CHINA))
+        assertEquals("Poor", LatencyGrade.POOR.label(java.util.Locale.US))
     }
 
     @Test

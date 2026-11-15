@@ -37,8 +37,8 @@ class ShareActivity : ComponentActivity() {
                     vm.effects.collect { e ->
                         when (e) {
                             ShareEffect.Finish -> finish()
-                            is ShareEffect.Toast -> Toast.makeText(this@ShareActivity, e.text, Toast.LENGTH_SHORT).show()
-                            is ShareEffect.Snackbar -> snackbar.showSnackbar(e.text)
+                            is ShareEffect.Toast -> Toast.makeText(this@ShareActivity, e.text.resolve(this@ShareActivity), Toast.LENGTH_SHORT).show()
+                            is ShareEffect.Snackbar -> snackbar.showSnackbar(e.text.resolve(this@ShareActivity))
                             is ShareEffect.OpenApp -> openApp(e)
                         }
                     }

@@ -1,7 +1,10 @@
 package com.benchan.wireless.screencasting.feature.sender
 
 import com.benchan.wireless.screencasting.core.discovery.DiscoverySource
-import com.benchan.wireless.screencasting.core.protocol.message.ErrorCode
+import com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason
+import com.benchan.wireless.screencasting.core.protocol.quality.GameHint
+import com.benchan.wireless.screencasting.core.protocol.quality.LatencyCause
+import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import com.benchan.wireless.screencasting.feature.sender.session.CastTarget
 import com.benchan.wireless.screencasting.feature.sender.session.ConnectFailure
 import com.benchan.wireless.screencasting.feature.sender.session.EndReason
@@ -9,16 +12,21 @@ import com.benchan.wireless.screencasting.feature.sender.session.SenderState
 import com.benchan.wireless.screencasting.feature.sender.session.isTerminal
 import com.benchan.wireless.screencasting.feature.sender.ui.EndedAction
 import com.benchan.wireless.screencasting.feature.sender.ui.SenderCopy
+import com.benchan.wireless.screencasting.feature.sender.ui.UiText
+import com.benchan.wireless.screencasting.feature.sender.ui.labelRes
+import com.benchan.wireless.screencasting.feature.sender.ui.relativeTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** 文案选择逻辑（资源 ID + 参数）。不断言具体语言的字面量：英文 / 中文由资源文件决定。 */
 class SenderCopyTest {
-    private val target = CastTarget("id", "客厅电视", "192.168.1.8", 8443, DiscoverySource.MDNS)
+    private val target = CastTarget("id", "Living room TV", "192.168.1.8", 8443, DiscoverySource.MDNS)
+
+    private fun UiText?.res(): UiText.Res = this as UiText.Res
 
     @Test
     fun readyToCaptureDoesNotStopTheProjectionService() {
@@ -31,88 +39,112 @@ class SenderCopyTest {
     }
 
     @Test
-    fun errorCodesNeverLeakIntoUserText() {
-        val codes = ErrorCode.entries.map { it.name }
-        for (reason in EndReason.entries) {
-            for (failure in ConnectFailure.entries + listOf(null)) {
-                val text = SenderCopy.endedSnackbar(reason, "客厅电视", failure) ?: continue
-                codes.forEach { assertFalse("$reason → $text", text.contains(it)) }
-                assertFalse(text.contains("WSC"))
-            }
-        }
+    fun deviceNameIsPassedRawAndFallsBackToTvResource() {
+        val t = SenderCopy.endedSnackbar(EndReason.BUSY, "Living room TV").res()
+        assertEquals(R.string.sender_ended_busy, t.id)
+        assertEquals(listOf(UiText.Raw("Living room TV")), t.args)
+        val fallback = SenderCopy.endedSnackbar(EndReason.REMOTE_CLOSED, null).res()
+        assertEquals(listOf(UiText.Res(R.string.sender_tv_fallback)), fallback.args)
     }
 
     @Test
     fun connectFailuresAreDistinguishedAndOfferDiagnostics() {
-        val texts = ConnectFailure.entries.map { SenderCopy.endedSnackbar(EndReason.CONNECT_FAILED, "客厅电视", it) }.toSet()
-        assertEquals(ConnectFailure.entries.size, texts.size)
+        val ids = ConnectFailure.entries.map { SenderCopy.endedSnackbar(EndReason.CONNECT_FAILED, "TV", it).res().id }.toSet()
+        assertEquals(ConnectFailure.entries.size, ids.size)
+        // 未知失败按“连不上”处理
+        assertEquals(R.string.sender_fail_unreachable, SenderCopy.endedSnackbar(EndReason.CONNECT_FAILED, "TV", null).res().id)
         assertEquals(EndedAction.DIAGNOSTICS, SenderCopy.endedAction(EndReason.CONNECT_FAILED))
     }
 
     @Test
     fun errorsCarryNextStep() {
-        assertTrue(SenderCopy.endedSnackbar(EndReason.BUSY, "客厅电视")!!.contains("结束当前投屏"))
-        assertTrue(SenderCopy.endedSnackbar(EndReason.CAST_CODE_WRONG, null)!!.contains("新码"))
+        assertEquals(R.string.sender_ended_cast_code_wrong, SenderCopy.endedSnackbar(EndReason.CAST_CODE_WRONG, null).res().id)
         assertEquals(EndedAction.RETYPE_CAST_CODE, SenderCopy.endedAction(EndReason.CAST_CODE_WRONG))
         assertEquals(EndedAction.RESCAN, SenderCopy.endedAction(EndReason.QR_EXPIRED))
         assertNull(SenderCopy.endedAction(EndReason.REJECTED))
         // 整页说明的原因不出 Snackbar
-        assertNull(SenderCopy.endedSnackbar(EndReason.RECONNECT_FAILED, "客厅电视"))
+        assertNull(SenderCopy.endedSnackbar(EndReason.RECONNECT_FAILED, "TV"))
+        assertNull(SenderCopy.endedSnackbar(EndReason.SCREEN_LOCKED, "TV"))
+        assertNull(SenderCopy.endedSnackbar(EndReason.USER_STOPPED, "TV"))
+    }
+
+    @Test
+    fun everySnackbarReasonHasItsOwnMessage() {
+        val reasons = EndReason.entries.filter { it != EndReason.CONNECT_FAILED }
+        val ids = reasons.mapNotNull { SenderCopy.endedSnackbar(it, "TV")?.res()?.id }
+        assertEquals(ids.size, ids.toSet().size)
     }
 
     @Test
     fun castCodeNetworkHint() {
         val noLan = SenderCopy.castCodeNetworkHint(hasLan = false, prefixSupported = false)
-        assertNotNull(noLan)
-        assertTrue(noLan!!.contains("Wi‑Fi"))
+        assertEquals(UiText.Res(R.string.sender_cast_code_no_wifi), noLan)
         val unsupported = SenderCopy.castCodeNetworkHint(hasLan = true, prefixSupported = false)
-        assertNotNull(unsupported)
-        assertNotEquals(noLan, unsupported)
-        assertFalse(unsupported!!.contains("/24"))
+        assertEquals(UiText.Res(R.string.sender_cast_code_unsupported_network), unsupported)
         assertNull(SenderCopy.castCodeNetworkHint(hasLan = true, prefixSupported = true))
     }
 
     @Test
-    fun secondRoundCopy() {
-        assertTrue(SenderCopy.endedSnackbar(EndReason.RECEIVER_NO_DISPLAY, "客厅电视")!!.contains("客厅电视 上没有打开“等待投屏”页面"))
-        // PIN 路径超时不归因到电视
-        assertFalse(SenderCopy.endedSnackbar(EndReason.PIN_TIMEOUT, "客厅电视")!!.contains("客厅电视"))
-        assertTrue(SenderCopy.endedSnackbar(EndReason.AUTH_FAILED, null)!!.contains("移除对方"))
+    fun pinTimeoutIsNotAttributedToTheTv() {
+        // PIN 路径超时不归因到电视：不带设备名参数
+        assertTrue(SenderCopy.endedSnackbar(EndReason.PIN_TIMEOUT, "TV").res().args.isEmpty())
         assertNotEquals(
             SenderCopy.endedSnackbar(EndReason.CONNECT_FAILED, null, ConnectFailure.QR_PAIR_TIMEOUT),
             SenderCopy.endedSnackbar(EndReason.CONNECT_FAILED, null, ConnectFailure.CODE_PAIR_TIMEOUT),
         )
-        assertTrue(SenderCopy.isLongText(SenderCopy.endedSnackbar(EndReason.BUSY, "客厅电视")!!))
-        assertFalse(SenderCopy.isLongText("已恢复"))
+        assertTrue(SenderCopy.isLongText("x".repeat(21)))
+        assertFalse(SenderCopy.isLongText("ok"))
     }
 
     @Test
-    fun gameModeCopyNeverPromisesNumbersAndHonoursAudio() {
-        val game = com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile.GAME
-        assertTrue(SenderCopy.qualityDescription(game).contains("声音可能比画面稍晚"))
+    fun gameModeDescriptionHonoursAudioAndFpsCap() {
+        val game = QualityProfile.GAME
+        val withAudio = SenderCopy.qualityDescription(game).res()
+        assertEquals(R.string.sender_quality_desc_game_audio_late, withAudio.id)
+        assertEquals(listOf(UiText.Res(R.string.sender_quality_desc_game)), withAudio.args)
         // 声音关闭时不提声音晚
-        assertFalse(SenderCopy.qualityDescription(game, audioOn = false).contains("声音"))
-        assertTrue(SenderCopy.qualityDescription(game, fpsCapped = com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason.THERMAL).contains("30 帧"))
-        assertTrue(SenderCopy.qualityDescription(game, fpsCapped = com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason.REMEMBERED).contains("再点一次"))
-        // 界面不出现目标延迟数字（产品拍板）
-        assertFalse(SenderCopy.qualityDescription(game).contains("100"))
-        val unmet = SenderCopy.hint(com.benchan.wireless.screencasting.core.protocol.quality.GameHint.LatencyUnmet(140, null))
-        assertFalse(unmet.title.contains("100"))
+        assertEquals(UiText.Res(R.string.sender_quality_desc_game), SenderCopy.qualityDescription(game, audioOn = false))
+        assertEquals(UiText.Res(R.string.sender_quality_desc_game_capped), SenderCopy.qualityDescription(game, audioOn = false, fpsCapped = FpsCapReason.THERMAL))
+        assertEquals(UiText.Res(R.string.sender_quality_desc_game_remembered), SenderCopy.qualityDescription(game, audioOn = false, fpsCapped = FpsCapReason.REMEMBERED))
+        // 普通档：档位摘要作为参数（1080p · 30 fps · 8 Mbps）
+        val balanced = SenderCopy.qualityDescription(QualityProfile.BALANCED).res()
+        assertEquals(R.string.sender_quality_desc_balanced, balanced.id)
+        assertEquals(listOf(UiText.Res(R.string.sender_quality_summary, listOf(1080, 30, 8))), balanced.args)
+    }
+
+    @Test
+    fun gameModeSwitchingAndHints() {
+        val game = QualityProfile.GAME
+        assertEquals(UiText.Res(R.string.sender_quality_switching_game), SenderCopy.qualitySwitching(game))
+        assertEquals(UiText.Res(R.string.sender_quality_switching), SenderCopy.qualitySwitching(QualityProfile.HD))
+        assertEquals(UiText.Res(R.string.sender_quality_switched_game), SenderCopy.qualitySwitched(game))
+        assertEquals(UiText.Res(R.string.sender_quality_switched, listOf(UiText.Res(R.string.sender_quality_hd))), SenderCopy.qualitySwitched(QualityProfile.HD))
+        assertEquals(UiText.Res(R.string.sender_measured_latency_game, listOf(85)), SenderCopy.measuredLatency(85, inGame = false))
+        assertEquals(UiText.Res(R.string.sender_measured_latency, listOf(85)), SenderCopy.measuredLatency(85))
+
+        val failed = SenderCopy.hint(GameHint.SwitchFailed(QualityProfile.BALANCED))
+        assertEquals(UiText.Res(R.string.sender_hint_switch_failed, listOf(UiText.Res(R.string.sender_quality_balanced))), failed.title)
+        assertEquals(R.string.sender_hint_poor_network_action, SenderCopy.hint(GameHint.PoorNetwork).action)
+        assertEquals(R.string.sender_hint_legacy_receiver_action, SenderCopy.hint(GameHint.LegacyReceiver).action)
+        assertNull(SenderCopy.hint(GameHint.NextTime).action)
+        // 解码和网络都不明显偏慢：只给数字，不猜原因
+        val unmet = SenderCopy.hint(GameHint.LatencyUnmet(140, null))
+        assertEquals(UiText.Res(R.string.sender_hint_latency_unmet, listOf(140)), unmet.title)
         assertNull(unmet.detail)
-        assertTrue(SenderCopy.measuredLatency(85, inGame = false).contains("游戏模式"))
-        assertEquals("正在切换到游戏模式，电视画面会停一下", SenderCopy.qualitySwitching(game))
-        assertTrue(SenderCopy.measuredLatency(85).startsWith("这台电视上实测约 85"))
-        val hints = listOf(
-            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.SwitchFailed(com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile.BALANCED),
-            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.PoorNetwork,
-            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.NextTime,
-            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.LegacyReceiver,
-        )
-        assertEquals("切换没有成功，已保持“均衡”", SenderCopy.hint(hints[0]).title)
-        assertEquals("切到流畅", SenderCopy.hint(hints[1]).action)
-        assertTrue(SenderCopy.hint(hints[2]).detail!!.startsWith("低延迟将在下次投屏生效"))
-        assertEquals("去更新", SenderCopy.hint(hints[3]).action)
-        // 界面文字不出现 AirPlay
-        hints.forEach { assertFalse(SenderCopy.hint(it).title.contains("AirPlay")) }
+        assertEquals(UiText.Res(R.string.sender_hint_latency_decoder), SenderCopy.hint(GameHint.LatencyUnmet(140, LatencyCause.DECODER)).detail)
+    }
+
+    @Test
+    fun qualityLabelsAreDistinct() {
+        assertEquals(QualityProfile.entries.size, QualityProfile.entries.map { it.labelRes }.toSet().size)
+    }
+
+    @Test
+    fun relativeTimeBuckets() {
+        val now = 10_000_000_000L
+        assertEquals(UiText.Res(R.string.sender_time_just_now), relativeTime(now - 30_000, now))
+        assertEquals(UiText.Plural(R.plurals.sender_time_minutes_ago, 5), relativeTime(now - 5 * 60_000, now))
+        assertEquals(UiText.Plural(R.plurals.sender_time_hours_ago, 2), relativeTime(now - 2 * 3_600_000, now))
+        assertEquals(UiText.Plural(R.plurals.sender_time_days_ago, 3), relativeTime(now - 3 * 86_400_000L, now))
     }
 }

@@ -13,17 +13,19 @@
 ## 效果图
 
 <p align="center">
-  <img src="docs/assets/screenshots/02-tv-receiver.png" alt="电视端等待投屏，显示二维码和投屏码" width="720">
+  <img src="docs/assets/screenshots/zh/02-tv-receiver.png" alt="电视端等待投屏，显示二维码和投屏码" width="420">
+  <img src="docs/assets/screenshots/zh/04-tv-mirroring.png" alt="电视上显示手机镜像画面，等比留黑边" width="420">
 </p>
 
 <p align="center">
-  <img src="docs/assets/screenshots/01-device-list.png" alt="手机端：发现的电视，可镜像或推送" width="200">
-  <img src="docs/assets/screenshots/03-casting-game-mode.png" alt="手机端：游戏模式投屏中，实时显示延迟" width="200">
-  <img src="docs/assets/screenshots/04-elder-mode.png" alt="长辈模式首页：大按钮" width="200">
-  <img src="docs/assets/screenshots/05-settings-dark.png" alt="深色模式下的设置页" width="200">
+  <img src="docs/assets/screenshots/zh/01-device-list.png" alt="手机端：发现的电视，可镜像或推送" width="160">
+  <img src="docs/assets/screenshots/zh/03-casting-game-mode.png" alt="手机端：游戏模式投屏中，实时显示延迟" width="160">
+  <img src="docs/assets/screenshots/zh/05-push-remote.png" alt="手机端：DLNA 推送遥控页，含播放列表、进度和音量" width="160">
+  <img src="docs/assets/screenshots/zh/06-elder-mode.png" alt="长辈模式首页：大按钮" width="160">
+  <img src="docs/assets/screenshots/zh/07-settings-dark.png" alt="深色模式下的设置页" width="160">
 </p>
 
-<p align="center"><sub>电视接收端 · 设备列表 · 游戏模式投屏 · 长辈模式 · 深色模式（模拟器截图）</sub></p>
+<p align="center"><sub>电视接收端 · 电视显示手机画面 · 设备列表 · 游戏模式 · DLNA 推送遥控 · 长辈模式 · 深色模式（模拟器截图）</sub></p>
 
 ## 功能
 
@@ -84,6 +86,7 @@
 
 - Android 10（API 29）及以上，手机、平板和 Android TV 都可以。
 - 发送端和接收端要连在同一个局域网里。
+- 界面语言：英文（默认）和简体中文，跟随系统语言；Android 13 及以上也可以在系统设置里单独给本应用选语言。
 
 ## 构建
 

@@ -94,3 +94,17 @@ object DlnaMerge {
         return rest.map { d -> absorbed[d.deviceId]?.let { ref -> if (d.dlna == null) d.copy(dlna = ref) else d } ?: d }
     }
 }
+
+/**
+ * mDNS TXT 的 `dlna` 键 → 本应用接收端的 DMR（SSDP 不通时的补充路径，PROTOCOL.md 第 1 节）。纯逻辑，单测覆盖。
+ * 描述地址固定为 `http://<host>:<port>/dlna/description.xml`；解析出的描述必须带非空 UDN、wsc:id 等于这条 WSC 行的 deviceId，
+ * 且不是本机，才把 DMR 挂到 WSC 行上（效果与 SSDP 的 `SsdpHit.Wsc` 分支相同）。
+ */
+object MdnsDlnaLink {
+    const val DESCRIPTION_PATH = "/dlna/description.xml"
+
+    fun descriptionUrl(host: String, port: Int): String = "http://$host:$port$DESCRIPTION_PATH"
+
+    fun accepts(ref: DlnaRendererRef, wscDeviceId: String, host: String, ownIp: String?, ownUdn: String?): Boolean =
+        ref.udn.isNotBlank() && ref.description.wscId == wscDeviceId && !DlnaMerge.isSelf(ref, host, ownIp, ownUdn)
+}

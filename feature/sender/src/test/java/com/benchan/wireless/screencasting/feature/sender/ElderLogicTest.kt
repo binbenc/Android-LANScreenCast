@@ -15,11 +15,15 @@ import com.benchan.wireless.screencasting.feature.sender.elder.ElderTargets
 import com.benchan.wireless.screencasting.feature.sender.elder.QuickConnect
 import com.benchan.wireless.screencasting.feature.sender.session.ConnectFailure
 import com.benchan.wireless.screencasting.feature.sender.session.EndReason
+import com.benchan.wireless.screencasting.feature.sender.ui.UiText
+import com.benchan.wireless.screencasting.feature.sender.ui.uiPlural
+import com.benchan.wireless.screencasting.feature.sender.ui.uiText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class ElderLogicTest {
     private fun recent(id: String, host: String, at: Long) = RecentDevice(id, "TV-$id", host, 40100, "ff", at)
@@ -50,6 +54,7 @@ class ElderLogicTest {
         val r = ElderTargets.resolve(listOf(ElderTarget(wscId = "a", name = "sdk_gphone64_arm64", label = "")), emptyList(), emptyList())
         assertEquals("sdk_gphone64_arm64", r.single().label)
     }
+
 
     @Test
     fun labelClampedToEightCharacters() {
@@ -94,14 +99,70 @@ class ElderLogicTest {
 
     @Test
     fun captureTextFollowsSdkAndLanguage() {
-        assertTrue(ElderCopy.capturePrompt(33, zh = true).second.contains("立即开始"))
-        assertTrue(ElderCopy.capturePrompt(34, zh = true).second.contains("「开始」"))
-        assertTrue(ElderCopy.capturePrompt(33, zh = false).second.contains("Start now"))
-        assertTrue(ElderCopy.failure(ElderOutcome.CAPTURE_DENIED, "x", 34, true).second.contains("「开始」"))
-        assertTrue(ElderCopy.failure(ElderOutcome.CAPTURE_DENIED, "x", 30, true).second.contains("立即开始"))
-        assertEquals(null, ElderCopy.captureScopeHint(33))
-        // 只能放照片的电视没找到：不提“局域投屏”
-        assertFalse(ElderCopy.failure(ElderOutcome.PUSH_NOT_FOUND, "客厅").second.contains("局域投屏"))
+        // 系统按钮名按系统版本与语言区分（模拟系统文字），作为参数放进资源
+        assertEquals(uiText(R.string.elder_capture_tap, "立即开始"), ElderCopy.capturePrompt(33, zh = true).second)
+        assertEquals(uiText(R.string.elder_capture_tap, "开始"), ElderCopy.capturePrompt(34, zh = true).second)
+        assertEquals(uiText(R.string.elder_capture_tap, "Start now"), ElderCopy.capturePrompt(33, zh = false).second)
+        assertEquals(uiText(R.string.elder_capture_tap, "Start"), ElderCopy.capturePrompt(34, zh = false).second)
+        assertEquals(uiText(R.string.elder_fail_capture_body, "开始"), ElderCopy.failure(ElderOutcome.CAPTURE_DENIED, "x", 34, true).second)
+        assertEquals(uiText(R.string.elder_fail_capture_body, "立即开始"), ElderCopy.failure(ElderOutcome.CAPTURE_DENIED, "x", 30, true).second)
+        assertNull(ElderCopy.captureScopeHint(33))
+        assertEquals(uiText(R.string.elder_capture_scope, "整个屏幕"), ElderCopy.captureScopeHint(34))
+        assertEquals(uiText(R.string.elder_capture_scope, "Entire screen"), ElderCopy.captureScopeHint(34, zh = false))
+        // 只能放照片的电视没找到：用不提“局域投屏”的检查项
+        assertEquals(uiText(R.string.elder_fail_push_not_found_body), ElderCopy.failure(ElderOutcome.PUSH_NOT_FOUND, "客厅").second)
+        assertEquals(uiText(R.string.elder_fail_not_found_title, "客厅"), ElderCopy.failure(ElderOutcome.PUSH_NOT_FOUND, "客厅").first)
+    }
+
+    @Test
+    fun copyPicksResources() {
+        assertEquals(uiText(R.string.elder_quality_poor), ElderCopy.quality(LatencyGrade.FAIR))
+        assertEquals(uiText(R.string.elder_quality_poor), ElderCopy.quality(LatencyGrade.POOR))
+        assertEquals(uiText(R.string.elder_quality_good), ElderCopy.quality(LatencyGrade.EXCELLENT))
+        assertEquals(uiText(R.string.elder_quality_good), ElderCopy.quality(null))
+        assertEquals(uiText(R.string.elder_status_found, "客厅"), ElderCopy.statusFound("客厅", pinned = true))
+        assertEquals(uiText(R.string.elder_status_found_last, "客厅"), ElderCopy.statusFound("客厅", pinned = false))
+        assertEquals(uiText(R.string.elder_main_spoken, "客厅", uiText(R.string.elder_spoken_missing)), ElderCopy.mainButtonSpoken("客厅", false))
+        // 时长：不到 1 分钟 / N 分钟（复数）/ H 小时 M 分钟
+        assertEquals(uiText(R.string.elder_elapsed_just), ElderCopy.elapsed(59_000))
+        assertEquals(uiPlural(R.plurals.elder_elapsed_minutes, 5), ElderCopy.elapsed(5 * 60_000L + 10))
+        assertEquals(uiText(R.string.elder_elapsed_hours, 1, 5), ElderCopy.elapsed(65 * 60_000L))
+        // 序号从 1 开始
+        assertEquals(uiText(R.string.elder_photo_counter, 3, 10), ElderCopy.photoCounter(2, 10))
+        assertEquals(uiText(R.string.elder_item_counter, 1, 2), ElderCopy.itemCounter(0, 2))
+        // 转换耗时
+        assertNull(ElderCopy.duration(null))
+        assertEquals(uiText(R.string.elder_duration_under), ElderCopy.duration(30_000))
+        assertEquals(uiPlural(R.plurals.elder_duration_about, 6), ElderCopy.duration(6 * 60_000L))
+        assertEquals(uiText(R.string.elder_transcode_offer, uiText(R.string.elder_duration_unknown)), ElderCopy.transcodeOffer(null))
+        assertEquals(uiText(R.string.elder_transcode_running, 40), ElderCopy.transcodeRunning(40, ElderCopy.eta(null)))
+        assertEquals(uiText(R.string.elder_transcode_running_eta, 40, uiPlural(R.plurals.elder_eta, 2)), ElderCopy.transcodeRunning(40, ElderCopy.eta(120_000)))
+        // 每个结果都有自己的问题描述
+        assertEquals(ElderOutcome.entries.size, ElderOutcome.entries.map { ElderCopy.problem(it) }.toSet().size)
+    }
+
+    /** 长辈文案（英文默认 + 中文）不出现技术词，两种语言的键一致，绝不出现 AirPlay。 */
+    @Test
+    fun resourcesAvoidTechWordsInBothLanguages() {
+        val en = strings("values")
+        val zh = strings("values-zh")
+        assertEquals(en.keys, zh.keys)
+        val elderFacing = { k: String -> k.startsWith("elder_fail_") || k.startsWith("elder_quality_") || k == "elder_pin_body" }
+        listOf(en, zh).forEach { m ->
+            m.forEach { (k, v) ->
+                assertFalse("$k contains AirPlay", v.contains("AirPlay", ignoreCase = true))
+                if (elderFacing(k)) {
+                    listOf("DLNA", "mDNS", "IP", "PIN").forEach { w -> assertFalse("$k: $v contains $w", Regex("\\b$w\\b").containsMatchIn(v)) }
+                    listOf("码率", "延迟", "latency", "bitrate").forEach { w -> assertFalse("$k: $v contains $w", v.contains(w, ignoreCase = true)) }
+                }
+            }
+        }
+    }
+
+    private fun strings(dir: String): Map<String, String> {
+        val f = listOf("src/main/res/$dir/strings_elder.xml", "feature/sender/src/main/res/$dir/strings_elder.xml").map(::File).first { it.exists() }
+        val text = f.readText()
+        return Regex("""<(string|plurals) name="([^"]+)">(.*?)</\1>""", RegexOption.DOT_MATCHES_ALL).findAll(text).associate { it.groupValues[2] to it.groupValues[3] }
     }
 
     @Test
@@ -125,29 +186,92 @@ class ElderLogicTest {
         assertFalse(c[1].canMirror)
     }
 
-    @Test
-    fun copyAvoidsTechWords() {
-        val all = ElderOutcome.entries.flatMap { ElderCopy.failure(it, "客厅电视").toList() } +
-            listOf(ElderCopy.quality(LatencyGrade.POOR), ElderCopy.quality(LatencyGrade.EXCELLENT), ElderCopy.PIN_BODY)
-        all.forEach { text -> listOf("DLNA", "mDNS", "IP", "码率", "延迟", "PIN").forEach { w -> assertFalse("$text contains $w", text.contains(w)) } }
-        assertEquals("网络不太好，可能会卡", ElderCopy.quality(LatencyGrade.FAIR))
-        assertTrue(ElderCopy.captureScopeHint(34)!!.contains("整个屏幕"))
-        assertTrue(ElderCopy.capturePrompt(33).second.contains("立即开始"))
-    }
-
     // —— 请家人帮忙：不含 Wi‑Fi 名称 / IP ——
 
     @Test
     fun helpTextHasNoPrivateInfo() {
         val f = ElderHelpText.Facts(
-            "没找到 客厅电视", "请看看", "Redmi Note 12", "14", "客厅电视", "本应用接收端",
-            ElderCopy.problem(ElderOutcome.NOT_FOUND), hasLan = true, multicastReply = false, tvReachable = false, time = "11-15 19:35",
+            uiText(R.string.elder_fail_not_found_title, "客厅电视"), uiText(R.string.elder_fail_not_found_body), "Redmi Note 12", "14", "客厅电视",
+            uiText(R.string.elder_kind_own), ElderCopy.problem(ElderOutcome.NOT_FOUND), hasLan = true, multicastReply = false, tvReachable = false, time = "11-15 19:35",
         )
-        val text = ElderHelpText.build(f)
-        assertTrue(text.contains("组播：无回应"))
-        assertTrue(text.contains("电视：未发现"))
-        assertFalse(Regex("""\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}""").containsMatchIn(text))
-        assertFalse(text.contains("SSID") || text.contains("Wi‑Fi 名"))
+        val lines = ElderHelpText.summary(f)
+        assertTrue(uiText(R.string.elder_help_network, uiText(R.string.elder_help_connected), uiText(R.string.elder_help_no_reply)) in lines)
+        assertTrue(uiText(R.string.elder_help_tv, uiText(R.string.elder_help_undiscovered)) in lines)
+        assertTrue(uiText(R.string.elder_help_tv_kind, "客厅电视", uiText(R.string.elder_kind_own)) in lines)
+        assertTrue(uiText(R.string.elder_help_problem, uiText(R.string.elder_problem_not_found)) in lines)
+        // 参数里只有机型、系统版本、叫法、时间：没有 IP / Wi‑Fi 名称
+        fun flat(t: Any): List<String> = when (t) {
+            is UiText.Res -> t.args.flatMap(::flat)
+            is UiText.Plural -> t.args.flatMap(::flat)
+            is UiText.Raw -> listOf(t.value)
+            else -> listOf(t.toString())
+        }
+        val args = lines.flatMap(::flat)
+        assertFalse(args.any { Regex("""\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}""").containsMatchIn(it) })
+        assertEquals(setOf("Redmi Note 12", "14", "客厅电视", "11-15 19:35"), args.toSet())
+        // 没检测时说“未检测”
+        val unchecked = ElderHelpText.summary(f.copy(hasLan = false, multicastReply = null, tvReachable = null, tvKind = null))
+        assertTrue(uiText(R.string.elder_help_network, uiText(R.string.elder_help_disconnected), uiText(R.string.elder_help_unchecked)) in unchecked)
+        assertTrue(uiText(R.string.elder_help_tv, "客厅电视") in unchecked)
+    }
+
+    // —— 固定电视的名字跟随最新设备名（电视改名后不再显示旧快照）——
+
+    private val pinnedSnapshot = ElderTarget(wscId = "w1", udn = "u1", name = "sdk_gphone64_arm64", label = "")
+
+    @Test
+    fun blankLabelFollowsDiscoveredName() {
+        val renamed = DiscoveredDevice("w1", "客厅电视", "h", 1, sources = setOf(DiscoverySource.MDNS), lastSeenAt = 1)
+        val r = ElderTargets.resolve(listOf(pinnedSnapshot), listOf(RecentDevice("w1", "旧名", "h", 1, "ff", 1)), emptyList(), listOf(renamed))
+        assertEquals("客厅电视", r.single().label)
+        assertEquals("客厅电视", r.single().name)
+    }
+
+    @Test
+    fun blankLabelFallsBackToRecentThenDlnaThenSnapshot() {
+        val recentRenamed = listOf(RecentDevice("w1", "客厅电视", "h", 1, "ff", 1))
+        val dlnaRenamed = listOf(DlnaRendererRecord("u1", "客厅 DLNA"))
+        assertEquals("客厅电视", ElderTargets.resolve(listOf(pinnedSnapshot), recentRenamed, dlnaRenamed).single().label)
+        assertEquals("客厅 DLNA", ElderTargets.resolve(listOf(pinnedSnapshot), emptyList(), dlnaRenamed).single().label)
+        assertEquals("sdk_gphone64_arm64", ElderTargets.resolve(listOf(pinnedSnapshot), emptyList(), emptyList()).single().label)
+    }
+
+    @Test
+    fun customLabelAlwaysWins() {
+        val renamed = DiscoveredDevice("w1", "客厅电视", "h", 1, sources = setOf(DiscoverySource.MDNS), lastSeenAt = 1)
+        val r = ElderTargets.resolve(listOf(pinnedSnapshot.copy(label = "奶奶的电视")), emptyList(), emptyList(), listOf(renamed))
+        assertEquals("奶奶的电视", r.single().label)
+        assertEquals("客厅电视", r.single().name)
+    }
+
+    @Test
+    fun snapshotRefreshedOnlyWhenDiscoveredNameChanges() {
+        val renamed = DiscoveredDevice("w1", "客厅电视", "h", 1, sources = setOf(DiscoverySource.MDNS), lastSeenAt = 1)
+        val other = ElderTarget(wscId = "w2", name = "卧室", label = "卧室")
+        val updated = ElderTargets.refreshSnapshots(listOf(pinnedSnapshot, other), listOf(renamed))!!
+        assertEquals(listOf("客厅电视", "卧室"), updated.map { it.name })
+        assertEquals(listOf("", "卧室"), updated.map { it.label })
+        // 名字已是最新 / 没发现：不写存储
+        assertNull(ElderTargets.refreshSnapshots(updated, listOf(renamed)))
+        assertNull(ElderTargets.refreshSnapshots(listOf(pinnedSnapshot), emptyList()))
+    }
+
+    @Test
+    fun wizardOverwritesSnapshotWithLatestName() {
+        val renamed = DiscoveredDevice("w1", "客厅电视", "h", 1, sources = setOf(DiscoverySource.MDNS), lastSeenAt = 1)
+        assertEquals("客厅电视", ElderTargets.withLatestNames(listOf(pinnedSnapshot), emptyList(), listOf(renamed)).single().name)
+        val cand = ElderTarget(wscId = "w1", name = "候选新名")
+        val viaCandidate = ElderTargets.withLatestNames(listOf(pinnedSnapshot.copy(label = "叫法")), listOf(cand), emptyList()).single()
+        assertEquals("候选新名", viaCandidate.name)
+        assertEquals("叫法", viaCandidate.label)
+        // 向导候选也显示发现结果里的新名字
+        val now = 1_000L
+        val c = com.benchan.wireless.screencasting.feature.sender.elder.ElderViewModel.mergeCandidates(
+            listOf(RecentDevice("w1", "sdk_gphone64_arm64", "h", 1, "ff", now)),
+            listOf(com.benchan.wireless.screencasting.core.security.trust.TrustedDevice("w1", "sdk_gphone64_arm64", "ff", 0, now)),
+            emptyList(), listOf(renamed),
+        )
+        assertEquals("客厅电视", c.single().target.name)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting
 
+import androidx.compose.ui.res.stringResource
 import com.benchan.wireless.screencasting.feature.control.ui.AccessibilityGuideScreen
 import com.benchan.wireless.screencasting.feature.control.ui.RemoteControlSettingsScreen
 import android.content.Intent
@@ -141,7 +142,7 @@ class MainActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         val recent by recentDevices.devices.collectAsStateWithLifecycle()
         if (s.elderExitNotice) {
-            ListNoticeCard("已退出长辈模式，可以在设置里重新打开", null, listOf("知道了" to { scope.launch { settingsRepository.setElderExitNoticeShown() } }))
+            ListNoticeCard(stringResource(R.string.app_elder_exit_notice), null, listOf(stringResource(R.string.app_elder_got_it) to { scope.launch { settingsRepository.setElderExitNoticeShown() } }))
             return
         }
         val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
@@ -150,10 +151,10 @@ class MainActivity : ComponentActivity() {
         if (ElderRecommend.shouldShow(fontScale, largest, recent.isNotEmpty(), s.elderRecommendDismissed, s.elderModeEnabled)) {
             // “去看看”不关闭卡片（家人在向导里退出后还能再看到）；完成向导或点“不用了 / ✕”才永久关闭（UX P2-24）
             ListNoticeCard(
-                "字太小？可以打开长辈模式", "大字大按钮，一键投到家里的电视",
+                stringResource(R.string.app_elder_recommend_title), stringResource(R.string.app_elder_recommend_detail),
                 listOf(
-                    "不用了" to { scope.launch { settingsRepository.setElderRecommendDismissed() } },
-                    "去看看" to onOpenWizard,
+                    stringResource(R.string.app_elder_recommend_no) to { scope.launch { settingsRepository.setElderRecommendDismissed() } },
+                    stringResource(R.string.app_elder_recommend_yes) to onOpenWizard,
                 ),
                 onClose = { scope.launch { settingsRepository.setElderRecommendDismissed() } },
                 icon = androidx.compose.material.icons.Icons.Rounded.FormatSize,
@@ -220,12 +221,14 @@ class MainActivity : ComponentActivity() {
                 // F24 长辈模式：只在发送端（手机 / 平板）生效；冷启动直接进入长辈首页，不自动发起镜像（决策 #44）
                 if (s.elderModeEnabled && !isTv && (mode == AppMode.SENDER || forceSender)) {
                     // 长辈模式不支持扫码配对新设备：系统相机深链接忽略；分享页“改用镜像 / 某台设备”回到长辈首页
+                    val noNewTvNotice = stringResource(R.string.app_elder_no_new_tv)
+                    val useHomeButtonsNotice = stringResource(R.string.app_elder_use_home_buttons)
                     LaunchedEffect(deepLink, entry) {
                         if (deepLink != null) {
                             deepLink = null
-                            elderNotice = "长辈模式下不能连新的电视，请家人帮忙设置"
+                            elderNotice = noNewTvNotice
                         }
-                        if (entry is SenderEntry.PushTo) elderNotice = "长辈模式下请用首页的大按钮放照片和视频"
+                        if (entry is SenderEntry.PushTo) elderNotice = useHomeButtonsNotice
                         if (entry is SenderEntry.MirrorHint || entry is SenderEntry.PushTo) entry = null
                     }
                     ElderHost(

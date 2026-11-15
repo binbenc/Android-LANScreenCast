@@ -26,6 +26,11 @@ android {
         buildConfig = true
     }
 
+    // 只支持英文（默认）与中文：去掉第三方库带的其他语言资源；与 res/xml/locales_config.xml 保持一致
+    androidResources {
+        localeFilters += listOf("en", "zh")
+    }
+
     // 按 ABI 拆包（技术方案 3.10.3）。TV 盒子大量是 32 位用户空间，armeabi-v7a 不能省。
     // x86_64 仅供模拟器调试使用。另外输出 universal 包：F26 局域网分发时，手机上装的是什么包就分发什么包，
     // 只有 universal 包才能保证 32 位电视也能安装（见 docs/dev/开发进度.md 已知问题）。

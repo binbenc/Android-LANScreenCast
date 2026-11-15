@@ -56,7 +56,13 @@ import com.benchan.wireless.screencasting.core.ui.components.LocalModalOverlayVi
 import com.benchan.wireless.screencasting.core.ui.components.TvSafeArea
 import com.benchan.wireless.screencasting.core.ui.theme.PinStyleTv
 import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
+import com.benchan.wireless.screencasting.feature.receiver.R
 import com.benchan.wireless.screencasting.feature.receiver.session.StandbyInfo
+import com.benchan.wireless.screencasting.feature.receiver.session.asString
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleFailure
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -70,7 +76,7 @@ private const val FOCUS_SETTINGS = "settings"
  * 从设置返回时恢复到“设置”（D3）。5% 过扫描安全区：水平 48dp、垂直 27dp。
  */
 @Composable
-internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnableAppleCompat: () -> Unit, appleFailure: String? = null) {
+internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnableAppleCompat: () -> Unit, appleFailure: AppleFailure? = null) {
     val c = MaterialTheme.colorScheme
     val settingsFocus = remember { FocusRequester() }
     val appleFocus = remember { FocusRequester() }
@@ -96,13 +102,13 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
     ) {
         // 顶部标题行（C8：设置按钮不再浮在右侧卡片上）
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("局域投屏", style = MaterialTheme.typography.titleLarge, color = c.primary)
+            Text(appLabel(), style = MaterialTheme.typography.titleLarge, color = c.primary)
             Text(
-                "无广告 · 无账号 · 不连接互联网", Modifier.weight(1f),
+                stringResource(R.string.rx_standby_tagline), Modifier.weight(1f),
                 style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             TvButton(
-                "设置",
+                stringResource(R.string.rx_settings),
                 { lastFocus = FOCUS_SETTINGS; onOpenSettings() },
                 Modifier.focusRequester(settingsFocus),
                 leading = { Icon(Icons.Rounded.Settings, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)) },
@@ -114,17 +120,27 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
             val left = @Composable { m: Modifier ->
                 Column(m, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     // “等待投屏”用 success 表达“就绪”（D2）
-                    Text("等待投屏", style = MaterialTheme.typography.titleMedium, color = WscTheme.extended.success)
+                    Text(stringResource(R.string.rx_standby_waiting), style = MaterialTheme.typography.titleMedium, color = WscTheme.extended.success)
                     Text(info.deviceName, style = MaterialTheme.typography.displayMedium, color = c.onSurface)
                     if (!info.lanAvailable) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Rounded.WifiOff, null, tint = WscTheme.extended.warning)
-                            Text("没有连接网络：请把电视连到家里的路由器", style = MaterialTheme.typography.bodyLarge, color = WscTheme.extended.warning)
+                            Text(stringResource(R.string.rx_standby_no_network), Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyLarge, color = WscTheme.extended.warning)
                         }
                     }
-                    Text("手机与电视连接同一个路由器后：", style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
-                    Step(1, "手机打开本应用，选择「${info.deviceName}」")
-                    Step(2, "搜不到时，扫描${if (wide) "右侧" else "下方"}二维码${if (info.castCode != null) "或输入投屏码" else "或手动输入地址"}")
+                    Text(stringResource(R.string.rx_standby_same_router), style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
+                    Step(1, stringResource(R.string.rx_standby_step1, info.deviceName))
+                    Step(
+                        2,
+                        stringResource(
+                            when {
+                                wide && info.castCode != null -> R.string.rx_standby_step2_right_code
+                                wide -> R.string.rx_standby_step2_right_address
+                                info.castCode != null -> R.string.rx_standby_step2_below_code
+                                else -> R.string.rx_standby_step2_below_address
+                            },
+                        ),
+                    )
                     if (showApple) {
                         Row(
                             Modifier.background(c.surfaceContainerHigh, RoundedCornerShape(16.dp)).padding(16.dp),
@@ -133,17 +149,17 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
                         ) {
                             Icon(Icons.Rounded.Devices, null, Modifier.size(32.dp), tint = c.onSurfaceVariant)
                             Column(Modifier.weight(1f, fill = false)) {
-                                Text("iPhone / iPad 用户", style = MaterialTheme.typography.titleMedium)
-                                Text("在设置中开启“兼容 Apple 设备”后，用系统「屏幕镜像」即可连接", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                                Text(stringResource(R.string.rx_standby_apple_title), style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.rx_standby_apple_desc), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                             }
-                            TvButton("去开启", { lastFocus = FOCUS_APPLE; onEnableAppleCompat() }, Modifier.focusRequester(appleFocus))
+                            TvButton(stringResource(R.string.rx_standby_apple_enable), { lastFocus = FOCUS_APPLE; onEnableAppleCompat() }, Modifier.focusRequester(appleFocus))
                         }
                     }
                     if (info.appleCompatEnabled && appleFailure != null) {
-                        Text("兼容 Apple 设备未能启动：$appleFailure", style = MaterialTheme.typography.bodyMedium, color = WscTheme.extended.warning)
+                        Text(stringResource(R.string.rx_standby_apple_failed, appleFailureText(appleFailure)), style = MaterialTheme.typography.bodyMedium, color = WscTheme.extended.warning)
                     }
                     info.notice?.let {
-                        Text(it, style = MaterialTheme.typography.bodyLarge, color = WscTheme.extended.warning)
+                        Text(it.asString(), style = MaterialTheme.typography.bodyLarge, color = WscTheme.extended.warning)
                     }
                 }
             }
@@ -154,21 +170,22 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     if (info.qrContent != null) {
-                        QrCode(info.qrContent, Modifier.size(200.dp), description = "扫码连接二维码")
-                        Text("扫码连接 · 免输入 PIN", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+                        QrCode(info.qrContent, Modifier.size(200.dp), description = stringResource(R.string.rx_standby_qr_desc))
+                        Text(stringResource(R.string.rx_standby_qr_hint), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
                     }
                     val code = info.castCode
                     if (code != null) {
-                        Text("投屏码", style = MaterialTheme.typography.labelLarge, color = c.onSurfaceVariant)
+                        val codeDesc = stringResource(R.string.rx_cast_code_desc, code.digits.toList().joinToString(" "))
+                        Text(stringResource(R.string.rx_cast_code), style = MaterialTheme.typography.labelLarge, color = c.onSurfaceVariant)
                         Text(
                             code.display,
                             style = PinStyleTv,
                             color = c.onSurface,
-                            modifier = Modifier.semantics { contentDescription = "投屏码 ${code.digits.toList().joinToString(" ")}" },
+                            modifier = Modifier.semantics { contentDescription = codeDesc },
                         )
                     } else {
                         // 端口回退 / 网段不支持：隐藏投屏码，提示扫码或手动输入地址（C1）
-                        info.castCodeUnavailableReason?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant) }
+                        info.castCodeUnavailableReason?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant) }
                     }
                     if (info.ip != null) {
                         // IP / 端口是需要抄写的凭据：onSurface + bodyMedium（TV 16sp），不按次要文字处理
@@ -244,7 +261,24 @@ internal fun ScreenSaver(info: StandbyInfo) {
         }
         Column(Modifier.offset { offset }.onSizeChanged { content = it }) {
             Text(info.deviceName, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            info.castCode?.let { Text("投屏码 ${it.display}", style = PinStyleTv.copy(fontSize = PinStyleTv.fontSize * 0.6f), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            info.castCode?.let { Text(stringResource(R.string.rx_cast_code_inline, it.display), style = PinStyleTv.copy(fontSize = PinStyleTv.fontSize * 0.6f), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }
 }
+
+/** 品牌名 = 应用名（随系统语言由 app 模块的 app_name 提供），不在本模块重复定义。 */
+@Composable
+internal fun appLabel(): String {
+    val context = LocalContext.current
+    return remember(context) { context.applicationInfo.loadLabel(context.packageManager).toString() }
+}
+
+@Composable
+private fun appleFailureText(failure: AppleFailure): String = stringResource(
+    when (failure) {
+        AppleFailure.PUBLISH_FAILED -> R.string.rx_apple_fail_publish
+        AppleFailure.PORT_IN_USE -> R.string.rx_apple_fail_port
+        AppleFailure.START_ERROR -> R.string.rx_apple_fail_other
+        AppleFailure.NOT_PACKAGED -> R.string.rx_apple_fail_not_packaged
+    },
+)

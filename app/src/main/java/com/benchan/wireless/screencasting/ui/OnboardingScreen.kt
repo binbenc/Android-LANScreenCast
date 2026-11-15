@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.ui
 
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -54,18 +56,18 @@ fun OnboardingScreen(defaultMode: AppMode, onStart: (AppMode) -> Unit, onInstall
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Spacer(Modifier.size(16.dp))
-        Text("把手机画面，\n安静地送到大屏", style = MaterialTheme.typography.headlineLarge)
-        Text("局域网直连 · GPL‑3.0 开源，代码可审计", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-        Promise(Icons.Rounded.DoNotDisturbOn, "没有广告，永久免费", "不接入任何广告、统计、崩溃上报 SDK")
-        Promise(Icons.Rounded.PersonOff, "不需要账号", "打开即用，不索要手机号")
-        Promise(Icons.Rounded.CloudOff, "不连接互联网", "画面只在你家的局域网内传输，屏幕镜像全程加密")
-        Text("这台设备用来", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
-        ModeCard(mode == AppMode.SENDER, Icons.Rounded.ScreenShare, "投屏到别处", "发送端" + if (defaultMode == AppMode.SENDER) " · 本机推荐" else "") { mode = AppMode.SENDER }
-        ModeCard(mode == AppMode.RECEIVER, Icons.Rounded.Tv, "接收投屏", "把本机当作屏幕" + if (defaultMode == AppMode.RECEIVER) " · 本机推荐" else "") { mode = AppMode.RECEIVER }
-        Button(onClick = { onStart(mode) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("开始使用") }
+        Text(stringResource(R.string.app_onboarding_headline), style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(R.string.app_onboarding_subtitle), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+        Promise(Icons.Rounded.DoNotDisturbOn, stringResource(R.string.app_onboarding_no_ads_title), stringResource(R.string.app_onboarding_no_ads_detail))
+        Promise(Icons.Rounded.PersonOff, stringResource(R.string.app_onboarding_no_account_title), stringResource(R.string.app_onboarding_no_account_detail))
+        Promise(Icons.Rounded.CloudOff, stringResource(R.string.app_onboarding_offline_title), stringResource(R.string.app_onboarding_offline_detail))
+        Text(stringResource(R.string.app_onboarding_use_as), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+        ModeCard(mode == AppMode.SENDER, Icons.Rounded.ScreenShare, stringResource(R.string.app_onboarding_mode_sender_title), recommended(stringResource(R.string.app_onboarding_mode_sender_subtitle), defaultMode == AppMode.SENDER)) { mode = AppMode.SENDER }
+        ModeCard(mode == AppMode.RECEIVER, Icons.Rounded.Tv, stringResource(R.string.app_onboarding_mode_receiver_title), recommended(stringResource(R.string.app_onboarding_mode_receiver_subtitle), defaultMode == AppMode.RECEIVER)) { mode = AppMode.RECEIVER }
+        Button(onClick = { onStart(mode) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(stringResource(R.string.app_onboarding_start)) }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("电视还没装接收端？", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-            TextButton(onClick = onInstallHelp) { Text("获取安装方法") }
+            Text(stringResource(R.string.app_onboarding_tv_missing), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            TextButton(onClick = onInstallHelp) { Text(stringResource(R.string.app_onboarding_install_help)) }
         }
     }
 }
@@ -101,3 +103,8 @@ private fun ModeCard(selected: Boolean, icon: ImageVector, title: String, detail
         RadioButton(selected, onClick = null)
     }
 }
+
+/** 模式卡副标题：本机推荐的模式追加“ · Recommended for this device”。 */
+@Composable
+private fun recommended(subtitle: String, isDefault: Boolean): String =
+    if (isDefault) stringResource(R.string.app_onboarding_mode_recommended, subtitle) else subtitle

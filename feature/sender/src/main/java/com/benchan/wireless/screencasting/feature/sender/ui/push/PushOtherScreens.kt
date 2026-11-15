@@ -67,6 +67,9 @@ import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
 import com.benchan.wireless.screencasting.protocol.dlna.dmc.PushEndInfo
 import com.benchan.wireless.screencasting.protocol.upnp.dmc.PushEndReason
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.sender.R
+import com.benchan.wireless.screencasting.feature.sender.ui.asString
 
 /** P04 推送网址：不自动读剪贴板，只有点 [粘贴] 才读；网址只在本次会话内存里。 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,17 +92,17 @@ internal fun PushUrlScreen(targetName: String, audioOnly: Boolean, initial: Stri
     }
     Column(Modifier.fillMaxSize().background(c.surface).imePadding()) {
         TopAppBar(
-            title = { Text("推送网址到 $targetName") },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "返回") } },
+            title = { Text(stringResource(R.string.push_url_title, targetName)) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.push_back)) } },
         )
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it; error = false },
-                label = { Text(if (audioOnly) "音乐文件地址" else "视频文件地址") },
+                label = { Text(stringResource(if (audioOnly) R.string.push_url_label_audio else R.string.push_url_label)) },
                 singleLine = true,
                 isError = error,
-                supportingText = { if (error) Text("只支持 http 或 https 开头的地址") },
+                supportingText = { if (error) Text(stringResource(R.string.push_url_error)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(onGo = { submit() }),
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
@@ -109,23 +112,22 @@ internal fun PushUrlScreen(targetName: String, audioOnly: Boolean, initial: Stri
                     val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip
                     clip?.getItemAt(0)?.coerceToText(context)?.toString()?.trim()?.let { text = it; error = false }
                 }) {
-                    Icon(Icons.Rounded.ContentPaste, null, Modifier.size(18.dp)); Spacer(Modifier.size(6.dp)); Text("粘贴")
+                    Icon(Icons.Rounded.ContentPaste, null, Modifier.size(18.dp)); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.push_paste))
                 }
                 Spacer(Modifier.weight(1f))
-                Text(hint, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                Text(hint.asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             }
             Text(
-                if (audioOnly) "设备会直接联网打开这个地址。请填音乐文件的地址（如 .mp3、.flac）。"
-                else "电视会直接联网打开这个地址。请填视频文件的地址（如 .mp4、.m3u8），视频网站的网页地址电视通常打不开。",
+                stringResource(if (audioOnly) R.string.push_url_note_audio else R.string.push_url_note),
                 style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(Icons.Rounded.Info, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
-                Text("本应用不会访问这个地址，也不保存记录。", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.push_url_privacy), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
             }
         }
         Box(Modifier.fillMaxWidth().navigationBarsPadding().reportFooterHeight().padding(16.dp)) {
-            Button(onClick = { submit() }, enabled = text.isNotBlank(), colors = WscButtonColors.filled(), modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("推送") }
+            Button(onClick = { submit() }, enabled = text.isNotBlank(), colors = WscButtonColors.filled(), modifier = Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_push)) }
         }
     }
 }
@@ -136,13 +138,15 @@ internal fun PushUrlScreen(targetName: String, audioOnly: Boolean, initial: Stri
 internal fun PushEndScreen(info: PushEndInfo, tvName: String, onAgain: () -> Unit, onResume: () -> Unit, onBack: () -> Unit, onDiagnostics: () -> Unit = {}) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
-    val (title, detail) = PushCopy.endTitle(info, tvName)
+    val (titleText, detailText) = PushCopy.endTitle(info, tvName)
+    val title = titleText.asString()
+    val detail = detailText.asString()
     val warn = info.reason == PushEndReason.DEVICE_LOST || info.reason == PushEndReason.NETWORK_CHANGED
     val failed = info.failure != null
     val titleFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { titleFocus.requestFocus() } }
     Column(Modifier.fillMaxSize().background(c.surface)) {
-        TopAppBar(title = {}, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Rounded.Close, contentDescription = "关闭") } })
+        TopAppBar(title = {}, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.push_close)) } })
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -188,16 +192,16 @@ internal fun PushEndScreen(info: PushEndInfo, tvName: String, onAgain: () -> Uni
                 ) {
                     Row {
                         Text(tvName, style = MaterialTheme.typography.titleMedium, color = c.onSurface, modifier = Modifier.weight(1f))
-                        Text("推送了 ${PushCopy.time(info.durationMs)}", fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodyMedium, color = c.onSurface)
+                        Text(stringResource(R.string.push_end_pushed_for, PushCopy.time(info.durationMs)), fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodyMedium, color = c.onSurface)
                     }
-                    PushCopy.endSummary(info).takeIf { it.isNotEmpty() }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant) }
+                    PushCopy.endSummary(info)?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant) }
                 }
             }
             // 只推了网址时手机没有分享文件，不写这句（第 1 轮 PM P2-5）
             if (!info.urlOnly && info.reason != PushEndReason.START_FAILED) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.CheckCircle, null, Modifier.size(16.dp), tint = ext.success)
-                    Text("手机已停止分享文件，链接已失效", style = MaterialTheme.typography.bodySmall, color = c.onSurface)
+                    Text(stringResource(R.string.push_end_sharing_stopped), style = MaterialTheme.typography.bodySmall, color = c.onSurface)
                 }
             }
         }
@@ -207,16 +211,16 @@ internal fun PushEndScreen(info: PushEndInfo, tvName: String, onAgain: () -> Uni
         ) {
             when {
                 info.canResume -> {
-                    Button(onClick = onResume, Modifier.fillMaxWidth().height(56.dp)) { Text("从 ${PushCopy.time(info.lastPositionMs)} 继续推送") }
-                    FilledTonalButton(onClick = onAgain, Modifier.fillMaxWidth().height(56.dp)) { Text("再推一个") }
+                    Button(onClick = onResume, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_end_resume_from, PushCopy.time(info.lastPositionMs))) }
+                    FilledTonalButton(onClick = onAgain, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_end_again)) }
                 }
                 info.reason == PushEndReason.START_FAILED && info.failure == com.benchan.wireless.screencasting.protocol.upnp.dmc.PushError.NO_NETWORK -> {
-                    Button(onClick = onDiagnostics, Modifier.fillMaxWidth().height(56.dp)) { Text("网络诊断") }
-                    FilledTonalButton(onClick = onAgain, Modifier.fillMaxWidth().height(56.dp)) { Text("重试") }
+                    Button(onClick = onDiagnostics, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_action_diagnostics)) }
+                    FilledTonalButton(onClick = onAgain, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_action_retry)) }
                 }
-                else -> Button(onClick = onAgain, Modifier.fillMaxWidth().height(56.dp)) { Text(if (info.reason == PushEndReason.START_FAILED) "重试" else "再推一个") }
+                else -> Button(onClick = onAgain, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(if (info.reason == PushEndReason.START_FAILED) R.string.push_action_retry else R.string.push_end_again)) }
             }
-            FilledTonalButton(onClick = onBack, Modifier.fillMaxWidth().height(56.dp)) { Text("返回设备列表") }
+            FilledTonalButton(onClick = onBack, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_back_to_list)) }
         }
     }
 }

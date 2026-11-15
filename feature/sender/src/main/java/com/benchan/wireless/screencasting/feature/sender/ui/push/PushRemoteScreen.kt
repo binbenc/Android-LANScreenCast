@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.sender.ui.push
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.BoxWithConstraints
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Size
@@ -127,6 +130,10 @@ import com.benchan.wireless.screencasting.protocol.upnp.dmc.PushPhase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.sender.R
+import com.benchan.wireless.screencasting.feature.sender.ui.asString
 
 /** 遥控页上的动作（由 [PushFullScreen] 接到具体页面）。 */
 internal class PushRemoteActions(
@@ -188,10 +195,21 @@ internal fun PushRemoteScreen(s: PushSessionState, vm: PushViewModel, actions: P
     if (firstPhotoIndex < 0 && item?.kind == MediaKind.IMAGE) firstPhotoIndex = item.index
     Column(Modifier.fillMaxSize().background(c.surface)) {
         TopAppBar(
-            title = { Text("推送中") },
-            navigationIcon = { IconButton(onClick = actions.onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "返回设备列表，推送继续") } },
+            title = { Text(stringResource(R.string.push_remote_title)) },
+            navigationIcon = { IconButton(onClick = actions.onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.push_remote_back_a11y)) } },
         )
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // 固定区（播放控件 / 列表·换内容 / 页脚）叠在滚动区底部、带背景；滚动内容底部留出与固定区等高的空间，
+        // 缩略图按剩余高度收缩，进入页面时进度条与音量条不被固定区盖住（多项推送多一行胶片条时也一样）
+        var fixedPx by remember { mutableIntStateOf(0) }
+        val density = LocalDensity.current
+        val fixedDp = with(density) { fixedPx.toDp() }
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+        val filmStrip = item != null && e.count > 1 && (item.kind == MediaKind.IMAGE || s.items.any { it.kind == MediaKind.IMAGE })
+        val thumbHeight = thumbnailHeight(maxWidth - 32.dp, maxHeight - fixedDp, big, filmStrip, density.fontScale)
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = fixedDp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             DeviceHeader(s)
             if (e.idleWarning) IdleBanner(vm::keepAlive)
             if (item != null) {
@@ -199,11 +217,22 @@ internal fun PushRemoteScreen(s: PushSessionState, vm: PushViewModel, actions: P
                 if (photoView) {
                     PhotoArea(s, item, vm, showPrivacyNote = item.index == firstPhotoIndex)
                 } else {
-                    Thumbnail(item, e.count, big)
-                    Text(item.title, style = MaterialTheme.typography.titleMedium, color = c.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(PushCopy.itemSubtitle(item, e.count), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                    if (thumbHeight != null) {
+                        Thumbnail(item, e.count, thumbHeight)
+                        Text(item.title, style = MaterialTheme.typography.titleMedium, color = c.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(PushCopy.itemSubtitle(item, e.count).asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                    } else {
+                        // 高度不够：缩略图缩成行首小图，标题与副标题放在右侧
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Box(Modifier.width(96.dp)) { Thumbnail(item, e.count, 54.dp, showBadge = false) }
+                            Column(Modifier.weight(1f)) {
+                                Text(item.title, style = MaterialTheme.typography.titleMedium, color = c.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(PushCopy.itemSubtitle(item, e.count).asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                            }
+                        }
+                    }
                 }
-                if (e.count > 1 && (item.kind == MediaKind.IMAGE || s.items.any { it.kind == MediaKind.IMAGE })) FilmStrip(s, vm)
+                if (filmStrip) FilmStrip(s, vm)
             }
             Crossfade(targetState = area, animationSpec = tween(200), label = "push-area") { a ->
                 when (a) {
@@ -219,20 +248,37 @@ internal fun PushRemoteScreen(s: PushSessionState, vm: PushViewModel, actions: P
         }
         // 播放控件行与“列表 / 换内容”一起固定在滚动区外：200% 字号时也始终可见（第 1 轮 UX P2-13），
         // 默认字号下也不会出现被半遮的按钮（第 2 轮复测）
+        Column(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(c.surface)
+                .onSizeChanged { fixedPx = it.height }.padding(top = 8.dp),
+        ) {
         if (area is Area.Player) PlayerButtons(s, vm, actions.onMessage)
         // 列表 / 换内容：只在正常播放 / 显示时出现（第 1 轮 UX P2-3）
         if (area is Area.Player || area is Area.Photo) {
             Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (e.count > 1) FilledTonalButton(onClick = actions.onShowPlaylist, Modifier.weight(1f)) {
-                    Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("列表")
+                    Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.push_list))
                 }
                 FilledTonalButton(onClick = actions.onChangeContent, Modifier.weight(1f)) {
-                    Icon(Icons.Rounded.SwapHoriz, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("换内容")
+                    Icon(Icons.Rounded.SwapHoriz, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.push_change_content))
                 }
             }
         }
         Footer(area, s, vm, actions)
+        }
+        }
     }
+}
+
+/**
+ * 大缩略图的高度：16:9（≥150% 字号 2.4:1），但不超过滚动区可视高度扣掉其余内容（标题、进度条、音量条等）后的余量；
+ * 余量不足 96 dp 时返回 null，改用行首小图。其余内容的高度按字号粗估（文字部分随字号放大）。
+ */
+internal fun thumbnailHeight(width: Dp, viewport: Dp, big: Boolean, filmStrip: Boolean, fontScale: Float): Dp? {
+    val natural = width / (if (big) 2.4f else 16f / 9f)
+    val reserve = (if (filmStrip) 368.dp else 300.dp) * (0.6f + 0.4f * fontScale.coerceIn(1f, 2f))
+    val room = viewport - reserve
+    return if (room < 96.dp) null else minOf(natural, room)
 }
 
 /** 页脚按状态切换（第 1 轮 UX P1-1）。 */
@@ -244,22 +290,22 @@ private fun Footer(area: Area, s: PushSessionState, vm: PushViewModel, actions: 
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         when (area) {
-            is Area.Loading -> OutlinedButton(onClick = actions.onCancelLoading, Modifier.fillMaxWidth().height(56.dp)) { Text("取消") }
+            is Area.Loading -> OutlinedButton(onClick = actions.onCancelLoading, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_cancel)) }
             is Area.Transcode -> {
-                OutlinedButton(onClick = actions.onCancelTranscode, Modifier.fillMaxWidth().height(56.dp)) { Text("取消转换") }
+                OutlinedButton(onClick = actions.onCancelTranscode, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_cancel_transcode)) }
                 if (area.t.inPlaylist) {
                     FilledTonalButton(onClick = vm::skipItem, Modifier.fillMaxWidth()) {
-                        Text("跳过这一项"); Spacer(Modifier.width(6.dp)); Icon(Icons.Rounded.SkipNext, null, Modifier.size(18.dp))
+                        Text(stringResource(R.string.push_skip_item)); Spacer(Modifier.width(6.dp)); Icon(Icons.Rounded.SkipNext, null, Modifier.size(18.dp))
                     }
                 } else {
-                    TextButton(onClick = vm::tryOriginal, Modifier.fillMaxWidth()) { Text("改为直接尝试原文件") }
+                    TextButton(onClick = vm::tryOriginal, Modifier.fillMaxWidth()) { Text(stringResource(R.string.push_switch_try_original)) }
                 }
             }
-            is Area.Failure, Area.AwaitingChoice -> OutlinedButton(onClick = vm::stop, Modifier.fillMaxWidth().height(56.dp)) { Text("结束推送") }
+            is Area.Failure, Area.AwaitingChoice -> OutlinedButton(onClick = vm::stop, Modifier.fillMaxWidth().height(56.dp)) { Text(stringResource(R.string.push_end_push)) }
             else -> Button(
                 onClick = vm::stop, Modifier.fillMaxWidth().height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = c.errorContainer, contentColor = c.onErrorContainer),
-            ) { Text("结束推送") }
+            ) { Text(stringResource(R.string.push_end_push)) }
         }
     }
 }
@@ -269,7 +315,7 @@ private fun DeviceHeader(s: PushSessionState) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
     val e = s.engine
-    val label = PushCopy.statusLabel(s)
+    val label = PushCopy.statusLabel(s)?.asString().orEmpty()
     val audioOnly = PushCopy.isAudioOnly(s.target.sink)
     val transcoding = s.transcode?.phase == TranscodeUi.Phase.RUNNING
     val busy = transcoding || e.phase == PushPhase.LOADING || e.phase == PushPhase.PREPARING || (e.phase == PushPhase.SHOWING && s.current?.served != true)
@@ -293,11 +339,13 @@ private fun DeviceHeader(s: PushSessionState) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ProtocolTag("DLNA")
                 Text(
-                    when {
-                        s.ownApp -> "本应用接收端"
-                        audioOnly -> "只能推送音乐"
-                        else -> "电视自带投屏"
-                    },
+                    stringResource(
+                        when {
+                            s.ownApp -> R.string.push_kind_own_app
+                            audioOnly -> R.string.push_sub_audio_only
+                            else -> R.string.push_kind_tv_builtin
+                        },
+                    ),
                     style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                 )
             }
@@ -328,8 +376,8 @@ private fun IdleBanner(onContinue: () -> Unit) {
         Modifier.fillMaxWidth().background(ext.warningContainer, RoundedCornerShape(12.dp)).padding(start = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("照片推送将在 1 分钟后结束", Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }, color = ext.onWarningContainer, style = MaterialTheme.typography.bodyMedium)
-        TextButton(onClick = onContinue) { Text("继续", color = ext.onWarningContainer) }
+        Text(stringResource(R.string.push_notif_idle), Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }, color = ext.onWarningContainer, style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = onContinue) { Text(stringResource(R.string.push_keep_alive), color = ext.onWarningContainer) }
     }
 }
 
@@ -346,10 +394,10 @@ internal fun rememberThumbnail(uri: Uri?, w: Int, h: Int): Bitmap? {
 }
 
 @Composable
-private fun Thumbnail(item: PushItemInfo, count: Int, big: Boolean) {
+private fun Thumbnail(item: PushItemInfo, count: Int, height: Dp, showBadge: Boolean = true) {
     val c = MaterialTheme.colorScheme
     Box(
-        Modifier.fillMaxWidth().aspectRatio(if (big) 2.4f else 16f / 9f).background(c.scrim, RoundedCornerShape(16.dp)),
+        Modifier.fillMaxWidth().height(height).background(c.scrim, RoundedCornerShape(16.dp)),
         contentAlignment = Alignment.Center,
     ) {
         when {
@@ -361,7 +409,7 @@ private fun Thumbnail(item: PushItemInfo, count: Int, big: Boolean) {
                 Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             } ?: Icon(kindIcon(item.kind), null, Modifier.size(48.dp), tint = c.onScrim)
         }
-        if (count > 1) CountBadge("${item.index + 1} / $count", Modifier.align(Alignment.BottomEnd))
+        if (count > 1 && showBadge) CountBadge("${item.index + 1} / $count", Modifier.align(Alignment.BottomEnd))
     }
 }
 
@@ -384,6 +432,8 @@ private fun PhotoArea(s: PushSessionState, item: PushItemInfo, vm: PushViewModel
     val c = MaterialTheme.colorScheme
     val e = s.engine
     var drag by remember { mutableFloatStateOf(0f) }
+    val prevLabel = stringResource(R.string.push_prev_photo)
+    val nextLabel = stringResource(R.string.push_next_photo)
     Box(
         Modifier.fillMaxWidth().aspectRatio(4f / 3f).background(c.scrim, RoundedCornerShape(16.dp))
             .pointerInput(e.index) {
@@ -396,8 +446,8 @@ private fun PhotoArea(s: PushSessionState, item: PushItemInfo, vm: PushViewModel
             }
             .semantics {
                 customActions = listOf(
-                    CustomAccessibilityAction("上一张") { vm.previous(); true },
-                    CustomAccessibilityAction("下一张") { vm.next(); true },
+                    CustomAccessibilityAction(prevLabel) { vm.previous(); true },
+                    CustomAccessibilityAction(nextLabel) { vm.next(); true },
                 )
             },
         contentAlignment = Alignment.Center,
@@ -410,19 +460,22 @@ private fun PhotoArea(s: PushSessionState, item: PushItemInfo, vm: PushViewModel
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (s.photoSlow) {
             Icon(Icons.Rounded.HourglassEmpty, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
-            Text("这台电视显示照片比较慢", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.push_photo_slow), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         } else {
-            val parts = listOfNotNull(if (e.count > 1) "左右滑动切换" else null, if (showPrivacyNote) "照片已转正并去掉拍摄位置" else null)
+            val parts = listOfNotNull(
+                if (e.count > 1) stringResource(R.string.push_photo_swipe) else null,
+                if (showPrivacyNote) stringResource(R.string.push_photo_privacy) else null,
+            )
             if (parts.isNotEmpty()) Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }
     if (e.count > 1) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FilledTonalButton(onClick = vm::previous, enabled = e.index > 0, modifier = Modifier.weight(1f).height(56.dp), colors = WscButtonColors.tonal()) {
-                Icon(Icons.Rounded.SkipPrevious, null); Spacer(Modifier.width(6.dp)); Text("上一张")
+                Icon(Icons.Rounded.SkipPrevious, null); Spacer(Modifier.width(6.dp)); Text(prevLabel)
             }
             FilledTonalButton(onClick = vm::next, enabled = e.index + 1 < e.count, modifier = Modifier.weight(1f).height(56.dp), colors = WscButtonColors.tonal()) {
-                Text("下一张"); Spacer(Modifier.width(6.dp)); Icon(Icons.Rounded.SkipNext, null)
+                Text(nextLabel); Spacer(Modifier.width(6.dp)); Icon(Icons.Rounded.SkipNext, null)
             }
         }
     }
@@ -438,15 +491,18 @@ private fun FilmStrip(s: PushSessionState, vm: PushViewModel) {
     LazyRow(state = state, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(s.items, key = { _, it -> it.index }) { i, it ->
             val selected = i == current
+            val itemA11y = stringResource(R.string.push_a11y_film_item, i + 1, s.items.size, stringResource(PushCopy.kindLabelRes(it.kind)))
+            val currentA11y = stringResource(R.string.push_a11y_current)
+            val selectLabel = stringResource(R.string.push_a11y_select_item)
             Box(
                 Modifier.size(56.dp)
                     .border(if (selected) BorderStroke(2.dp, c.primary) else BorderStroke(0.dp, c.surface), RoundedCornerShape(8.dp))
                     .padding(if (selected) 3.dp else 0.dp)
                     .background(c.scrim, RoundedCornerShape(6.dp))
-                    .clickable(onClickLabel = "切到这一项") { vm.select(i) }
+                    .clickable(onClickLabel = selectLabel) { vm.select(i) }
                     .semantics {
                         this.selected = selected
-                        contentDescription = "第 ${i + 1} 项，共 ${s.items.size} 项，${PushCopy.kindLabel(it.kind)}" + if (selected) "，当前" else ""
+                        contentDescription = if (selected) "$itemA11y$currentA11y" else itemA11y
                     },
                 contentAlignment = Alignment.Center,
             ) {
@@ -489,21 +545,29 @@ private fun LoadingCard(s: PushSessionState) {
         ) {
             val loading = s.engine.phase == PushPhase.LOADING
             Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-                Step(done = loading, active = !loading, text = if (loading) "已连接 ${s.target.name}" else "正在连接 ${s.target.name}…")
+                Step(done = loading, active = !loading, text = stringResource(if (loading) R.string.push_step_connected else R.string.push_notif_connecting, s.target.name))
                 if (photo) {
-                    Step(done = false, active = loading, text = "正在发送到电视")
+                    Step(done = false, active = loading, text = stringResource(R.string.push_step_sending))
                 } else {
-                    Step(done = false, active = loading, text = if (s.engine.awaitingConsent) "等待 ${s.target.name} 允许…" else "电视正在加载…")
-                    Step(done = false, active = false, text = "开始播放")
+                    Step(done = false, active = loading, text = if (s.engine.awaitingConsent) stringResource(R.string.push_step_awaiting_consent, s.target.name) else stringResource(R.string.push_step_tv_loading))
+                    Step(done = false, active = false, text = stringResource(R.string.push_step_start))
                 }
             }
-            LinearProgressIndicator(progress = { (waited / 20f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
-            Row {
+            LinearProgressIndicator(progress = { (waited / LOAD_LIMIT_S.toFloat()).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+            if (s.engine.awaitingConsent) {
+                // 等待确认不计时：整句说明，不再并排“最长 20 秒”（并排拼接在英文下会错位）
                 Text(
-                    if (s.engine.awaitingConsent) "等待对方确认（不计入 20 秒）" else "已等待 $waited 秒",
-                    style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.weight(1f),
+                    stringResource(R.string.push_waiting_consent, LOAD_LIMIT_S),
+                    style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                 )
-                Text("最长 20 秒", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        pluralStringResource(R.plurals.push_waited_seconds, waited.toInt(), waited.toInt()),
+                        style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.weight(1f),
+                    )
+                    Text(stringResource(R.string.push_max_20s, LOAD_LIMIT_S), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                }
             }
             if (s.ownApp || s.engine.loadingSlow) {
                 Row(
@@ -513,7 +577,7 @@ private fun LoadingCard(s: PushSessionState) {
                 ) {
                     Icon(Icons.Rounded.SettingsRemote, null, Modifier.size(18.dp), tint = c.onSurface)
                     Text(
-                        if (s.ownApp) "请在 ${s.target.name} 上点「允许」" else "如果电视上出现确认提示，请用遥控器点「允许」",
+                        if (s.ownApp) stringResource(R.string.push_allow_on_own, s.target.name) else stringResource(R.string.push_allow_on_tv),
                         style = MaterialTheme.typography.bodyMedium, color = c.onSurface,
                     )
                 }
@@ -538,57 +602,63 @@ private fun Step(done: Boolean, active: Boolean, text: String) {
     }
 }
 
-/** 设备是音箱时把“电视”换成“设备”（交互稿 P07）。 */
-private fun deviceWord(s: PushSessionState) = if (PushCopy.isAudioOnly(s.target.sink)) "设备" else "电视"
+/** 设备是音箱时把“电视”换成“设备”（交互稿 P07）：true = 用“设备”的文案。 */
+private fun isSpeaker(s: PushSessionState) = PushCopy.isAudioOnly(s.target.sink)
 
 /** P06 / P07：进度与音量（能力缺失时只读 / 隐藏 + 同高说明，布局不塌陷）。 */
 @Composable
 private fun PlayerProgressAndVolume(s: PushSessionState, vm: PushViewModel) {
     val c = MaterialTheme.colorScheme
     val e = s.engine
-    val device = deviceWord(s)
+    val speaker = isSpeaker(s)
     var dragging by remember { mutableStateOf<Float?>(null) }
     val duration = e.durationMs
     val position = e.positionMs
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when {
-            position == null -> InfoLine("这台${device}不提供播放进度")
+            position == null -> InfoLine(stringResource(if (speaker) R.string.push_no_progress_device else R.string.push_no_progress_tv))
             duration != null && duration > 0 && e.canSeek -> {
                 val frac = dragging ?: (position.toFloat() / duration).coerceIn(0f, 1f)
                 val shown = (frac * duration).toLong()
+                val progressLabel = stringResource(R.string.push_a11y_progress)
+                val progressState = stringResource(R.string.push_a11y_progress_state, PushCopy.spokenTime(shown).asString(), PushCopy.spokenTime(duration).asString())
+                val fwdLabel = stringResource(R.string.push_a11y_forward_10)
+                val backLabel = stringResource(R.string.push_a11y_back_10)
                 if (dragging != null) Text(PushCopy.time(shown), fontFamily = FontFamily.Monospace, color = c.primary, style = MaterialTheme.typography.labelLarge)
                 Slider(
                     value = frac,
                     onValueChange = { dragging = it },
                     onValueChangeFinished = { dragging?.let { vm.seekTo((it * duration).toLong()) }; dragging = null },
                     modifier = Modifier.semantics {
-                        contentDescription = "播放进度"
-                        stateDescription = "${PushCopy.spokenTime(shown)}，共 ${PushCopy.spokenTime(duration)}"
+                        contentDescription = progressLabel
+                        stateDescription = progressState
                         // 读屏下按 10 秒步进调整（第 1 轮 UX P2-5 / PM P2-19）
                         customActions = listOf(
-                            CustomAccessibilityAction("快进 10 秒") { vm.seekTo((position + 10_000).coerceAtMost(duration)); true },
-                            CustomAccessibilityAction("后退 10 秒") { vm.seekTo((position - 10_000).coerceAtLeast(0)); true },
+                            CustomAccessibilityAction(fwdLabel) { vm.seekTo((position + 10_000).coerceAtMost(duration)); true },
+                            CustomAccessibilityAction(backLabel) { vm.seekTo((position - 10_000).coerceAtLeast(0)); true },
                         )
                     },
                 )
                 TimeRow(shown, duration)
             }
             else -> {
+                val readOnlyA11y = stringResource(R.string.push_a11y_progress_readonly, PushCopy.spokenTime(position).asString(), PushCopy.spokenTime(duration).asString())
                 LinearProgressIndicator(
                     progress = { if (duration != null && duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f },
                     modifier = Modifier.fillMaxWidth().semantics {
-                        contentDescription = "播放进度 ${PushCopy.spokenTime(position)}，共 ${PushCopy.spokenTime(duration)}，不能拖动"
+                        contentDescription = readOnlyA11y
                     },
                     color = c.outline,
                 )
                 TimeRow(position, duration)
-                InfoLine("这台${device}不支持拖动进度")
+                InfoLine(stringResource(if (speaker) R.string.push_no_seek_device else R.string.push_no_seek_tv))
             }
         }
         val vol = e.volume
         if (e.hasVolume && vol != null) {
             var local by remember { mutableFloatStateOf(vol.toFloat()) }
             var touching by remember { mutableStateOf(false) }
+            val volumeA11y = stringResource(R.string.push_a11y_volume, s.target.name)
             LaunchedEffect(vol) { if (!touching) local = vol.toFloat() }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.VolumeUp, null, tint = c.onSurfaceVariant)
@@ -596,7 +666,7 @@ private fun PlayerProgressAndVolume(s: PushSessionState, vm: PushViewModel) {
                     value = local, valueRange = 0f..100f, steps = 19,
                     onValueChange = { touching = true; local = it; vm.setVolume(it.toInt()) },
                     onValueChangeFinished = { touching = false },
-                    modifier = Modifier.weight(1f).semantics { contentDescription = "${s.target.name} 音量" },
+                    modifier = Modifier.weight(1f).semantics { contentDescription = volumeA11y },
                 )
                 Text("${local.toInt()}", fontFamily = FontFamily.Monospace, color = c.onSurfaceVariant, modifier = Modifier.widthIn(min = 32.dp))
             }
@@ -604,7 +674,7 @@ private fun PlayerProgressAndVolume(s: PushSessionState, vm: PushViewModel) {
             Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.SettingsRemote, null, Modifier.size(18.dp), tint = c.onSurface)
                 Text(
-                    if (device == "设备") "请用设备自带的遥控器或按键调音量" else "请用电视遥控器调音量",
+                    stringResource(if (speaker) R.string.push_volume_hint_device else R.string.push_volume_hint_tv),
                     style = MaterialTheme.typography.bodyMedium, color = c.onSurface,
                 )
             }
@@ -617,26 +687,30 @@ private fun PlayerProgressAndVolume(s: PushSessionState, vm: PushViewModel) {
 private fun PlayerButtons(s: PushSessionState, vm: PushViewModel, onMessage: (String) -> Unit) {
     val c = MaterialTheme.colorScheme
     val e = s.engine
-    val device = deviceWord(s)
+    val speaker = isSpeaker(s)
+    val noPause = stringResource(if (speaker) R.string.push_no_pause_device else R.string.push_no_pause_tv)
+    val pauseA11y = stringResource(R.string.push_pause)
+    val pauseUnavailableA11y = stringResource(if (speaker) R.string.push_a11y_pause_unavailable_device else R.string.push_a11y_pause_unavailable_tv)
+    val playA11y = stringResource(R.string.push_play_a11y)
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
         if (e.count > 1) {
             IconButton(onClick = vm::previous, enabled = e.index > 0, modifier = Modifier.size(48.dp), colors = WscButtonColors.icon()) {
-                Icon(Icons.Rounded.SkipPrevious, contentDescription = "上一个")
+                Icon(Icons.Rounded.SkipPrevious, contentDescription = stringResource(R.string.push_prev))
             }
         }
         val playing = e.phase == PushPhase.PLAYING
         val pauseUnavailable = playing && !e.canPause
         FilledIconButton(
-            onClick = { if (pauseUnavailable) onMessage("这台${device}不支持暂停，可以结束推送") else vm.togglePlay() },
+            onClick = { if (pauseUnavailable) onMessage(noPause) else vm.togglePlay() },
             modifier = Modifier.size(72.dp).semantics {
-                contentDescription = if (playing) (if (e.canPause) "暂停" else "暂停，不可用，这台${device}不支持暂停") else "播放"
+                contentDescription = if (playing) (if (e.canPause) pauseA11y else pauseUnavailableA11y) else playA11y
             },
             colors = if (pauseUnavailable) androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(containerColor = c.surfaceContainer, contentColor = c.outline)
             else androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(),
         ) { Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(36.dp)) }
         if (e.count > 1) {
             IconButton(onClick = vm::next, enabled = e.index + 1 < e.count, modifier = Modifier.size(48.dp), colors = WscButtonColors.icon()) {
-                Icon(Icons.Rounded.SkipNext, contentDescription = "下一个")
+                Icon(Icons.Rounded.SkipNext, contentDescription = stringResource(R.string.push_next))
             }
         }
     }
@@ -670,10 +744,10 @@ private fun AwaitingChoiceCard(onChoose: () -> Unit) {
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Tune, null, tint = c.onSurfaceVariant)
-            Text("等你选择转换方式", style = MaterialTheme.typography.titleMedium, color = c.onSurface)
+            Text(stringResource(R.string.push_awaiting_choice_title), style = MaterialTheme.typography.titleMedium, color = c.onSurface)
         }
-        Text("电视可能放不了这个视频。选好后才会开始。", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-        FilledTonalButton(onClick = onChoose) { Text("选择") }
+        Text(stringResource(R.string.push_awaiting_choice_body), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        FilledTonalButton(onClick = onChoose) { Text(stringResource(R.string.push_choose)) }
     }
 }
 
@@ -691,34 +765,35 @@ private fun TranscodeCard(tvName: String, t: TranscodeUi) {
         if (hot) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Thermostat, null, tint = ext.onWarningContainer)
-                Text("手机温度较高，已暂停转换", style = MaterialTheme.typography.titleMedium, color = ext.onWarningContainer)
+                Text(stringResource(R.string.push_notif_transcode_hot), style = MaterialTheme.typography.titleMedium, color = ext.onWarningContainer)
             }
-            Text("降温后自动继续 · ${t.progress}%", style = MaterialTheme.typography.bodyMedium, color = ext.onWarningContainer)
+            Text(stringResource(R.string.push_notif_transcode_hot_detail, t.progress), style = MaterialTheme.typography.bodyMedium, color = ext.onWarningContainer)
         } else {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    if (t.inPlaylist) "正在转换第 ${t.index + 1} 项" else "正在转换", style = MaterialTheme.typography.titleMedium,
+                    if (t.inPlaylist) stringResource(R.string.push_transcoding_item, t.index + 1) else stringResource(R.string.push_transcoding), style = MaterialTheme.typography.titleMedium,
                     color = c.onSurface, modifier = Modifier.weight(1f),
                 )
                 // 每 25% 播报一次，不逐个百分点播报（第 1 轮 UX P2-10）
+                val quarterA11y = stringResource(R.string.push_a11y_transcoded, quarter)
                 Text(
                     "${t.progress}%", fontSize = 24.sp, fontFamily = FontFamily.Monospace, color = c.onSurface,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite; contentDescription = "已转换 $quarter%" },
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite; contentDescription = quarterA11y },
                 )
             }
             LinearProgressIndicator(progress = { t.progress / 100f }, modifier = Modifier.fillMaxWidth())
             Row {
                 Text(
-                    PushCopy.minutes(t.etaMs)?.let { "约剩 ${it.removePrefix("约 ")}" } ?: "正在估算剩余时间",
+                    PushCopy.remaining(t.etaMs)?.asString() ?: stringResource(R.string.push_estimating),
                     style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.weight(1f),
                 )
                 if (t.durationMs != null) Text(
-                    "已转换 ${PushCopy.time(t.processedMs)} / ${PushCopy.time(t.durationMs)}",
+                    stringResource(R.string.push_transcoded_time, PushCopy.time(t.processedMs), PushCopy.time(t.durationMs)),
                     style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, color = c.onSurfaceVariant,
                 )
             }
-            Text("转完自动推送到 $tvName，转换期间电视上不显示内容。可以锁屏或切到其他应用，转换不会中断。", style = MaterialTheme.typography.bodySmall, color = c.onSurface)
-            InfoLine("手机温度过高时会自动暂停，降温后继续")
+            Text(stringResource(R.string.push_transcode_note, tvName), style = MaterialTheme.typography.bodySmall, color = c.onSurface)
+            InfoLine(stringResource(R.string.push_transcode_thermal_note))
         }
     }
 }
@@ -748,14 +823,16 @@ private fun FailureCard(f: PushCopy.Failure, error: PushError, onAction: (PushCo
                 Icon(failureIcon(error), null, tint = c.onErrorContainer)
             }
             Text(
-                f.title, style = MaterialTheme.typography.titleMedium, color = c.onSurface,
+                f.title.asString(), style = MaterialTheme.typography.titleMedium, color = c.onSurface,
                 modifier = Modifier.focusRequester(focus).focusable().semantics { heading(); liveRegion = LiveRegionMode.Assertive },
             )
         }
-        Text(f.detail, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-        Button(onClick = { onAction(f.primary) }, Modifier.fillMaxWidth()) { Text(f.primary.label) }
-        f.secondary?.let { FilledTonalButton(onClick = { onAction(it) }, Modifier.fillMaxWidth()) { Text(it.label) } }
-        f.tertiary?.let { TextButton(onClick = { onAction(it) }, Modifier.fillMaxWidth()) { Text(it.label) } }
+        Text(f.detail.asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        Button(onClick = { onAction(f.primary) }, Modifier.fillMaxWidth()) { Text(stringResource(f.primary.labelRes)) }
+        f.secondary?.let { FilledTonalButton(onClick = { onAction(it) }, Modifier.fillMaxWidth()) { Text(stringResource(it.labelRes)) } }
+        f.tertiary?.let { TextButton(onClick = { onAction(it) }, Modifier.fillMaxWidth()) { Text(stringResource(it.labelRes)) } }
     }
 }
 
+/** 加载等待上限（秒），与进度条的 20 秒一致。 */
+private const val LOAD_LIMIT_S = 20

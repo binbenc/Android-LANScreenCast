@@ -1,5 +1,10 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.core.ui.text.displaySummary
+import com.benchan.wireless.screencasting.core.ui.text.displayLabel
+import com.benchan.wireless.screencasting.core.ui.R as UiR
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -143,49 +148,54 @@ fun SettingsScreen(
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
     Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
-        SettingsTopBar("设置", onBack)
+        SettingsTopBar(stringResource(R.string.settings_title), onBack)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
-            Group("本机")
+            Group(stringResource(R.string.settings_group_device))
             // TV：进入页面第一项获得焦点（B7）
-            NavRow("设备名", settings.deviceName, modifier = rowFocus("name")) { lastRow = "name"; dialog = "name" }
-            NavRow("默认模式", if (!receiverMode) "发送端（投屏到别处）" else "接收端（把本机当作屏幕）", modifier = rowFocus("mode")) { lastRow = "mode"; dialog = "mode" }
+            NavRow(stringResource(R.string.settings_device_name), settings.deviceName, modifier = rowFocus("name")) { lastRow = "name"; dialog = "name" }
+            NavRow(stringResource(R.string.settings_default_mode), stringResource(if (!receiverMode) R.string.settings_mode_sender else R.string.settings_mode_receiver), modifier = rowFocus("mode")) { lastRow = "mode"; dialog = "mode" }
             // 可信设备对发送端和接收端都有效（双方互相信任），放在“本机”分组，不受“切换为接收端后生效”说明覆盖（R3）
-            NavRow("可信设备", "${trusted.size} 台 · 可逐个移除", rowFocus("trusted"), icon = Icons.Rounded.Devices) { lastRow = "trusted"; onNavigate(SettingsDestination.TRUSTED) }
+            NavRow(stringResource(R.string.settings_trusted), pluralStringResource(R.plurals.settings_trusted_detail, trusted.size, trusted.size), rowFocus("trusted"), icon = Icons.Rounded.Devices) { lastRow = "trusted"; onNavigate(SettingsDestination.TRUSTED) }
             // F24 长辈模式（交互稿 E02）：独立分组，只在发送端模式显示；导航行（开启前必须走向导）
             if (!isTv && !receiverMode) {
-                Group("长辈模式")
-                NavRow("长辈模式", "大字大按钮，一键投到家里的电视。由家人先设置好 · " + if (settings.elderModeEnabled) "已开启" else "关闭") {
+                Group(stringResource(R.string.settings_elder))
+                NavRow(
+                    stringResource(R.string.settings_elder),
+                    stringResource(R.string.settings_elder_detail, stringResource(if (settings.elderModeEnabled) R.string.settings_elder_on else R.string.settings_elder_off)),
+                ) {
                     lastRow = "elder"; onNavigate(SettingsDestination.ELDER)
                 }
             }
 
             val sender = @Composable {
-                Group("投屏")
+                Group(stringResource(R.string.settings_group_cast))
                 // 游戏档不切档（F18，UX 走查 P1-7）：两处文案按默认档位取
-                NavRow("画质档位", qualityRowDetail(settings.quality, settings.autoAdjustQuality)) { dialog = "quality" }
-                SwitchRow("自动调节", autoAdjustDetail(settings.quality), settings.autoAdjustQuality, viewModel::setAutoAdjust)
+                NavRow(stringResource(R.string.settings_quality), qualityRowDetail(settings.quality, settings.autoAdjustQuality)) { dialog = "quality" }
+                SwitchRow(stringResource(R.string.settings_auto_adjust), autoAdjustDetail(settings.quality), settings.autoAdjustQuality, viewModel::setAutoAdjust)
                 // 声音、说明卡只对手机发送端有意义：TV 上隐藏（UX#20）
                 if (!isTv) {
-                    SwitchRow("声音", "只捕获手机播放的声音，不录麦克风", settings.audioEnabled, onChange = { on ->
+                    SwitchRow(stringResource(R.string.settings_audio), stringResource(R.string.settings_audio_detail), settings.audioEnabled, onChange = { on ->
                         if (on && !has(Manifest.permission.RECORD_AUDIO)) audioLauncher.launch(Manifest.permission.RECORD_AUDIO) else viewModel.setAudio(on)
                     })
                     if (settings.audioEnabled && !hasMic) {
                         Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("未授予录音权限，投屏时只投画面", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            TextButton(onClick = { openAppDetailsSettings(context) }) { Text("去系统设置") }
+                            Text(stringResource(R.string.settings_audio_no_permission), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            TextButton(onClick = { openAppDetailsSettings(context) }) { Text(stringResource(R.string.settings_open_system_settings)) }
                         }
                     }
-                    SwitchRow("录屏前显示说明卡", "关闭后点设备直接弹出系统录屏授权", !settings.skipCaptureIntro, onChange = { viewModel.setSkipIntro(!it) })
+                    SwitchRow(stringResource(R.string.settings_capture_intro), stringResource(R.string.settings_capture_intro_detail), !settings.skipCaptureIntro, onChange = { viewModel.setSkipIntro(!it) })
                     // F14 Direct Share（决策 #34，交互稿 S08 / 09A）：关闭后立即移除全部快捷方式
-                    SwitchRow("在分享菜单显示最近推送的电视", "分享照片和视频时，可以直接点电视的名字", settings.directShareEnabled, viewModel::setDirectShare)
+                    SwitchRow(stringResource(R.string.settings_direct_share), stringResource(R.string.settings_direct_share_detail), settings.directShareEnabled, viewModel::setDirectShare)
                     // 反向控制（PRD F23，交互稿 09A / R01）：导航行 + 状态值（UX 走查 G12），点按进入 R01 再开关。
                     // B 期起 TV 接收端有控制入口：说明为“电视或平板”（用户决策 D3）
                     val rcServiceOn = remember(resumeTick, settings.remoteControlEnabled) { viewModel.remoteControlServiceOn() }
-                    val rcValue = when {
-                        !settings.remoteControlEnabled -> "已关闭"
-                        rcServiceOn -> "已开启"
-                        else -> "已开启 · 还需开启无障碍服务"
-                    }
+                    val rcValue = stringResource(
+                        when {
+                            !settings.remoteControlEnabled -> R.string.settings_rc_off
+                            rcServiceOn -> R.string.settings_rc_on
+                            else -> R.string.settings_rc_needs_service
+                        },
+                    )
                     val rcWarn = settings.remoteControlEnabled && !rcServiceOn
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { lastRow = "remote"; onNavigate(SettingsDestination.REMOTE_CONTROL) }
@@ -195,8 +205,8 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text("反向控制", style = MaterialTheme.typography.bodyLarge)
-                            Text("允许电视、平板或手机在投屏时操作本机，每次都需你确认", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.settings_rc), style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.settings_rc_detail), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
                                 rcValue,
                                 style = MaterialTheme.typography.bodySmall,
@@ -208,28 +218,28 @@ fun SettingsScreen(
                 }
             }
             val receiver = @Composable {
-                Group("接收（本机作为屏幕时）")
+                Group(stringResource(R.string.settings_group_receiver))
                 // 发送端模式下接收端设置不立即生效：如实说明（与 TV 隐藏发送端项对称，P2）
                 if (!receiverMode) {
                     Text(
-                        "当前为发送端模式，以下设置在切换为接收端后生效",
+                        stringResource(R.string.settings_receiver_inactive_note),
                         Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                NavRow("连接策略", if (settings.connectionPolicy == ConnectionPolicy.TRUSTED_SKIP_CONFIRM) "已信任的设备免确认" else "每次都确认", modifier = rowFocus("policy")) { lastRow = "policy"; dialog = "policy" }
-                SwitchRow("DLNA 接收", "视频 App 的“投屏”按钮可以选择本机", settings.dlnaEnabled, viewModel::setDlna)
-                SwitchRow("陌生设备需确认", "防止邻居或酒店住客误投", settings.dlnaConfirmUnknown, viewModel::setDlnaConfirm, enabled = settings.dlnaEnabled)
+                NavRow(stringResource(R.string.settings_policy), stringResource(if (settings.connectionPolicy == ConnectionPolicy.TRUSTED_SKIP_CONFIRM) R.string.settings_policy_trusted else R.string.settings_policy_always), modifier = rowFocus("policy")) { lastRow = "policy"; dialog = "policy" }
+                SwitchRow(stringResource(R.string.settings_dlna), stringResource(R.string.settings_dlna_detail), settings.dlnaEnabled, viewModel::setDlna)
+                SwitchRow(stringResource(R.string.settings_dlna_confirm), stringResource(R.string.settings_dlna_confirm_detail), settings.dlnaConfirmUnknown, viewModel::setDlnaConfirm, enabled = settings.dlnaEnabled)
                 if (viewModel.appleCompatAvailable) {
                     SwitchRow(
-                        "兼容 Apple 设备（非官方）",
-                        "开启后 iPhone、iPad 可用系统“屏幕镜像”连接本机",
+                        stringResource(R.string.settings_apple),
+                        stringResource(R.string.settings_apple_detail),
                         settings.appleCompatEnabled,
                         { on -> if (on) dialog = "apple" else viewModel.setAppleCompat(false, settings.appleCompatPin) },
                     )
                     // 开启后可以单独修改“连接时要求 PIN”（D5）
                     if (settings.appleCompatEnabled) {
-                        SwitchRow("连接时要求输入 PIN", "推荐开启，防止他人误连", settings.appleCompatPin, onChange = { viewModel.setAppleCompat(true, it) })
+                        SwitchRow(stringResource(R.string.settings_apple_pin), stringResource(R.string.settings_apple_pin_detail), settings.appleCompatPin, onChange = { viewModel.setAppleCompat(true, it) })
                     }
                     // 非官方声明常驻显示（交互稿 09A）
                     Row(
@@ -239,14 +249,14 @@ fun SettingsScreen(
                     ) {
                         Icon(Icons.Rounded.Info, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
-                            "基于社区开源实现，与 Apple Inc. 无关，未获其授权或认证；系统更新后可能暂时失效；不支持受版权保护的视频。",
+                            stringResource(R.string.settings_apple_disclaimer),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
                 // 开机自启只在接收端模式下有意义：发送端模式隐藏（BootReceiver 同样会检查模式，P2）
                 if (receiverMode) {
-                    SwitchRow("开机自启", "开机后在后台等待投屏（通知栏会常驻一条“正在后台等待投屏”），有人投屏时用通知打开确认界面；部分电视系统不支持后台唤起，此时需先打开本应用", settings.bootStart, onChange = { on ->
+                    SwitchRow(stringResource(R.string.settings_boot), stringResource(R.string.settings_boot_detail), settings.bootStart, onChange = { on ->
                         if (on) dialog = "boot" else viewModel.setBootStart(false)
                     })
                 }
@@ -254,32 +264,34 @@ fun SettingsScreen(
             // TV 上隐藏整个“投屏”分组（画质、自动调节、声音、说明卡都只对手机发送端有意义，S3）
             if (isTv) receiver() else { sender(); receiver() }
 
-            Group("诊断")
+            Group(stringResource(R.string.settings_group_diagnostics))
             NavRow(
-                "投屏报告",
-                summary.successRatePercent?.let { "最近 30 天成功率 $it% · 平均延迟 ${summary.avgLatencyMs ?: "—"} ms" } ?: "还没有投屏记录",
+                stringResource(R.string.settings_report),
+                summary.successRatePercent?.let { stringResource(R.string.settings_report_summary, it, summary.avgLatencyMs?.toString() ?: "—") }
+                    ?: stringResource(R.string.settings_report_empty),
                 rowFocus("report"),
                 icon = Icons.Rounded.BarChart,
             ) { lastRow = "report"; onNavigate(SettingsDestination.REPORT) }
-            NavRow("网络诊断", "检查网段、组播与路由器设置", rowFocus("diag"), icon = Icons.Rounded.Router) { lastRow = "diag"; onNavigate(SettingsDestination.DIAGNOSTICS) }
-            NavRow("导出本地日志", "导出前可以先查看内容，用于提交 issue", rowFocus("logs"), icon = Icons.Rounded.IosShare) { lastRow = "logs"; onNavigate(SettingsDestination.LOGS) }
+            NavRow(stringResource(R.string.settings_network_diag), stringResource(R.string.settings_network_diag_detail), rowFocus("diag"), icon = Icons.Rounded.Router) { lastRow = "diag"; onNavigate(SettingsDestination.DIAGNOSTICS) }
+            NavRow(stringResource(R.string.settings_export_logs), stringResource(R.string.settings_export_logs_detail), rowFocus("logs"), icon = Icons.Rounded.IosShare) { lastRow = "logs"; onNavigate(SettingsDestination.LOGS) }
             if (!isTv) {
-                NavRow("把接收端安装到电视", "手机在局域网内临时提供安装包", rowFocus("install"), icon = Icons.Rounded.InstallMobile) { lastRow = "install"; onNavigate(SettingsDestination.INSTALL_HELP) }
+                NavRow(stringResource(R.string.settings_install_receiver), stringResource(R.string.settings_install_receiver_detail), rowFocus("install"), icon = Icons.Rounded.InstallMobile) { lastRow = "install"; onNavigate(SettingsDestination.INSTALL_HELP) }
             }
 
-            Group("关于")
-            InfoRow(Icons.Rounded.PrivacyTip, "隐私", "本应用不访问互联网，不上报任何数据；屏幕镜像始终加密")
-            InfoRow(Icons.Rounded.Info, "开源许可", "GPL‑3.0 · 版本 $versionName")
+            Group(stringResource(R.string.settings_group_about))
+            InfoRow(Icons.Rounded.PrivacyTip, stringResource(R.string.settings_privacy), stringResource(R.string.settings_privacy_detail))
+            InfoRow(Icons.Rounded.Info, stringResource(R.string.settings_license), stringResource(R.string.settings_license_detail, versionName))
         }
     }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().tvSafeArea())
     }
 
+    val appleEnabledMessage = stringResource(R.string.settings_apple_enabled)
     when (dialog) {
         "name" -> NameDialog(settings.deviceName, { dialog = null }) { viewModel.setDeviceName(it); dialog = null }
-        "mode" -> ChoiceDialog("默认模式", listOf(AppMode.SENDER to "发送端（投屏到别处）", AppMode.RECEIVER to "接收端（把本机当作屏幕）"),
+        "mode" -> ChoiceDialog(stringResource(R.string.settings_default_mode), listOf(AppMode.SENDER to stringResource(R.string.settings_mode_sender), AppMode.RECEIVER to stringResource(R.string.settings_mode_receiver)),
             settings.mode ?: if (isTv) AppMode.RECEIVER else AppMode.SENDER, { dialog = null }) { viewModel.setMode(it); dialog = null }
-        "quality" -> ChoiceDialog("画质档位", QualityProfile.entries.map { it to qualityOption(it) }, settings.quality, { dialog = null }) {
+        "quality" -> ChoiceDialog(stringResource(R.string.settings_quality), QualityProfile.entries.map { it to qualityOption(it) }, settings.quality, { dialog = null }) {
             // F18 G06：本机还没确认过 G01 时，先弹首次说明卡，“开启”后才保存
             if (it == QualityProfile.GAME && !viewModel.gameIntroAcknowledged()) dialog = "game_intro" else viewModel.setQuality(it).also { dialog = null }
         }
@@ -288,25 +300,24 @@ fun SettingsScreen(
             dialog = null
         }
         "policy" -> ChoiceDialog(
-            "连接策略",
-            listOf(ConnectionPolicy.TRUSTED_SKIP_CONFIRM to "已信任的设备免确认", ConnectionPolicy.ALWAYS_CONFIRM to "每次都确认"),
+            stringResource(R.string.settings_policy),
+            listOf(
+                ConnectionPolicy.TRUSTED_SKIP_CONFIRM to stringResource(R.string.settings_policy_trusted),
+                ConnectionPolicy.ALWAYS_CONFIRM to stringResource(R.string.settings_policy_always),
+            ),
             settings.connectionPolicy, { dialog = null },
         ) { viewModel.setPolicy(it); dialog = null }
         "apple" -> AppleCompatDialog(settings.appleCompatPin, { dialog = null }) { pin ->
             viewModel.setAppleCompat(true, pin)
             dialog = null
             // 开启后给出可感知的结果（D5；文案不出现商标字样）
-            scope.launch { snackbar.showSnackbar("已开启。回到“等待投屏”页面后，iPhone、iPad 可以在“屏幕镜像”中找到本机", duration = SnackbarDuration.Long) }
+            scope.launch { snackbar.showSnackbar(appleEnabledMessage, duration = SnackbarDuration.Long) }
         }
         "boot" -> AlertDialog(
             onDismissRequest = { dialog = null },
-            title = { Text("开启开机自启？") },
+            title = { Text(stringResource(R.string.settings_boot_dialog_title)) },
             text = {
-                Text(
-                    "开机后会在后台等待投屏，略微增加耗电。系统要求后台运行的应用显示一条常驻通知“正在后台等待投屏”，可在通知上点“停止”。\n\n" +
-                        "有人投屏时，本应用会用通知打开确认 / 播放界面，所以需要允许通知。" +
-                        "部分电视系统不显示通知、或会阻止应用在后台自启，这种情况下仍需先打开本应用才能接收投屏。",
-                )
+                Text(stringResource(R.string.settings_boot_dialog_text))
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -316,9 +327,9 @@ fun SettingsScreen(
                     } else {
                         viewModel.setBootStart(true)
                     }
-                }, modifier = Modifier.tvFocusRing()) { Text("开启") }
+                }, modifier = Modifier.tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_turn_on)) }
             },
-            dismissButton = { TextButton(onClick = { dialog = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { dialog = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_cancel)) } },
         )
     }
 }
@@ -377,28 +388,31 @@ private fun NameDialog(current: String, onDismiss: () -> Unit, onSave: (String) 
     var text by remember { mutableStateOf(current) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("设备名") },
+        title = { Text(stringResource(R.string.settings_device_name)) },
         text = {
-            OutlinedTextField(text, { text = it.take(40) }, singleLine = true, supportingText = { Text("显示在其他设备的列表里") })
+            OutlinedTextField(text, { text = it.take(40) }, singleLine = true, supportingText = { Text(stringResource(R.string.settings_name_hint)) })
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank(), modifier = Modifier.tvFocusRing()) { Text("保存") } },
-        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.tvFocusRing()) { Text("取消") } },
+        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank(), modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_cancel)) } },
     )
 }
 
+@Composable
 private fun qualityRowDetail(p: QualityProfile, auto: Boolean): String = when {
-    p.lowLatency -> "${p.label} · 720p · 60 帧 · 延迟优先"
-    auto -> "${p.label} · 网络变差时自动降档"
-    else -> p.label
+    p.lowLatency -> stringResource(R.string.settings_quality_row_game, p.displayLabel())
+    auto -> stringResource(R.string.settings_quality_row_auto, p.displayLabel())
+    else -> p.displayLabel()
 }
 
+@Composable
 private fun autoAdjustDetail(p: QualityProfile): String =
-    if (p.lowLatency) "游戏模式下只降码率和清晰度，不切档" else "网络变差时自动降为“流畅”"
+    stringResource(if (p.lowLatency) R.string.settings_auto_adjust_game else R.string.settings_auto_adjust_detail)
 
 /** 默认画质选项：每项一句用途说明，“游戏”的说明含代价（交互稿 G06）。 */
+@Composable
 private fun qualityOption(p: QualityProfile): String = when (p) {
-    QualityProfile.GAME -> "${p.label}（720p · 60 帧 · 延迟优先，声音可能稍晚）"
-    else -> "${p.label}（${p.summary}）"
+    QualityProfile.GAME -> stringResource(R.string.settings_quality_option_game, p.displayLabel())
+    else -> stringResource(R.string.settings_quality_option, p.displayLabel(), p.displaySummary())
 }
 
 @Composable
@@ -421,7 +435,7 @@ private fun <T> ChoiceDialog(title: String, options: List<Pair<T, String>>, sele
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.tvFocusRing()) { Text("关闭") } },
+        confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_close)) } },
     )
 }
 
@@ -432,26 +446,26 @@ private fun AppleCompatDialog(pinDefault: Boolean, onDismiss: () -> Unit, onEnab
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.Devices, null) },
-        title = { Text("开启兼容 Apple 设备？") },
+        title = { Text(stringResource(R.string.settings_apple_dialog_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("开启后，本机会出现在 iPhone、iPad 的“屏幕镜像”列表中。")
-                Text("· 这是非官方的兼容实现，与 Apple Inc. 无关，未经其授权或认证\n· iOS 更新后可能暂时无法使用\n· 不支持受版权保护（DRM）的视频", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.settings_apple_dialog_intro))
+                Text(stringResource(R.string.settings_apple_dialog_risks), style = MaterialTheme.typography.bodySmall)
                 Row(
                     Modifier.fillMaxWidth().toggleable(pin, role = Role.Checkbox) { pin = it },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(pin, onCheckedChange = null)
                     Column {
-                        Text("连接时要求输入 PIN")
+                        Text(stringResource(R.string.settings_apple_pin))
                         // 推荐说明不是“成功”状态：用 onSurfaceVariant（D2）
-                        Text("推荐，防止他人误连", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_apple_dialog_pin_detail), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onEnable(pin) }, modifier = Modifier.tvFocusRing()) { Text("开启") } },
-        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
+        confirmButton = { TextButton(onClick = { onEnable(pin) }, modifier = Modifier.tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_turn_on)) } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_cancel)) } },
     )
 }
 
@@ -462,48 +476,49 @@ fun TrustedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hilt
     val list by viewModel.trusted.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
-        SettingsTopBar("可信设备", onBack, initialFocus = list.isEmpty())
+        SettingsTopBar(stringResource(R.string.settings_trusted), onBack, initialFocus = list.isEmpty())
         val pushed by viewModel.pushedTvs.collectAsStateWithLifecycle()
         var forgetTv by remember { mutableStateOf<String?>(null) }
         // 两组都空才显示空态，文案覆盖两类（第 1 轮 UX P1-10）
         if (list.isEmpty() && pushed.isEmpty()) {
-            Text("还没有配对或推送过的设备。第一次镜像时输入 PIN、投屏码或扫码，或第一次推送到电视后会出现在这里。", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.settings_trusted_empty), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Column(Modifier.verticalScroll(rememberScrollState())) {
             if (list.isNotEmpty() && pushed.isNotEmpty()) {
-                Text("已配对的设备", Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp).semantics { heading() }, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.settings_trusted_paired), Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp).semantics { heading() }, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
             }
             list.forEachIndexed { i, d ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(d.name, style = MaterialTheme.typography.bodyLarge)
                         // 不用“证书指纹”这类术语；短识别码作为次要信息，便于和对方设备核对（C5）
-                        Text("上次连接 ${java.text.DateFormat.getDateInstance().format(java.util.Date(d.lastSeenAt))}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("设备识别码 ${d.fingerprint.shortDisplay}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_trusted_last_connected, java.text.DateFormat.getDateInstance().format(java.util.Date(d.lastSeenAt))), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_trusted_device_code, d.fingerprint.shortDisplay), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     TextButton(
                         onClick = { confirm = d.deviceId },
                         modifier = (if (i == 0) Modifier.tvInitialFocus() else Modifier).tvFocusRing(),
-                    ) { Text("移除") }
+                    ) { Text(stringResource(R.string.settings_remove)) }
                 }
                 HorizontalDivider()
             }
             // 推送过的电视（交互稿 P02 / Q14-B）：放在“已配对的设备”之后；忘记后下次推送重新出现确认卡
             if (pushed.isNotEmpty()) {
-                Text("推送过的电视", Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp).semantics { heading() }, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.settings_pushed_tvs), Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp).semantics { heading() }, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 pushed.forEach { tv ->
                     val model = listOfNotNull(tv.manufacturer, tv.model).joinToString(" · ")
-                    val last = if (tv.lastUsedAt > 0) "上次推送 ${relativeAgo(tv.lastUsedAt)}" else "已确认，尚未推送"
+                    val last = if (tv.lastUsedAt > 0) stringResource(R.string.settings_pushed_last, relativeAgo(tv.lastUsedAt)) else stringResource(R.string.settings_pushed_never)
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
                             Text(tv.name, style = MaterialTheme.typography.bodyLarge)
                             if (model.isNotBlank()) Text(model, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(last, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        val forgetDesc = stringResource(R.string.settings_forget_desc, tv.name)
                         TextButton(
                             onClick = { forgetTv = tv.udn },
-                            modifier = Modifier.tvFocusRing().semantics { contentDescription = "忘记 ${tv.name}" },
-                        ) { Text("忘记") }
+                            modifier = Modifier.tvFocusRing().semantics { contentDescription = forgetDesc },
+                        ) { Text(stringResource(R.string.settings_forget)) }
                     }
                     HorizontalDivider()
                 }
@@ -512,32 +527,33 @@ fun TrustedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hilt
         forgetTv?.let { udn ->
             AlertDialog(
                 onDismissRequest = { forgetTv = null },
-                title = { Text("忘记这台电视？") },
-                text = { Text("下次推送到这台电视时，会再次请你确认是不是面前的这台。") },
-                confirmButton = { TextButton(onClick = { viewModel.forgetPushedTv(udn); forgetTv = null }, modifier = Modifier.tvFocusRing()) { Text("忘记") } },
-                dismissButton = { TextButton(onClick = { forgetTv = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
+                title = { Text(stringResource(R.string.settings_forget_title)) },
+                text = { Text(stringResource(R.string.settings_forget_text)) },
+                confirmButton = { TextButton(onClick = { viewModel.forgetPushedTv(udn); forgetTv = null }, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_forget)) } },
+                dismissButton = { TextButton(onClick = { forgetTv = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_cancel)) } },
             )
         }
     }
     confirm?.let { id ->
         AlertDialog(
             onDismissRequest = { confirm = null },
-            title = { Text("移除这台设备？") },
-            text = { Text("移除后，下次连接需要重新输入 PIN。") },
-            confirmButton = { TextButton(onClick = { viewModel.removeTrusted(id); confirm = null }, modifier = Modifier.tvFocusRing()) { Text("移除") } },
-            dismissButton = { TextButton(onClick = { confirm = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
+            title = { Text(stringResource(R.string.settings_remove_title)) },
+            text = { Text(stringResource(R.string.settings_remove_text)) },
+            confirmButton = { TextButton(onClick = { viewModel.removeTrusted(id); confirm = null }, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_remove)) } },
+            dismissButton = { TextButton(onClick = { confirm = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_cancel)) } },
         )
     }
 }
 
-/** “刚刚 / n 分钟前 / n 小时前 / 昨天 / n 天前”。 */
+/** “Just now / n minutes ago / n hours ago / Yesterday / n days ago”（刚刚 / n 分钟前 / n 小时前 / 昨天 / n 天前）。 */
+@Composable
 internal fun relativeAgo(at: Long, now: Long = System.currentTimeMillis()): String {
     val d = (now - at).coerceAtLeast(0) / 1000
     return when {
-        d < 60 -> "刚刚"
-        d < 3_600 -> "${d / 60} 分钟前"
-        d < 86_400 -> "${d / 3_600} 小时前"
-        d < 172_800 -> "昨天"
-        else -> "${d / 86_400} 天前"
+        d < 60 -> stringResource(R.string.settings_ago_just_now)
+        d < 3_600 -> (d / 60).toInt().let { pluralStringResource(R.plurals.settings_ago_minutes, it, it) }
+        d < 86_400 -> (d / 3_600).toInt().let { pluralStringResource(R.plurals.settings_ago_hours, it, it) }
+        d < 172_800 -> stringResource(R.string.settings_ago_yesterday)
+        else -> (d / 86_400).toInt().let { pluralStringResource(R.plurals.settings_ago_days, it, it) }
     }
 }

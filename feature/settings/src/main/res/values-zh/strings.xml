@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- feature/settings 中文文案，与 values/strings.xml 一一对应。 -->
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="settings_group_device">本机</string>
+    <string name="settings_device_name">设备名</string>
+    <string name="settings_default_mode">默认模式</string>
+    <string name="settings_mode_sender">发送端（投屏到别处）</string>
+    <string name="settings_mode_receiver">接收端（把本机当作屏幕）</string>
+    <string name="settings_trusted">可信设备</string>
+    <plurals name="settings_trusted_detail">
+        <item quantity="other">%1$d 台 · 可逐个移除</item>
+    </plurals>
+    <string name="settings_elder">长辈模式</string>
+    <string name="settings_elder_detail">大字大按钮，一键投到家里的电视。由家人先设置好 · %1$s</string>
+    <string name="settings_elder_on">已开启</string>
+    <string name="settings_elder_off">关闭</string>
+    <string name="settings_group_cast">投屏</string>
+    <string name="settings_quality">画质档位</string>
+    <string name="settings_quality_row_game">%1$s · 720p · 60 帧 · 延迟优先</string>
+    <string name="settings_quality_row_auto">%1$s · 网络变差时自动降档</string>
+    <string name="settings_quality_option">%1$s（%2$s）</string>
+    <string name="settings_quality_option_game">%1$s（720p · 60 帧 · 延迟优先，声音可能稍晚）</string>
+    <string name="settings_auto_adjust">自动调节</string>
+    <string name="settings_auto_adjust_detail">网络变差时自动降为“流畅”</string>
+    <string name="settings_auto_adjust_game">游戏模式下只降码率和清晰度，不切档</string>
+    <string name="settings_audio">声音</string>
+    <string name="settings_audio_detail">只捕获手机播放的声音，不录麦克风</string>
+    <string name="settings_audio_no_permission">未授予录音权限，投屏时只投画面</string>
+    <string name="settings_open_system_settings">去系统设置</string>
+    <string name="settings_capture_intro">录屏前显示说明卡</string>
+    <string name="settings_capture_intro_detail">关闭后点设备直接弹出系统录屏授权</string>
+    <string name="settings_direct_share">在分享菜单显示最近推送的电视</string>
+    <string name="settings_direct_share_detail">分享照片和视频时，可以直接点电视的名字</string>
+    <string name="settings_rc">反向控制</string>
+    <string name="settings_rc_detail">允许电视、平板或手机在投屏时操作本机，每次都需你确认</string>
+    <string name="settings_rc_off">已关闭</string>
+    <string name="settings_rc_on">已开启</string>
+    <string name="settings_rc_needs_service">已开启 · 还需开启无障碍服务</string>
+    <string name="settings_group_receiver">接收（本机作为屏幕时）</string>
+    <string name="settings_receiver_inactive_note">当前为发送端模式，以下设置在切换为接收端后生效</string>
+    <string name="settings_policy">连接策略</string>
+    <string name="settings_policy_trusted">已信任的设备免确认</string>
+    <string name="settings_policy_always">每次都确认</string>
+    <string name="settings_dlna">DLNA 接收</string>
+    <string name="settings_dlna_detail">视频 App 的“投屏”按钮可以选择本机</string>
+    <string name="settings_dlna_confirm">陌生设备需确认</string>
+    <string name="settings_dlna_confirm_detail">防止邻居或酒店住客误投</string>
+    <string name="settings_apple">兼容 Apple 设备（非官方）</string>
+    <string name="settings_apple_detail">开启后 iPhone、iPad 可用系统“屏幕镜像”连接本机</string>
+    <string name="settings_apple_pin">连接时要求输入 PIN</string>
+    <string name="settings_apple_pin_detail">推荐开启，防止他人误连</string>
+    <string name="settings_apple_disclaimer">基于社区开源实现，与 Apple Inc. 无关，未获其授权或认证；系统更新后可能暂时失效；不支持受版权保护的视频。</string>
+    <string name="settings_apple_enabled">已开启。回到“等待投屏”页面后，iPhone、iPad 可以在“屏幕镜像”中找到本机</string>
+    <string name="settings_boot">开机自启</string>
+    <string name="settings_boot_detail">开机后在后台等待投屏（通知栏会常驻一条“正在后台等待投屏”），有人投屏时用通知打开确认界面；部分电视系统不支持后台唤起，此时需先打开本应用</string>
+    <string name="settings_boot_dialog_title">开启开机自启？</string>
+    <string name="settings_boot_dialog_text">开机后会在后台等待投屏，略微增加耗电。系统要求后台运行的应用显示一条常驻通知“正在后台等待投屏”，可在通知上点“停止”。\n\n有人投屏时，本应用会用通知打开确认 / 播放界面，所以需要允许通知。部分电视系统不显示通知、或会阻止应用在后台自启，这种情况下仍需先打开本应用才能接收投屏。</string>
+    <string name="settings_group_diagnostics">诊断</string>
+    <string name="settings_report">投屏报告</string>
+    <string name="settings_report_summary">最近 30 天成功率 %1$d%% · 平均延迟 %2$s ms</string>
+    <string name="settings_report_empty">还没有投屏记录</string>
+    <string name="settings_network_diag">网络诊断</string>
+    <string name="settings_network_diag_detail">检查网段、组播与路由器设置</string>
+    <string name="settings_export_logs">导出本地日志</string>
+    <string name="settings_export_logs_detail">导出前可以先查看内容，用于提交 issue</string>
+    <string name="settings_install_receiver">把接收端安装到电视</string>
+    <string name="settings_install_receiver_detail">手机在局域网内临时提供安装包</string>
+    <string name="settings_group_about">关于</string>
+    <string name="settings_privacy">隐私</string>
+    <string name="settings_privacy_detail">本应用不访问互联网，不上报任何数据；屏幕镜像始终加密</string>
+    <string name="settings_license">开源许可</string>
+    <string name="settings_license_detail">GPL‑3.0 · 版本 %1$s</string>
+    <string name="settings_name_hint">显示在其他设备的列表里</string>
+    <string name="settings_save">保存</string>
+
+    <string name="settings_apple_dialog_title">开启兼容 Apple 设备？</string>
+    <string name="settings_apple_dialog_intro">开启后，本机会出现在 iPhone、iPad 的“屏幕镜像”列表中。</string>
+    <string name="settings_apple_dialog_risks">· 这是非官方的兼容实现，与 Apple Inc. 无关，未经其授权或认证\n· iOS 更新后可能暂时无法使用\n· 不支持受版权保护（DRM）的视频</string>
+    <string name="settings_apple_dialog_pin_detail">推荐，防止他人误连</string>
+
+    <string name="settings_trusted_empty">还没有配对或推送过的设备。第一次镜像时输入 PIN、投屏码或扫码，或第一次推送到电视后会出现在这里。</string>
+    <string name="settings_trusted_paired">已配对的设备</string>
+    <string name="settings_trusted_last_connected">上次连接 %1$s</string>
+    <string name="settings_trusted_device_code">设备识别码 %1$s</string>
+    <string name="settings_remove">移除</string>
+    <string name="settings_remove_title">移除这台设备？</string>
+    <string name="settings_remove_text">移除后，下次连接需要重新输入 PIN。</string>
+    <string name="settings_pushed_tvs">推送过的电视</string>
+    <string name="settings_pushed_last">上次推送 %1$s</string>
+    <string name="settings_pushed_never">已确认，尚未推送</string>
+    <string name="settings_forget">忘记</string>
+    <string name="settings_forget_desc">忘记 %1$s</string>
+    <string name="settings_forget_title">忘记这台电视？</string>
+    <string name="settings_forget_text">下次推送到这台电视时，会再次请你确认是不是面前的这台。</string>
+    <string name="settings_ago_just_now">刚刚</string>
+    <plurals name="settings_ago_minutes">
+        <item quantity="other">%1$d 分钟前</item>
+    </plurals>
+    <plurals name="settings_ago_hours">
+        <item quantity="other">%1$d 小时前</item>
+    </plurals>
+    <string name="settings_ago_yesterday">昨天</string>
+    <plurals name="settings_ago_days">
+        <item quantity="other">%1$d 天前</item>
+    </plurals>
+
+    <string name="settings_report_export_logs">导出日志</string>
+    <string name="settings_report_range_30">最近 30 天</string>
+    <string name="settings_report_range_all">全部</string>
+    <string name="settings_report_success_rate">投屏成功率</string>
+    <plurals name="settings_report_success_sub">
+        <item quantity="other">%1$d / %2$d 次</item>
+    </plurals>
+    <string name="settings_report_disconnects">断线次数</string>
+    <string name="settings_report_unit_times">次</string>
+    <plurals name="settings_report_recovered">
+        <item quantity="other">其中 %1$d 次自动恢复</item>
+    </plurals>
+    <string name="settings_report_avg_latency">平均延迟</string>
+    <string name="settings_report_p95_latency">P95 延迟</string>
+    <string name="settings_report_metric_desc">%1$s %2$s %3$s，%4$s</string>
+    <string name="settings_report_histogram_title">延迟分布 · 单位 ms</string>
+    <string name="settings_report_game_title">游戏模式延迟（中位数）</string>
+    <string name="settings_report_game_range">%1$s · 共 %2$s</string>
+    <plurals name="settings_report_game_desc">
+        <item quantity="other">游戏模式延迟中位数约 %1$d 毫秒，估算，%2$s，%3$s</item>
+    </plurals>
+    <string name="settings_report_protocols">协议</string>
+    <string name="settings_report_proto_mirroring">屏幕镜像</string>
+    <string name="settings_report_proto_dlna">DLNA 接收</string>
+    <string name="settings_report_proto_apple">兼容 Apple 设备（非官方）</string>
+    <string name="settings_report_proto_dlna_push">DLNA 推送</string>
+    <string name="settings_report_push_success">成功率 %1$d%%</string>
+    <string name="settings_report_push_first_play">首次播放 P50 %1$s 秒</string>
+    <plurals name="settings_report_count">
+        <item quantity="other">%1$d 次</item>
+    </plurals>
+    <string name="settings_report_top_devices">常用设备</string>
+    <string name="settings_report_remote_control">反向控制</string>
+    <string name="settings_report_controlled">本次被 %1$s 控制 %2$s</string>
+    <string name="settings_report_local_only">数据只保存在本机，不会上传</string>
+    <string name="settings_report_clear">清除记录</string>
+    <string name="settings_report_clear_title">清除全部投屏记录？</string>
+    <string name="settings_report_clear_text">清除后无法恢复。诊断日志不受影响。</string>
+    <string name="settings_report_clear_confirm">清除</string>
+    <string name="settings_duration_hours">%1$d 小时</string>
+    <string name="settings_duration_hours_minutes">%1$d 小时 %2$d 分钟</string>
+    <string name="settings_duration_minutes">%1$d 分钟</string>
+    <string name="settings_duration_under_minute">不到 1 分钟</string>
+
+    <string name="settings_diag_intro">不读取 Wi‑Fi 名称（需要定位权限），只检查网段与连通性。</string>
+    <string name="settings_diag_status_confirmed">已确认</string>
+    <string name="settings_diag_status_needs_user">需你确认</string>
+    <string name="settings_diag_status_problem">有问题</string>
+    <string name="settings_diag_item_desc">%1$s：%2$s%3$s</string>
+    <string name="settings_diag_sentence_end">。</string>
+    <string name="settings_diag_no_lan_title">没有连接 Wi‑Fi 或有线网络</string>
+    <string name="settings_diag_no_lan_detail">请先连接家里的路由器，电视也要连同一个路由器</string>
+    <string name="settings_diag_lan_title">手机已连接 %1$s</string>
+    <string name="settings_diag_transport_wifi">Wi‑Fi</string>
+    <string name="settings_diag_transport_ethernet">有线网络</string>
+    <string name="settings_diag_lan_detail">本机地址 %1$s，电视应为 %2$s</string>
+    <string name="settings_diag_vpn_title">检测到 VPN 已开启</string>
+    <string name="settings_diag_vpn_detail">VPN 可能让局域网设备互相看不到，请暂时关闭后重试</string>
+    <string name="settings_diag_prefix_title">当前网段较大（/%1$d）</string>
+    <string name="settings_diag_prefix_detail">投屏码只支持 /24 网段，请改用扫码连接</string>
+    <string name="settings_diag_multicast_ok_title">局域网组播正常</string>
+    <plurals name="settings_diag_multicast_ok_detail">
+        <item quantity="other">收到 %1$d 台设备的回应</item>
+    </plurals>
+    <string name="settings_diag_multicast_silent_title">没有收到任何设备的组播回应</string>
+    <string name="settings_diag_multicast_silent_detail">路由器可能拦截了组播（自动发现），扫码或投屏码不受影响</string>
+    <string name="settings_diag_target_ok_title">可以连上 %1$s</string>
+    <string name="settings_diag_target_ok_detail">端口 %1$d 可达</string>
+    <string name="settings_diag_target_fail_title">连不上 %1$s:%2$d</string>
+    <string name="settings_diag_target_fail_detail">电视可能已关机、退出了接收页面，或不在同一网段</string>
+    <string name="settings_diag_router_title">电视和手机连的是同一个路由器吗？</string>
+    <string name="settings_diag_router_detail">双频路由的 2.4G 与 5G 有时互不相通</string>
+    <string name="settings_diag_isolation_title">路由器是否开启了“AP 隔离”？</string>
+    <string name="settings_diag_isolation_detail">也叫无线隔离 / 客户端隔离，开启后设备之间无法互访</string>
+    <string name="settings_diag_guest_title">是否连接了“访客网络”？</string>
+    <string name="settings_diag_guest_detail">访客网络通常禁止设备互访，请换到主网络</string>
+    <string name="settings_diag_target_section">测试能否连上电视</string>
+    <string name="settings_diag_target_hint">电视地址，例如 192.168.1.128:8443</string>
+    <string name="settings_diag_rerun">重新诊断</string>
+
+    <string name="settings_logs_intro">以下是将要导出的全部内容，请先确认。导出后由你选择发给谁（例如在 GitHub 提 issue 时附上），本应用不会自动上传。</string>
+    <plurals name="settings_logs_tv_summary">
+        <item quantity="other">共 %1$d 行（对端设备名已脱敏）。电视上不显示全文，导出后可在手机或电脑上查看。</item>
+    </plurals>
+    <string name="settings_logs_loading">正在读取…</string>
+    <string name="settings_logs_clear">清空运行日志</string>
+    <string name="settings_logs_chooser">导出诊断日志</string>
+    <string name="settings_logs_export">导出</string>
+
+    <string name="settings_install_intro">同一个安装包既是发送端也是接收端。电视安装后打开，会自动进入“等待投屏”。</string>
+    <string name="settings_install_split_warning">本机的应用是以拆分安装包形式安装的（例如来自应用商店），无法直接分享给电视。请从项目发布页下载 universal（通用）安装包，用 U 盘或电视浏览器安装。</string>
+    <string name="settings_install_abi_warning">本机安装的是只含 %1$s 的安装包，很多电视盒子是 32 位系统，可能装不上。可改用发布页上的 universal（通用）安装包，或用 U 盘安装对应版本。</string>
+    <string name="settings_install_method_share">方法一：手机临时分享安装包（推荐）</string>
+    <string name="settings_install_method_share_detail">手机和电视要连同一个路由器。分享只在局域网内可见，离开本页或 10 分钟后自动停止。</string>
+    <string name="settings_install_start">开始分享</string>
+    <string name="settings_install_start_failed">无法开启分享，请确认手机已连接 Wi‑Fi 后重试，或改用 U 盘安装</string>
+    <string name="settings_install_need_wifi">请先连接 Wi‑Fi</string>
+    <string name="settings_install_enter_url">在电视的浏览器地址栏输入：</string>
+    <string name="settings_install_qr_desc">安装包下载地址二维码（给其他手机或平板用）</string>
+    <plurals name="settings_install_downloads">
+        <item quantity="other">已下载 %1$d 次</item>
+    </plurals>
+    <string name="settings_install_stop">停止分享</string>
+    <string name="settings_install_method_usb">方法二：U 盘</string>
+    <string name="settings_install_method_usb_detail">把安装包拷到 U 盘，插到电视上，用电视的“文件管理”打开安装。部分电视需要先在系统设置里允许“安装未知来源应用”。</string>
+    <string name="settings_install_fallback_title">电视实在装不了？</string>
+    <string name="settings_install_fallback_detail">很多电视自带 DLNA 接收：不用安装本应用，也可以在设备列表的“电视自带投屏”分组里直接推送手机里的视频、照片和音乐（不能镜像屏幕）。</string>
+    <string name="settings_apk_page_lang">zh-CN</string>
+    <string name="settings_apk_page_title">%1$s 安装包</string>
+    <string name="settings_apk_page_intro">免费、开源（GPL‑3.0）、不联网的局域网投屏接收端。安装后打开即进入“等待投屏”。</string>
+    <string name="settings_apk_page_download">下载安装包（%1$d MB）</string>
+    <string name="settings_apk_page_help">下载后在电视的“文件管理”或“下载”里打开安装。如果提示禁止安装，请在系统设置里允许本浏览器 / 文件管理器“安装未知来源应用”。</string>
+</resources>

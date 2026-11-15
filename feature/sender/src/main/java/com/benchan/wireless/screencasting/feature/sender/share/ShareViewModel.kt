@@ -8,6 +8,9 @@ import android.net.Uri
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.benchan.wireless.screencasting.feature.sender.R
+import com.benchan.wireless.screencasting.feature.sender.ui.UiText
+import com.benchan.wireless.screencasting.feature.sender.ui.uiText
 import com.benchan.wireless.screencasting.core.common.WscLog
 import com.benchan.wireless.screencasting.core.data.dlna.DlnaRendererStore
 import com.benchan.wireless.screencasting.core.data.settings.AppSettings
@@ -86,7 +89,7 @@ data class ShareUi(
     /** Direct Share 点的那台（交互稿 S08）。 */
     val directName: String? = null,
     /** Direct Share 落回列表时顶部的提示（找不到 / 只能推音乐）。 */
-    val directMissed: String? = null,
+    val directMissed: UiText? = null,
     /** Direct Share 点的那台（网页地址选了“仍然推送”后继续用它，PM P2-8）。 */
     val directUdn: String? = null,
     val target: PushTarget? = null,
@@ -103,13 +106,15 @@ enum class ShareGroup { FAMILY, RECENT, DLNA, OWN, DISABLED }
 data class ShareRow(
     val key: String,
     val name: String,
-    val subtitle: String,
+    val subtitle: UiText,
     val target: PushTarget?,
     val group: ShareGroup,
     val enabled: Boolean,
     val ownApp: Boolean,
     val pushing: Boolean = false,
     val mirroring: Boolean = false,
+    /** 只能推送音乐（音箱遇到照片 / 视频，置灰）。 */
+    val audioOnly: Boolean = false,
 )
 
 /** 会盖在分享页上的确认（P02 / S07）。 */
@@ -124,8 +129,8 @@ sealed interface ShareDialog {
 /** 交给分享页 Activity 执行的一次性动作。 */
 sealed interface ShareEffect {
     data object Finish : ShareEffect
-    data class Toast(val text: String) : ShareEffect
-    data class Snackbar(val text: String) : ShareEffect
+    data class Toast(val text: UiText) : ShareEffect
+    data class Snackbar(val text: UiText) : ShareEffect
     /** 在本应用自己的任务里打开（遥控页 / 设备列表 + 镜像横幅 / 某台设备的内容面板）。 */
     data class OpenApp(val remote: Boolean = false, val mirrorHint: Boolean = false, val pushUdn: String? = null) : ShareEffect
 }
@@ -224,7 +229,7 @@ class ShareViewModel @Inject constructor(
         directJob?.cancel()
         _dialog.value = null
         _ui.value = ShareUi()
-        if (replacing) _effects.tryEmit(ShareEffect.Snackbar(ShareCopy.REPLACED_SNACK))
+        if (replacing) _effects.tryEmit(ShareEffect.Snackbar(uiText(R.string.share_replaced_snack)))
         val streams = streamsOf(intent)
         val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
         val type = intent.type
@@ -396,8 +401,9 @@ class ShareViewModel @Inject constructor(
     // ------------------------------------------------------------------ Direct Share（S08）
 
     private fun startDirect(udn: String) {
-        val name = renderers.find(udn)?.name ?: "电视"
-        _ui.update { it.copy(stage = ShareStage.DIRECT_FINDING, directName = name) }
+        val found = renderers.find(udn)?.name
+        val name: Any = found ?: uiText(R.string.share_tv)
+        _ui.update { it.copy(stage = ShareStage.DIRECT_FINDING, directName = found) }
         directJob?.cancel()
         directJob = viewModelScope.launch {
             val started = System.currentTimeMillis()
@@ -409,7 +415,7 @@ class ShareViewModel @Inject constructor(
                 WscLog.i(TAG, "direct share: device not found in ${System.currentTimeMillis() - started}ms, fallback to list")
                 // 找到了但置灰（音箱遇到照片 / 视频）：说清原因，而不是“没找到”（PM P2-12）
                 val disabled = rows.value.firstOrNull { it.target?.udn == udn && !it.enabled }
-                val text = if (disabled != null && disabled.subtitle == ShareCopy.AUDIO_ONLY) ShareCopy.directAudioOnly(name) else ShareCopy.directMissed(name)
+                val text = if (disabled != null && disabled.audioOnly) ShareCopy.directAudioOnly(name) else ShareCopy.directMissed(name)
                 _ui.update { it.copy(stage = ShareStage.PICK, directMissed = text) }
             } else {
                 WscLog.i(TAG, "direct share: found in ${System.currentTimeMillis() - started}ms")
@@ -549,7 +555,7 @@ class ShareViewModel @Inject constructor(
         WscLog.i(TAG, "share: push cancelled")
         _ui.update { it.copy(sessionId = null) }
         // 长辈模式不用会自己消失的 Toast（PRD 8.1.4 E）
-        if (!elder) _effects.tryEmit(ShareEffect.Toast(ShareCopy.CANCELLED_TOAST))
+        if (!elder) _effects.tryEmit(ShareEffect.Toast(uiText(R.string.share_cancelled_toast)))
         _effects.tryEmit(ShareEffect.Finish)
     }
 
@@ -631,22 +637,24 @@ class ShareViewModel @Inject constructor(
                 ownApp -> ShareGroup.OWN
                 else -> ShareGroup.DLNA
             }
-            val subtitle = when {
-                ref == null -> ShareCopy.NEEDS_DLNA
-                audioBlocked -> ShareCopy.AUDIO_ONLY
-                pushing -> "正在推送 · " + PushCopy.bannerStatus(push!!).let { "$it · 点它可以替换内容" }
-                mirroring -> "正在镜像 · 可以接收推送"
-                last != null -> "上次 ${com.benchan.wireless.screencasting.feature.sender.ui.relativeTime(last)}" + if (ownApp) " · 本应用接收端" else " · 电视自带投屏"
-                ownApp -> "已信任 · 可以接收推送".takeIf { d.fingerprintHex != null } ?: "可以接收推送"
-                else -> listOfNotNull(ref.description.manufacturer, ref.description.modelName).joinToString(" ").ifBlank { "电视自带投屏 · 不加密" }
+            val subtitle: UiText = when {
+                ref == null -> uiText(R.string.share_needs_dlna)
+                audioBlocked -> uiText(R.string.share_audio_only)
+                pushing -> uiText(R.string.share_row_pushing, PushCopy.bannerStatus(push!!))
+                mirroring -> uiText(R.string.share_row_mirroring)
+                last != null -> uiText(if (ownApp) R.string.share_row_last_own else R.string.share_row_last_dlna, com.benchan.wireless.screencasting.feature.sender.ui.relativeTime(last))
+                ownApp -> uiText(if (d.fingerprintHex != null) R.string.share_row_trusted else R.string.share_row_can_receive)
+                // 厂商 / 型号是设备自报的原文，不翻译
+                else -> listOfNotNull(ref.description.manufacturer, ref.description.modelName).joinToString(" ")
+                    .takeIf { it.isNotBlank() }?.let { UiText.Raw(it) } ?: uiText(R.string.share_row_dlna_unencrypted)
             }
             val elderSubtitle = when {
-                ref == null -> ShareCopy.ELDER_NEEDS_SETUP
-                audioBlocked -> ShareCopy.ELDER_AUDIO_SUB
-                pushing -> "正在放 · 点它可以换成刚分享的内容"
-                else -> ShareCopy.ELDER_OK_SUB
+                ref == null -> uiText(R.string.share_elder_needs_setup)
+                audioBlocked -> uiText(R.string.share_elder_audio_sub)
+                pushing -> uiText(R.string.share_elder_row_pushing)
+                else -> uiText(R.string.share_elder_ok_sub)
             }
-            ShareRow(d.deviceId, d.name, if (s.elderModeEnabled) elderSubtitle else subtitle, target, group, enabled, ownApp, pushing, mirroring)
+            ShareRow(d.deviceId, d.name, if (s.elderModeEnabled) elderSubtitle else subtitle, target, group, enabled, ownApp, pushing, mirroring, audioOnly = audioBlocked)
         }.filter { r ->
             // 长辈模式：只列家人设置的电视和已经确认过的电视，不对新电视做首次推送（用户拍板）
             !s.elderModeEnabled || r.group == ShareGroup.FAMILY || (r.target?.udn?.let { it in confirmed } == true)

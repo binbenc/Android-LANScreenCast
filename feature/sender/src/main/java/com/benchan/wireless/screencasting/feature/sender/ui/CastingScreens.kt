@@ -2,6 +2,9 @@
 
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import com.benchan.wireless.screencasting.feature.sender.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.ui.res.painterResource
@@ -107,9 +110,9 @@ internal fun CaptureIntroSheet(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("开始镜像前，还有一步", style = MaterialTheme.typography.titleLarge)
-            Text("系统会询问是否允许录屏，请选择：", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-            ChoiceRow(true, "共享整个屏幕", "切换 App 时电视画面不中断", recommended = !forceWholeScreen)
+            Text(stringResource(R.string.sender_intro_title), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.sender_intro_subtitle), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            ChoiceRow(true, stringResource(R.string.sender_intro_whole), stringResource(R.string.sender_intro_whole_detail), recommended = !forceWholeScreen)
             if (forceWholeScreen) {
                 // 用户决策 D1：开启反向控制时只共享整个屏幕
                 Row(
@@ -117,14 +120,14 @@ internal fun CaptureIntroSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(Icons.Rounded.TouchApp, null, Modifier.size(18.dp), tint = c.primary)
-                    Text("已开启反向控制，将共享整个屏幕；只想共享单个应用可在设置中关闭反向控制", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.sender_intro_control_forces_whole), style = MaterialTheme.typography.bodySmall)
                 }
             } else {
-                ChoiceRow(false, "共享单个应用", "离开该应用后，电视会显示占位画面")
+                ChoiceRow(false, stringResource(R.string.sender_intro_single), stringResource(R.string.sender_intro_single_detail))
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Shield, null, Modifier.size(18.dp), tint = c.tertiary)
-                Text("画面加密传输，只发送到 $targetName", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.sender_intro_encrypted, targetName), style = MaterialTheme.typography.bodyMedium)
             }
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 56.dp)
@@ -132,8 +135,8 @@ internal fun CaptureIntroSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("同时投送声音", style = MaterialTheme.typography.bodyLarge)
-                    Text("只捕获手机播放的声音，不录麦克风", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                    Text(stringResource(R.string.sender_intro_audio), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.sender_intro_audio_detail), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                 }
                 Switch(checked = audioEnabled, onCheckedChange = null)
             }
@@ -142,7 +145,7 @@ internal fun CaptureIntroSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(Icons.Rounded.LockClock, null, tint = WscTheme.extended.onWarningContainer)
-                Text("锁屏会停止投屏。镜像期间手机会保持亮屏；看剧建议改用推送（设备列表里的“推送”），手机可以锁屏。", style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer)
+                Text(stringResource(R.string.sender_intro_lock_warning), style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer)
             }
             // FlowRow：200% 字号时按钮换到下一行而不是被挤压（C11）
             FlowRow(
@@ -152,11 +155,11 @@ internal fun CaptureIntroSheet(
             ) {
                 Row(Modifier.weight(1f).heightIn(min = 48.dp).toggleable(skip, role = Role.Checkbox) { skip = it }, verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = skip, onCheckedChange = null)
-                    Text("下次不再提示", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.sender_dont_show_again), style = MaterialTheme.typography.bodyMedium)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onCancel) { Text("取消") }
-                    Button(onClick = { onContinue(skip) }) { Text("继续") }
+                    TextButton(onClick = onCancel) { Text(stringResource(R.string.sender_cancel)) }
+                    Button(onClick = { onContinue(skip) }) { Text(stringResource(R.string.sender_continue)) }
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -180,7 +183,7 @@ private fun ChoiceRow(selected: Boolean, title: String, detail: String, recommen
                 Text(title, style = MaterialTheme.typography.titleSmall, color = if (selected) c.onPrimaryContainer else c.onSurface)
                 if (recommended) {
                     Text(
-                        "推荐",
+                        stringResource(R.string.sender_recommended),
                         Modifier.background(c.primary, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = c.onPrimary,
@@ -233,15 +236,16 @@ internal fun CastingScreen(
             DeviceAvatar(Icons.Rounded.Tv)
             Column(Modifier.weight(1f)) {
                 Text(state.target.name, style = MaterialTheme.typography.titleMedium)
-                EncryptedLabel("屏幕镜像")
+                EncryptedLabel(stringResource(R.string.sender_mirroring))
             }
-            Text("投屏中", style = MaterialTheme.typography.labelLarge, color = ext.success)
+            Text(stringResource(R.string.sender_casting_badge), style = MaterialTheme.typography.labelLarge, color = ext.success)
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(elapsed, style = DisplayNumber, modifier = Modifier.semantics { contentDescription = "已投屏 $elapsed" })
+            val elapsedA11y = stringResource(R.string.sender_elapsed_a11y, elapsed)
+            Text(elapsed, style = DisplayNumber, modifier = Modifier.semantics { contentDescription = elapsedA11y })
             val s = state.stats
             // F18 切换中：延迟段换成“切换中 均衡 → 游戏”，码率 / 分辨率段隐藏（交互稿 G02）
-            val switchLabel = qualitySwitch.switching?.let { to -> "${(qualitySwitch.from ?: to).label} → ${to.label}" }
+            val switchLabel = qualitySwitch.switching?.let { to -> stringResource((qualitySwitch.from ?: to).labelRes) + " → " + stringResource(to.labelRes) }
             // ≥150% 字号胶囊只留延迟段（交互稿 07 / 15，UX 走查 P1-2）
             val compact = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.5f
             StatusCapsule(
@@ -255,13 +259,13 @@ internal fun CastingScreen(
                 controlled = control.controlled,
             )
             if (state.audio == AudioState.SILENT_SUSPECTED) {
-                Text("一直没有声音：正在播放的 App 可能禁止了声音捕获", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.sender_audio_silent), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, textAlign = TextAlign.Center)
             }
             if (!state.appVisible) {
-                Text("被共享的应用已切到后台，电视显示占位画面", style = MaterialTheme.typography.bodySmall, color = ext.warning)
+                Text(stringResource(R.string.sender_app_hidden), style = MaterialTheme.typography.bodySmall, color = ext.warning)
             }
             if (state.protectedSuspected) {
-                Text("当前画面可能受保护（黑屏），建议改用推送（设备列表里的“推送”）", style = MaterialTheme.typography.bodySmall, color = ext.warning, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.sender_protected), style = MaterialTheme.typography.bodySmall, color = ext.warning, textAlign = TextAlign.Center)
             }
         }
         if (control.controlled) ControlCard(control, onRevokeControl, onContinueControl)
@@ -273,23 +277,23 @@ internal fun CastingScreen(
             ) {
                 Icon(Icons.Rounded.Notifications, null, tint = c.onSecondaryContainer)
                 Spacer(Modifier.width(8.dp))
-                Text(SenderCopy.NOTIFICATION_TIP, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = c.onSecondaryContainer)
-                TextButton(onClick = onAllowNotifications) { Text(if (notificationNeedsSettings) SenderCopy.OPEN_SETTINGS else SenderCopy.NOTIFICATION_ALLOW) }
-                IconButton(onClick = onDismissNotificationTip) { Icon(Icons.Rounded.Close, "关闭提示", tint = c.onSecondaryContainer) }
+                Text(stringResource(R.string.sender_notification_tip), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = c.onSecondaryContainer)
+                TextButton(onClick = onAllowNotifications) { Text(stringResource(if (notificationNeedsSettings) R.string.sender_open_settings else R.string.sender_notification_allow)) }
+                IconButton(onClick = onDismissNotificationTip) { Icon(Icons.Rounded.Close, stringResource(R.string.sender_dismiss_tip), tint = c.onSecondaryContainer) }
             }
         }
         // F18 画质分段 + 切换中 + 档位说明 + 提示位 + G01（交互稿 15，GameModeUi.kt）
         QualitySection(state, onQuality, game, qualitySwitch)
-        SwitchRow("自动调节", SenderCopy.autoAdjustDetail(state.profile), state.autoAdjust, onAutoAdjust)
+        SwitchRow(stringResource(R.string.sender_auto_adjust), SenderCopy.autoAdjustDetail(state.profile).asString(), state.autoAdjust, onAutoAdjust)
         SwitchRow(
-            "声音",
-            if (state.audio == AudioState.NO_PERMISSION) SenderCopy.AUDIO_NO_PERMISSION else "在电视上播放手机的声音",
+            stringResource(R.string.sender_audio),
+            stringResource(if (state.audio == AudioState.NO_PERMISSION) R.string.sender_audio_no_permission else R.string.sender_audio_detail),
             state.audio != AudioState.OFF && state.audio != AudioState.NO_PERMISSION,
             onAudio,
             enabled = state.audio != AudioState.NO_PERMISSION,
         )
         if (state.audio == AudioState.NO_PERMISSION) {
-            TextButton(onClick = onOpenAppSettings) { Text(SenderCopy.OPEN_SETTINGS) }
+            TextButton(onClick = onOpenAppSettings) { Text(stringResource(R.string.sender_open_settings)) }
         }
         Spacer(Modifier.height(8.dp))
     }
@@ -311,7 +315,7 @@ private fun ControlCard(control: ControlUi, onRevoke: () -> Unit, onContinueCont
             Icon(Icons.Rounded.TouchApp, null, tint = c.onPrimaryContainer)
             Column(Modifier.weight(1f)) {
                 Text(
-                    "${control.peerName} 正在控制本机",
+                    stringResource(R.string.sender_control_peer, control.peerName),
                     Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     style = MaterialTheme.typography.labelLarge, color = c.onPrimaryContainer,
                 )
@@ -323,11 +327,11 @@ private fun ControlCard(control: ControlUi, onRevoke: () -> Unit, onContinueCont
                     Text(
                         when {
                             // D9：在本应用内时控制暂停，告诉用户原因与出路（用户决策）
-                            ownApp -> "对方暂时不能操作：你正在使用局域投屏"
+                            ownApp -> stringResource(R.string.sender_control_own_app)
                             control.phase == ControlPhase.PAUSED && control.reason == com.benchan.wireless.screencasting.core.protocol.control.ControlReason.SENSITIVE_APP ->
-                                "对方暂时不能操作：此界面只能由你操作"
-                            paused -> "控制已暂停 · ${ControlCopy.pauseLabel(control.reason)}"
-                            else -> "已控制 $since · 锁屏会立即收回"
+                                stringResource(R.string.sender_control_sensitive)
+                            paused -> stringResource(R.string.sender_control_paused, ControlCopy.pauseLabel(control.reason))
+                            else -> stringResource(R.string.sender_control_since, since)
                         },
                         style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                         color = c.onPrimaryContainer,
@@ -349,25 +353,25 @@ private fun ControlCard(control: ControlUi, onRevoke: () -> Unit, onContinueCont
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (ownAppPaused) {
                 // D9 暂停卡（交互稿 v1.0.3）：[回到桌面] Filled + [收回控制] Outlined
-                Button(onClick = { ControlCopy.goHome(context) }, modifier = Modifier.heightIn(min = 40.dp)) { Text("回到桌面") }
+                Button(onClick = { ControlCopy.goHome(context) }, modifier = Modifier.heightIn(min = 40.dp)) { Text(stringResource(R.string.sender_control_go_home)) }
                 OutlinedButton(onClick = onRevoke, modifier = Modifier.heightIn(min = 40.dp)) {
                     Icon(painterResource(com.benchan.wireless.screencasting.feature.control.R.drawable.ic_control_handback), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("收回控制")
+                    Text(stringResource(R.string.sender_control_revoke))
                 }
             } else if (control.phase == ControlPhase.PAUSED && control.reason == com.benchan.wireless.screencasting.core.protocol.control.ControlReason.SENSITIVE_APP) {
                 // D-3 兜底：敏感界面暂停时本机可“继续控制”（例如权限弹窗需要对方继续）
-                Button(onClick = onContinueControl, modifier = Modifier.heightIn(min = 40.dp)) { Text("继续控制") }
+                Button(onClick = onContinueControl, modifier = Modifier.heightIn(min = 40.dp)) { Text(stringResource(R.string.sender_control_continue)) }
                 OutlinedButton(onClick = onRevoke, modifier = Modifier.heightIn(min = 40.dp)) {
                     Icon(painterResource(com.benchan.wireless.screencasting.feature.control.R.drawable.ic_control_handback), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("收回控制")
+                    Text(stringResource(R.string.sender_control_revoke))
                 }
             } else {
                 Button(onClick = onRevoke, modifier = Modifier.heightIn(min = 40.dp)) {
                     Icon(painterResource(com.benchan.wireless.screencasting.feature.control.R.drawable.ic_control_handback), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("收回控制")
+                    Text(stringResource(R.string.sender_control_revoke))
                 }
             }
         }
@@ -385,7 +389,7 @@ private fun StopFooter(onStop: () -> Unit) {
     ) {
         Icon(Icons.Rounded.Stop, null)
         Spacer(Modifier.width(8.dp))
-        Text("停止投屏")
+        Text(stringResource(R.string.sender_stop_casting))
     }
 }
 
@@ -427,19 +431,19 @@ internal fun ReconnectingScreen(state: SenderState.Reconnecting, onStop: () -> U
         ) {
             // 读屏：标题变化时礼貌播报；秒数类文字不设 liveRegion，避免每秒打断（C13）
             Text(
-                "正在重连（第 ${state.attempt.coerceAtLeast(1)} 次）",
+                stringResource(R.string.sender_reconnecting_attempt, state.attempt.coerceAtLeast(1)),
                 style = MaterialTheme.typography.titleLarge, color = ext.onWarningContainer,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
-            Text("网络中断了一下。录屏没有停止，恢复后会自动继续，不需要重新授权。", style = MaterialTheme.typography.bodyMedium, color = ext.onWarningContainer)
+            Text(stringResource(R.string.sender_reconnecting_body), style = MaterialTheme.typography.bodyMedium, color = ext.onWarningContainer)
             LinearProgressIndicator(
                 progress = { (now - state.since).toFloat() / WscProtocol.RECONNECT_WINDOW_MS },
                 modifier = Modifier.fillMaxWidth(),
                 color = ext.warning,
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("已等待 $waited 秒", style = MaterialTheme.typography.bodySmall, color = ext.onWarningContainer)
-                Text("最长 30 秒", style = MaterialTheme.typography.bodySmall, color = ext.onWarningContainer)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(pluralStringResource(R.plurals.sender_reconnecting_waited, waited, waited), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = ext.onWarningContainer)
+                Text(stringResource(R.string.sender_reconnecting_max), style = MaterialTheme.typography.bodySmall, color = ext.onWarningContainer)
             }
         }
         Row(
@@ -449,16 +453,16 @@ internal fun ReconnectingScreen(state: SenderState.Reconnecting, onStop: () -> U
             DeviceAvatar(Icons.Rounded.Tv)
             Column(Modifier.weight(1f)) {
                 Text(state.target.name, style = MaterialTheme.typography.titleMedium)
-                Text("电视正保留最后一帧画面", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.sender_reconnecting_last_frame), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
             }
         }
-        StatusCapsule(null, null, null, reconnectingLabel = "— ms 已暂停")
+        StatusCapsule(null, null, null, reconnectingLabel = stringResource(R.string.sender_reconnecting_capsule))
         state.nextRetryAt?.let {
             val s = ((it - now) / 1000).coerceAtLeast(0)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Refresh, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
                 Spacer(Modifier.width(6.dp))
-                Text("下一次尝试：${if (s == 0L) "正在尝试" else "$s 秒后"}", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.sender_next_retry, if (s == 0L) stringResource(R.string.sender_next_retry_now) else pluralStringResource(R.plurals.sender_next_retry_in, s.toInt(), s.toInt())), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -480,21 +484,21 @@ internal fun EndedScreen(
     onUsePush: (() -> Unit)? = null,
 ) {
     val c = MaterialTheme.colorScheme
-    val name = state.target?.name ?: "电视"
+    val name = state.target?.name ?: stringResource(R.string.sender_tv_fallback)
     data class Copy(val title: String, val detail: String, val primary: String?, val note: String?)
     val copy = when (state.reason) {
         EndReason.RECONNECT_FAILED -> Copy(
-            "连接已断开", "30 秒内没能重新连上 $name\n\n可能的原因\n· 电视已关机，或退出了接收页面\n· 手机或电视切换到了其他 Wi‑Fi\n· 路由器重启",
-            "重新连接", "系统要求重新允许一次录屏（Android 14 起）",
+            stringResource(R.string.sender_end_disconnected), stringResource(R.string.sender_end_reconnect_failed_detail, name),
+            stringResource(R.string.sender_end_reconnect), stringResource(R.string.sender_end_reconnect_note),
         )
         EndReason.SCREEN_LOCKED -> Copy(
-            "锁屏已停止投屏", "手机锁屏后，系统会自动停止录屏（Android 15 起）。解锁后点一下即可重新投屏。\n\n看剧建议改用推送，手机可以锁屏。",
-            "重新投屏", "需要重新允许一次录屏",
+            stringResource(R.string.sender_end_locked), stringResource(R.string.sender_end_locked_detail),
+            stringResource(R.string.sender_end_recast), stringResource(R.string.sender_end_recast_note),
         )
-        EndReason.PROJECTION_STOPPED -> Copy("录屏已停止", "录屏被系统或状态栏停止了。", "重新投屏", "需要重新允许一次录屏")
-        EndReason.CAPTURE_DENIED -> Copy("需要允许录屏才能镜像", "系统弹窗中选择“开始”后，电视才能看到手机画面。", "重试", "看剧时也可以改用推送，手机可以锁屏")
-        EndReason.VERSION_UNSUPPORTED -> Copy("对方版本过旧", "请升级 $name 上的接收端后再试。", null, null)
-        else -> Copy("连接已断开", state.detail ?: "", "重新连接", null)
+        EndReason.PROJECTION_STOPPED -> Copy(stringResource(R.string.sender_end_projection_stopped), stringResource(R.string.sender_end_projection_stopped_detail), stringResource(R.string.sender_end_recast), stringResource(R.string.sender_end_recast_note))
+        EndReason.CAPTURE_DENIED -> Copy(stringResource(R.string.sender_end_capture_denied), stringResource(R.string.sender_end_capture_denied_detail), stringResource(R.string.sender_end_retry), stringResource(R.string.sender_end_capture_denied_note))
+        EndReason.VERSION_UNSUPPORTED -> Copy(stringResource(R.string.sender_end_version), stringResource(R.string.sender_end_version_detail, name), null, null)
+        else -> Copy(stringResource(R.string.sender_end_disconnected), state.detail ?: "", stringResource(R.string.sender_end_reconnect), null)
     }
     // 可滚动的同时保持垂直居中：内容最小高度 = 可视高度（S8）
     BoxWithConstraints(Modifier.fillMaxSize().systemBarsPadding()) {
@@ -523,11 +527,11 @@ internal fun EndedScreen(
             copy.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, textAlign = TextAlign.Center) }
         }
         if (onUsePush != null && (state.reason == EndReason.SCREEN_LOCKED || state.reason == EndReason.CAPTURE_DENIED)) {
-            FilledTonalButton(onClick = onUsePush, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("改用推送") }
+            FilledTonalButton(onClick = onUsePush, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(stringResource(R.string.sender_use_push)) }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
-            OutlinedButton(onClick = onBack) { Text("返回设备列表") }
-            if (state.reason == EndReason.RECONNECT_FAILED) TextButton(onClick = onDiagnostics) { Text("网络诊断") }
+            OutlinedButton(onClick = onBack) { Text(stringResource(R.string.sender_back_to_devices)) }
+            if (state.reason == EndReason.RECONNECT_FAILED) TextButton(onClick = onDiagnostics) { Text(stringResource(R.string.sender_action_diagnostics)) }
         }
     }
     }

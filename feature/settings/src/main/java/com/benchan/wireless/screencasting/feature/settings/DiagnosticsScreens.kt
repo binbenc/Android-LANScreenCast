@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.core.discovery.diagnostics.DiagnosticCheck
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.benchan.wireless.screencasting.core.ui.components.LocalIsTv
 import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
 import com.benchan.wireless.screencasting.core.ui.components.tvInitialFocus
@@ -71,40 +74,48 @@ fun NetworkDiagnosticsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = 
     val ext = WscTheme.extended
     Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
         // 默认焦点给返回按钮：“重新诊断”在诊断进行中不可用，不能作为初始焦点（U6）
-        SettingsTopBar("网络诊断", onBack, initialFocus = true)
+        SettingsTopBar(stringResource(R.string.settings_network_diag), onBack, initialFocus = true)
         LazyColumn(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
-                Text("不读取 Wi‑Fi 名称（需要定位权限），只检查网段与连通性。", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.settings_diag_intro), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
             }
             items(checks.orEmpty()) { ch ->
-                val (icon, tint, label) = when (ch.status) {
-                    CheckStatus.CONFIRMED -> Triple(Icons.Rounded.CheckCircle, ext.success, "已确认")
-                    CheckStatus.NEEDS_USER -> Triple(Icons.Rounded.HelpOutline, ext.warning, "需你确认")
-                    CheckStatus.PROBLEM -> Triple(Icons.Rounded.ErrorOutline, c.error, "有问题")
+                val (icon, tint, labelRes) = when (ch.status) {
+                    CheckStatus.CONFIRMED -> Triple(Icons.Rounded.CheckCircle, ext.success, R.string.settings_diag_status_confirmed)
+                    CheckStatus.NEEDS_USER -> Triple(Icons.Rounded.HelpOutline, ext.warning, R.string.settings_diag_status_needs_user)
+                    CheckStatus.PROBLEM -> Triple(Icons.Rounded.ErrorOutline, c.error, R.string.settings_diag_status_problem)
                 }
+                val (title, detail) = diagnosticText(ch)
+                val sentenceEnd = stringResource(R.string.settings_diag_sentence_end)
+                val desc = stringResource(
+                    R.string.settings_diag_item_desc,
+                    stringResource(labelRes),
+                    if (title.isNotEmpty() && title.last() in "？?。.") title else title + sentenceEnd,
+                    detail,
+                )
                 Row(
                     Modifier.fillMaxWidth().background(c.surfaceContainerLow, RoundedCornerShape(12.dp)).padding(12.dp)
-                        .semantics(mergeDescendants = true) { contentDescription = "$label：${ch.title}${if (ch.title.last() in "？?。") "" else "。"}${ch.detail}" },
+                        .semantics(mergeDescendants = true) { contentDescription = desc },
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(icon, null, tint = tint)
                     Column {
-                        Text(ch.title, style = MaterialTheme.typography.titleSmall)
-                        Text(ch.detail, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        Text(title, style = MaterialTheme.typography.titleSmall)
+                        Text(detail, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                     }
                 }
             }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("测试能否连上电视", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.settings_diag_target_section), style = MaterialTheme.typography.titleSmall)
                     OutlinedTextField(
                         target, { target = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ':' } },
-                        singleLine = true, label = { Text("电视地址，例如 192.168.1.128:8443") },
+                        singleLine = true, label = { Text(stringResource(R.string.settings_diag_target_hint)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(onClick = { viewModel.runDiagnostics(target) }, enabled = !running, modifier = Modifier.tvFocusRing()) { Text("重新诊断") }
+                        Button(onClick = { viewModel.runDiagnostics(target) }, enabled = !running, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_diag_rerun)) }
                         if (running) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                     }
                 }
@@ -122,15 +133,15 @@ fun LogExportScreen(versionName: String, onBack: () -> Unit, viewModel: Settings
     var text by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { text = viewModel.buildLogPreview(versionName) }
     Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
-        SettingsTopBar("导出本地日志", onBack)
+        SettingsTopBar(stringResource(R.string.settings_export_logs), onBack)
         Text(
-            "以下是将要导出的全部内容，请先确认。导出后由你选择发给谁（例如在 GitHub 提 issue 时附上），本应用不会自动上传。",
+            stringResource(R.string.settings_logs_intro),
             Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (LocalIsTv.current) {
             // TV 上遥控器无法滚动查看长文本：只显示摘要，导出后在手机 / 电脑上查看全文（S10）
             Text(
-                text?.let { "共 ${it.lines().size} 行（对端设备名已脱敏）。电视上不显示全文，导出后可在手机或电脑上查看。" } ?: "正在读取…",
+                text?.lines()?.size?.let { pluralStringResource(R.plurals.settings_logs_tv_summary, it, it) } ?: stringResource(R.string.settings_logs_loading),
                 Modifier.weight(1f).padding(16.dp), style = MaterialTheme.typography.bodyMedium,
             )
         } else {
@@ -139,11 +150,12 @@ fun LogExportScreen(versionName: String, onBack: () -> Unit, viewModel: Settings
                     .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
                     .verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()).padding(12.dp),
             ) {
-                Text(text ?: "正在读取…", fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp)
+                Text(text ?: stringResource(R.string.settings_logs_loading), fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp)
             }
         }
+        val chooserTitle = stringResource(R.string.settings_logs_chooser)
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = { viewModel.clearLog(); scope.launch { text = viewModel.buildLogPreview(versionName) } }, modifier = Modifier.tvFocusRing()) { Text("清空运行日志") }
+            OutlinedButton(onClick = { viewModel.clearLog(); scope.launch { text = viewModel.buildLogPreview(versionName) } }, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_logs_clear)) }
             Button(
                 enabled = text != null,
                 modifier = Modifier.tvInitialFocus(text != null).tvFocusRing(),
@@ -157,10 +169,30 @@ fun LogExportScreen(versionName: String, onBack: () -> Unit, viewModel: Settings
                             putExtra(Intent.EXTRA_STREAM, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        context.startActivity(Intent.createChooser(send, "导出诊断日志"))
+                        context.startActivity(Intent.createChooser(send, chooserTitle))
                     }
                 },
-            ) { Text("导出") }
+            ) { Text(stringResource(R.string.settings_logs_export)) }
         }
     }
+}
+
+/** 诊断项 → (标题, 说明)：core/discovery 只给结构化结论，文案在这里映射到字符串资源。 */
+@Composable
+private fun diagnosticText(ch: DiagnosticCheck): Pair<String, String> = when (ch) {
+    DiagnosticCheck.NoLan -> stringResource(R.string.settings_diag_no_lan_title) to stringResource(R.string.settings_diag_no_lan_detail)
+    is DiagnosticCheck.LanConnected -> stringResource(
+        R.string.settings_diag_lan_title,
+        stringResource(if (ch.ethernet) R.string.settings_diag_transport_ethernet else R.string.settings_diag_transport_wifi),
+    ) to stringResource(R.string.settings_diag_lan_detail, ch.ip, ch.subnetHint)
+    DiagnosticCheck.VpnActive -> stringResource(R.string.settings_diag_vpn_title) to stringResource(R.string.settings_diag_vpn_detail)
+    is DiagnosticCheck.LargePrefix -> stringResource(R.string.settings_diag_prefix_title, ch.prefixLength) to stringResource(R.string.settings_diag_prefix_detail)
+    is DiagnosticCheck.MulticastOk -> stringResource(R.string.settings_diag_multicast_ok_title) to
+        pluralStringResource(R.plurals.settings_diag_multicast_ok_detail, ch.responders, ch.responders)
+    DiagnosticCheck.MulticastSilent -> stringResource(R.string.settings_diag_multicast_silent_title) to stringResource(R.string.settings_diag_multicast_silent_detail)
+    is DiagnosticCheck.TargetReachable -> stringResource(R.string.settings_diag_target_ok_title, ch.host) to stringResource(R.string.settings_diag_target_ok_detail, ch.port)
+    is DiagnosticCheck.TargetUnreachable -> stringResource(R.string.settings_diag_target_fail_title, ch.host, ch.port) to stringResource(R.string.settings_diag_target_fail_detail)
+    DiagnosticCheck.AskSameRouter -> stringResource(R.string.settings_diag_router_title) to stringResource(R.string.settings_diag_router_detail)
+    DiagnosticCheck.AskApIsolation -> stringResource(R.string.settings_diag_isolation_title) to stringResource(R.string.settings_diag_isolation_detail)
+    DiagnosticCheck.AskGuestNetwork -> stringResource(R.string.settings_diag_guest_title) to stringResource(R.string.settings_diag_guest_detail)
 }

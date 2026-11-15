@@ -1,5 +1,9 @@
 package com.benchan.wireless.screencasting.feature.control
 
+import android.content.Context
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.benchan.wireless.screencasting.core.protocol.control.ControlPhase
 import com.benchan.wireless.screencasting.core.protocol.control.ControlReason
 import com.benchan.wireless.screencasting.core.protocol.control.InputMessage
@@ -42,7 +46,7 @@ sealed interface ControlEvent {
     data class Ended(val reason: ControlReason) : ControlEvent
 }
 
-/** 交互稿 R05 / R08 的暂停原因短语。 */
+/** 交互稿 R05 / R08 的暂停原因短语。文字在资源里（英文默认 / values-zh），跟随系统语言。 */
 object ControlCopy {
     /** 回到桌面（D9：离开本应用后对方才能操作）。 */
     fun goHome(context: android.content.Context) {
@@ -51,27 +55,44 @@ object ControlCopy {
         runCatching { context.startActivity(home) }
     }
 
-    fun pauseLabel(reason: ControlReason?): String = when (reason) {
-        ControlReason.RECONNECTING -> "正在重连"
-        ControlReason.PROTECTED -> "画面受保护"
-        ControlReason.APP_HIDDEN -> "已离开共享的应用"
-        ControlReason.WINDOWED -> "分屏时不可控制"
-        ControlReason.OWN_APP -> "本应用内不可控制"
-        ControlReason.SENSITIVE_APP -> "此界面不可控制"
-        else -> "暂停"
+    @StringRes
+    fun pauseLabelRes(reason: ControlReason?): Int = when (reason) {
+        ControlReason.RECONNECTING -> R.string.ctl_pause_reconnecting
+        ControlReason.PROTECTED -> R.string.ctl_pause_protected
+        ControlReason.APP_HIDDEN -> R.string.ctl_pause_app_hidden
+        ControlReason.WINDOWED -> R.string.ctl_pause_windowed
+        ControlReason.OWN_APP -> R.string.ctl_pause_own_app
+        ControlReason.SENSITIVE_APP -> R.string.ctl_pause_sensitive
+        else -> R.string.ctl_pause_other
     }
 
-    /** 边缘胶囊文案；字号 ≥130% 时去掉“控制”二字（UX 走查 G1）。 */
-    fun overlayLabel(phase: ControlPhase, reason: ControlReason?, largeFont: Boolean = false): String = when {
-        phase != ControlPhase.PAUSED -> "控制中"
-        largeFont -> "已暂停 · ${pauseLabel(reason)}"
-        else -> "控制已暂停 · ${pauseLabel(reason)}"
+    @Composable
+    fun pauseLabel(reason: ControlReason?): String = stringResource(pauseLabelRes(reason))
+
+    fun pauseLabel(context: Context, reason: ControlReason?): String = context.getString(pauseLabelRes(reason))
+
+    /** 边缘胶囊文案的资源与参数；字号 ≥130% 时去掉“控制”二字（UX 走查 G1）。 */
+    @StringRes
+    fun overlayLabelRes(phase: ControlPhase, largeFont: Boolean = false): Int = when {
+        phase != ControlPhase.PAUSED -> R.string.ctl_overlay_active
+        largeFont -> R.string.ctl_overlay_paused_short
+        else -> R.string.ctl_overlay_paused
     }
+
+    fun overlayLabel(context: Context, phase: ControlPhase, reason: ControlReason?, largeFont: Boolean = false): String =
+        if (phase != ControlPhase.PAUSED) {
+            context.getString(overlayLabelRes(phase, largeFont))
+        } else {
+            context.getString(overlayLabelRes(phase, largeFont), pauseLabel(context, reason))
+        }
 
     /** 屏幕朗读开启时的提示（UX 走查 §4）。 */
-    const val TALKBACK_CONSENT = "本机开着屏幕朗读（如 TalkBack），对方的点击和滑动可能无法正常生效"
-    const val TALKBACK_CARD = "开着屏幕朗读时，对方的点击和滑动可能无法正常生效"
+    val TALKBACK_CONSENT: String
+        @Composable get() = stringResource(R.string.ctl_talkback_consent)
+    val TALKBACK_CARD: String
+        @Composable get() = stringResource(R.string.ctl_talkback_card)
 
     /** 隐私说明（用户决策 D-1，各处统一，避免“包名”一词）。 */
-    const val PRIVACY_SHORT = "只识别当前打开的是哪个应用、哪个页面（不含页面上的文字），用于在一些界面（例如安装应用、授予权限）自动暂停控制。不收集任何数据。"
+    val PRIVACY_SHORT: String
+        @Composable get() = stringResource(R.string.ctl_privacy_short)
 }

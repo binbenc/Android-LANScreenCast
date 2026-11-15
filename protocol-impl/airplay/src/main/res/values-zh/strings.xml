@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Apple 发送端未上报设备名时的显示名。不得出现 Apple 协议商标名（PRD 12）。 -->
+    <string name="apple_compat_default_peer">Apple 设备</string>
+</resources>

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_label">推送到电视</string>
+
+    <string name="share_title">推送到电视</string>
+    <string name="share_close">关闭，不推送</string>
+    <string name="share_close_continue">关闭，推送继续</string>
+    <string name="share_header_push_to">推送到 %1$s</string>
+    <string name="share_reselect_title">选好电视后，从相册重新选择</string>
+    <string name="share_change_tv">换一台电视</string>
+    <string name="share_checking">正在检查分享的文件…</string>
+    <string name="share_tv">电视</string>
+    <string name="share_current_tv">当前电视</string>
+    <string name="share_spoken_separator">，</string>
+
+    <plurals name="share_count_videos">
+        <item quantity="other">%d 个视频</item>
+    </plurals>
+    <plurals name="share_count_photos">
+        <item quantity="other">%d 张照片</item>
+    </plurals>
+    <plurals name="share_count_music">
+        <item quantity="other">%d 首音乐</item>
+    </plurals>
+    <string name="share_url_word">网址</string>
+    <string name="share_play_in_order">按分享的顺序播放</string>
+    <string name="share_edit">修改</string>
+
+    <plurals name="share_ignored_title">
+        <item quantity="other">已忽略 %d 个文件</item>
+    </plurals>
+    <string name="share_ignored_detail">只能推送视频、照片和音乐</string>
+    <plurals name="share_unreadable_title">
+        <item quantity="other">有 %d 个文件读不到，已跳过</item>
+    </plurals>
+    <string name="share_unreadable_no_permission">分享它的应用没有允许读取</string>
+    <string name="share_unreadable_generic">读不到这个文件。如果它在云盘里，可以先在云盘 App 里下载，再分享一次</string>
+    <string name="share_truncated">一次最多推送 100 项，已取前 100 项</string>
+
+    <string name="share_nothing_title">这些文件不能推送到电视</string>
+    <string name="share_nothing_detail">可以推送视频、照片、音乐，或者视频网址。PDF、文档可以打开后用屏幕镜像在电视上看</string>
+    <string name="share_unreadable_block_title">读不到分享的文件</string>
+    <string name="share_unreadable_block_detail">%1$s。可以选好电视后，在本应用里重新选择</string>
+    <string name="share_no_url_title">没有找到网址</string>
+    <string name="share_no_url_detail">可以分享视频文件，或者以 .mp4、.m3u8 结尾的视频地址</string>
+    <string name="share_no_space_title">手机空间不足</string>
+    <string name="share_no_space_detail_single">这个文件需要约 %1$s，当前可用 %2$s。清理空间后再分享，或者改用屏幕镜像</string>
+    <plurals name="share_no_space_detail_multi">
+        <item quantity="other">%1$d 个文件需要约 %2$s，当前可用 %3$s</item>
+    </plurals>
+    <string name="share_prepare_failed_title">文件准备失败</string>
+    <string name="share_prepare_failed_detail">分享的文件都没能准备好。可以再分享一次，或者改用屏幕镜像</string>
+    <plurals name="share_not_ready">
+        <item quantity="other">%d 个文件没准备好</item>
+    </plurals>
+    <string name="share_prepared">文件已准备好</string>
+    <plurals name="share_only_first">
+        <item quantity="other">只推送前 %1$d 项（%2$s）</item>
+    </plurals>
+    <string name="share_reselect_in_app">在本应用里重新选</string>
+
+    <string name="share_copy_no_space_title">手机空间不足，无法准备这个文件</string>
+    <string name="share_copy_no_space_detail">清理空间后再分享一次，或者改用屏幕镜像</string>
+    <string name="share_copy_too_large_title">文件太大，无法准备</string>
+    <string name="share_copy_too_large_detail">超过 4 GB 的云盘文件需要先下载到手机，再分享一次</string>
+    <string name="share_copy_read_failed_title">准备文件失败</string>
+    <string name="share_copy_read_failed_detail">读取中断了。可以再分享一次</string>
+    <string name="share_copy_gone_title">文件已不存在</string>
+    <string name="share_copy_gone_detail">它可能已被删除或移动</string>
+
+    <string name="share_preparing_percent">正在准备文件 %1$d%%</string>
+    <string name="share_preparing_read">正在准备文件 · 已读取 %1$s</string>
+    <string name="share_bytes_read">已读取 %1$s</string>
+    <string name="share_remaining_10s">约剩 10 秒</string>
+    <string name="share_remaining_20s">约剩 20 秒</string>
+    <string name="share_remaining_30s">约剩 30 秒</string>
+    <string name="share_remaining_1min">约剩 1 分钟</string>
+    <plurals name="share_remaining_long">
+        <item quantity="other">文件较大，约剩 %d 分钟。可以先离开，准备好后自动播放</item>
+    </plurals>
+    <string name="share_auto_start">选好电视后自动开始</string>
+
+    <string name="share_first_use_title">电视会直接从手机读取你分享的文件</string>
+    <string name="share_first_use_transfer">不需要存储权限。照片和音乐会先复制到本应用里，视频由电视直接从手机读取；推送结束后立即删除副本、停止分享。电视自带投屏不加密。</string>
+    <string name="share_first_use_copy">不需要存储权限。文件会先复制到本应用里，推送结束后立即删除。电视自带投屏不加密。</string>
+    <string name="share_got_it">知道了</string>
+
+    <string name="share_web_title">这是网页地址，电视通常打不开</string>
+    <string name="share_web_detail">电视只能打开视频文件的地址（如 .mp4、.m3u8）。想在电视上看这个视频，可以把手机屏幕镜像到电视，再回到视频 App 播放。</string>
+    <string name="share_web_mirror">改用屏幕镜像</string>
+    <string name="share_web_mirror_note">需要电视上装有本应用 · 手机会询问是否允许录屏</string>
+    <string name="share_web_push">仍然推送</string>
+    <string name="share_web_push_note">电视会自己联网打开这个地址，本应用不会访问它</string>
+    <string name="share_web_mirroring">正在镜像到 %1$s。回到视频 App 直接播放，电视上就能看到。</string>
+    <string name="share_url_cd">网址：%1$s</string>
+    <string name="share_mirror_hint">选好电视开始镜像后，回到视频 App 播放即可</string>
+
+    <string name="share_group_recent">最近推送过</string>
+    <string name="share_group_family">家人设置的电视</string>
+    <string name="share_group_dlna">电视自带投屏</string>
+    <string name="share_group_own">本应用接收端</string>
+    <string name="share_unencrypted">不加密</string>
+    <string name="share_searching_short">仍在搜索</string>
+    <string name="share_needs_dlna">在这台电视的设置里打开“DLNA 接收”后才能推送</string>
+    <string name="share_audio_only">只能推送音乐</string>
+    <string name="share_still_searching">还在找… 请确认电视已开机，并且和手机连的是同一个路由器</string>
+    <string name="share_empty_title">没有发现可以推送的电视</string>
+    <string name="share_empty_detail">请确认电视已开机，并且和手机连的是同一个路由器。电视自带投屏还需要路由器允许设备互相发现。</string>
+    <string name="share_no_wifi_title">手机没有连接 Wi‑Fi</string>
+    <string name="share_no_wifi_detail">连上和电视同一个路由器后，会自动重新搜索。</string>
+    <string name="share_open_wifi">打开 Wi‑Fi 设置</string>
+    <plurals name="share_found_tvs">
+        <item quantity="other">找到 %d 台电视</item>
+    </plurals>
+    <string name="share_rescan">重新搜索</string>
+    <string name="share_diagnostics">网络诊断</string>
+    <string name="share_no_cast_feature">电视上没有投屏功能？</string>
+    <string name="share_unavailable">不可用</string>
+    <string name="share_pushing_state">正在推送，双击替换内容</string>
+    <string name="share_row_pushing">正在推送 · %1$s · 点它可以替换内容</string>
+    <string name="share_row_mirroring">正在镜像 · 可以接收推送</string>
+    <string name="share_row_last_own">上次 %1$s · 本应用接收端</string>
+    <string name="share_row_last_dlna">上次 %1$s · 电视自带投屏</string>
+    <string name="share_row_trusted">已信任 · 可以接收推送</string>
+    <string name="share_row_can_receive">可以接收推送</string>
+    <string name="share_row_dlna_unencrypted">电视自带投屏 · 不加密</string>
+
+    <string name="share_elder_new_tv">要推送到新的电视，请家人在长辈设置里添加</string>
+    <string name="share_elder_needs_setup">这台电视暂时不能放照片和视频，请家人帮忙设置</string>
+    <string name="share_elder_ok_sub">可以放照片和视频</string>
+    <string name="share_elder_audio_sub">只能放音乐</string>
+    <string name="share_elder_row_pushing">正在放 · 点它可以换成刚分享的内容</string>
+
+    <string name="share_direct_audio_only">%1$s 只能推送音乐</string>
+    <string name="share_direct_missed">没有找到 %1$s。请确认电视已开机、和手机连的是同一个路由器</string>
+    <string name="share_direct_finding">正在找 %1$s…</string>
+    <string name="share_direct_hint">最多 5 秒 · 文件同时在准备</string>
+    <string name="share_pick_other_tv">选其他电视</string>
+    <string name="share_shortcut_disabled">这台电视已从推送列表移除</string>
+
+    <string name="share_banner_mirroring_title">正在镜像到 %1$s</string>
+    <string name="share_banner_mirroring_detail">镜像和推送不能同时进行</string>
+    <string name="share_banner_pushing_title">正在推送到 %1$s</string>
+    <string name="share_banner_pushing_detail">%1$s · 点它可以替换内容</string>
+    <string name="share_stop_mirror_title">结束镜像，改为推送到 %1$s？</string>
+    <string name="share_stop_mirror_title_connecting">取消正在进行的连接，改为推送到 %1$s？</string>
+    <string name="share_stop_mirror_body_named">%1$s 会停止显示手机画面。</string>
+    <string name="share_stop_mirror_body">电视会停止显示手机画面。</string>
+    <string name="share_stop_mirror_confirm">结束镜像并推送</string>
+    <string name="share_stop_mirror_confirm_connecting">改为推送</string>
+    <string name="share_replace_title">替换 %1$s 上正在播放的内容？</string>
+    <string name="share_replace_now">正在播放“%1$s”。</string>
+    <string name="share_replace_now_multi">正在播放“%1$s”（%2$d / %3$d）。</string>
+    <string name="share_replace_body">%1$s替换后改为播放刚分享的 %2$s，原来的播放列表不会保留。</string>
+    <string name="share_replace_confirm">替换</string>
+    <string name="share_switch_title">停止推送到 %1$s，改为推送到 %2$s？</string>
+    <string name="share_switch_body">%1$s会停止播放。%2$s</string>
+    <string name="share_switch_confirm">改为推送到 %1$s</string>
+    <string name="share_transcode_tail">正在进行的视频转换也会取消。</string>
+
+    <string name="share_preparing_first">正在准备第 1 项</string>
+    <string name="share_preparing_file">正在准备文件</string>
+    <string name="share_connect_step">连接 %1$s</string>
+    <string name="share_play_step">开始播放</string>
+    <string name="share_tv_loading">电视正在加载…</string>
+    <string name="share_transcoding">正在转换视频 %1$d%%</string>
+    <string name="share_allow_hint">如果电视上出现确认提示，请用遥控器点「允许」</string>
+    <string name="share_leave_note">第 1 项准备好就开始播放，其余边放边准备。现在离开这里，推送也不会中断。</string>
+    <string name="share_cancel">取消</string>
+    <string name="share_cancel_push">取消推送</string>
+    <string name="share_done">完成</string>
+    <string name="share_open_remote">打开遥控</string>
+    <string name="share_cancelled_toast">已取消，没有推送任何内容</string>
+    <string name="share_started_photo">已发送到 %1$s</string>
+    <string name="share_started_play">已在 %1$s 上开始播放</string>
+    <string name="share_item_of">第 %1$d / %2$d 项 · %3$s</string>
+    <plurals name="share_rest_preparing">
+        <item quantity="other">其余 %d 项正在准备</item>
+    </plurals>
+    <plurals name="share_rest_preparing_percent">
+        <item quantity="other">其余 %1$d 项正在准备 %2$d%%</item>
+    </plurals>
+    <plurals name="share_all_ready">
+        <item quantity="other">全部 %d 项已准备好</item>
+    </plurals>
+    <string name="share_item_skipped_gone">第 %1$d 项已不存在，已跳过</string>
+    <string name="share_item_skipped_interrupted">第 %1$d 项读取中断，已跳过</string>
+    <string name="share_started_note">离开后，可以在通知栏或锁屏上暂停、切换和结束推送。</string>
+    <string name="share_replaced_snack">已换成新分享的内容</string>
+
+    <string name="share_edit_url_title">修改网址</string>
+    <string name="share_url_label">视频网址</string>
+    <string name="share_url_confirm">用这个网址</string>
+    <!-- 正文 + 追加的一句（英文句间需要空格，中文不需要） -->
+    <string name="share_body_with_tail">%1$s%2$s</string>
+</resources>

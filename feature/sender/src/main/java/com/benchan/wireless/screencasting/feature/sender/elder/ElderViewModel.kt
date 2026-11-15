@@ -15,10 +15,12 @@ import com.benchan.wireless.screencasting.core.discovery.DiscoverySource
 import com.benchan.wireless.screencasting.core.net.LanInfo
 import com.benchan.wireless.screencasting.core.net.NetworkMonitor
 import com.benchan.wireless.screencasting.core.security.trust.TrustedDeviceStore
+import com.benchan.wireless.screencasting.feature.sender.R
 import com.benchan.wireless.screencasting.feature.sender.session.CastTarget
 import com.benchan.wireless.screencasting.feature.sender.session.SenderController
 import com.benchan.wireless.screencasting.feature.sender.session.SenderState
 import com.benchan.wireless.screencasting.feature.sender.session.isTerminal
+import com.benchan.wireless.screencasting.feature.sender.ui.uiText
 import com.benchan.wireless.screencasting.protocol.dlna.dmc.DmcController
 import com.benchan.wireless.screencasting.protocol.dlna.dmc.PushSessionState
 import com.benchan.wireless.screencasting.protocol.dlna.dmc.PushTarget
@@ -86,7 +88,7 @@ class ElderViewModel @Inject constructor(
     val targets: StateFlow<List<ElderTargetUi>> = combine(
         settingsRepo.settings, recent.devices, dlna.records, discovery.devices, _searchExpired,
     ) { s, r, d, found, expired ->
-        ElderTargets.resolve(s.elderTargets, r, d).map { t ->
+        ElderTargets.resolve(s.elderTargets, r, d, found).map { t ->
             val dev = ElderTargets.match(t, found)
             ElderTargetUi(
                 t,
@@ -113,6 +115,19 @@ class ElderViewModel @Inject constructor(
 
     private var attemptJob: Job? = null
     private var searchJob: Job? = null
+
+    init {
+        // 电视改名后把新名字写回固定电视的快照（叫法不动）；名字没变时不写存储
+        viewModelScope.launch {
+            combine(settingsRepo.settings, discovery.devices) { s, found -> ElderTargets.refreshSnapshots(s.elderTargets, found) }
+                .collect { updated ->
+                    if (updated != null) {
+                        WscLog.i(TAG, "elder targets: refreshed device names (${updated.size})")
+                        settingsRepo.setElderTargets(updated)
+                    }
+                }
+        }
+    }
 
     fun startDiscovery() {
         discovery.start(this)
@@ -231,12 +246,13 @@ class ElderViewModel @Inject constructor(
 
     // ------------------------------------------------------------------ 请家人帮忙（E12）
 
-    fun helpFacts(label: String?, outcome: ElderOutcome): ElderHelpText.Facts {
-        val (title, detail) = ElderCopy.failure(outcome, label ?: "电视", Build.VERSION.SDK_INT, java.util.Locale.getDefault().language == "zh")
+    /** @param label 电视叫法；界面没有具体电视时传本地化的“电视”。 */
+    fun helpFacts(label: String, outcome: ElderOutcome): ElderHelpText.Facts {
+        val (title, detail) = ElderCopy.failure(outcome, label, Build.VERSION.SDK_INT, systemZh())
         val found = discovery.devices.value
         val multicast = if (found.isEmpty()) false else found.any { DiscoverySource.MDNS in it.sources || DiscoverySource.SSDP in it.sources }
         val t = targets.value.firstOrNull { it.target.label == label }
-        val kind = t?.let { if (it.canMirror) "本应用接收端" else "电视自带投屏" }
+        val kind = t?.let { uiText(if (it.canMirror) R.string.elder_kind_own else R.string.elder_kind_dlna) }
         return ElderHelpText.Facts(
             reasonTitle = title, reasonDetail = detail,
             phoneModel = Build.MODEL.orEmpty(), androidVersion = Build.VERSION.RELEASE.orEmpty(),
@@ -262,7 +278,8 @@ class ElderViewModel @Inject constructor(
 
     fun finishWizard(targets: List<ElderTarget>, onDone: () -> Unit) = viewModelScope.launch {
         WscLog.i(TAG, "elder mode enabled: pinned=${targets.size}")
-        settingsRepo.enableElderMode(targets)
+        // 重新走向导：用最新设备名覆盖快照
+        settingsRepo.enableElderMode(ElderTargets.withLatestNames(targets, candidates.value.map { it.target }, discovery.devices.value))
         onDone()
     }
 
@@ -309,7 +326,9 @@ class ElderViewModel @Inject constructor(
                     pushOnly += ElderCandidate(ElderTarget(udn = d.udn, name = d.name), false, canMirror = false, canPush = true, lastUsedAt = d.lastUsedAt)
                 }
             }
+            // 候选显示发现结果里的最新名字（电视改名后向导里也是新名字）
             return (merged.values + pushOnly.distinctBy { it.target.name }).sortedByDescending { it.lastUsedAt }
+                .map { c -> c.copy(target = ElderTargets.withLatestNames(listOf(c.target), emptyList(), found).single()) }
         }
 
         private const val TAG = "Elder"

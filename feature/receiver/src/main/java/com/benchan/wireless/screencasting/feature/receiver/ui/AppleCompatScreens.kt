@@ -47,6 +47,9 @@ import androidx.media3.ui.PlayerView
 import com.benchan.wireless.screencasting.core.ui.theme.PinStyleTv
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSession
 import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionKind
+import com.benchan.wireless.screencasting.feature.receiver.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 
 /*
  * 兼容 Apple 设备（非官方）播放页。界面文案不出现 “AirPlay” 字样与苹果图标（PRD 12、决策 #23）。
@@ -54,7 +57,6 @@ import com.benchan.wireless.screencasting.protocol.airplay.api.AppleSessionKind
 
 private const val PIN_OVERLAY_TIMEOUT_MS = 60_000L
 
-private const val SOURCE_LABEL = "兼容 Apple 设备"
 
 /** 连按两次返回断开（与 WSC 播放页一致，PRD 6.2）。 */
 @Composable
@@ -86,7 +88,7 @@ internal fun AppleCompatPlayback(
         onDispose { onDisplay(false) }
     }
     ImmersiveSystemBars()
-    DoubleBackToDisconnect("再按一次返回键断开", onDisconnect)
+    DoubleBackToDisconnect(stringResource(R.string.rx_back_again_disconnect), onDisconnect)
     val tag = rememberSourceTagState()
     Box(Modifier.fillMaxSize().showSourceTagOnKeys(tag)) {
         when (session.kind) {
@@ -117,10 +119,10 @@ private fun AppleMirror(session: AppleSession, setSurface: (android.view.Surface
         if (session.firstFrameAt == null) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 CircularProgressIndicator()
-                Text("正在连接 ${session.peerName}…", color = MaterialTheme.colorScheme.onScrim, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.rx_connecting_to, session.peerName), color = MaterialTheme.colorScheme.onScrim, style = MaterialTheme.typography.titleMedium)
             }
         }
-        FadingSourceTag("$SOURCE_LABEL · ${session.peerName}", tag, Modifier.align(Alignment.TopStart))
+        FadingSourceTag(stringResource(R.string.rx_apple_tag_mirror, session.peerName), tag, Modifier.align(Alignment.TopStart))
     }
 }
 
@@ -147,7 +149,7 @@ private fun AppleVideoUrl(session: AppleSession, player: Player?, tag: SourceTag
         } else {
             CircularProgressIndicator(Modifier.align(Alignment.Center))
         }
-        FadingSourceTag("视频网址 · $SOURCE_LABEL · ${session.peerName}", tag, Modifier.align(Alignment.TopStart))
+        FadingSourceTag(stringResource(R.string.rx_apple_tag_video_url, session.peerName), tag, Modifier.align(Alignment.TopStart))
     }
 }
 
@@ -158,9 +160,9 @@ private fun AppleAudio(session: AppleSession) {
     Box(Modifier.fillMaxSize().background(c.surface), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Icon(Icons.Rounded.MusicNote, null, Modifier.size(96.dp), tint = c.primary)
-            Text(session.trackTitle ?: "正在播放音频", style = MaterialTheme.typography.headlineMedium, color = c.onSurface)
+            Text(session.trackTitle ?: stringResource(R.string.rx_apple_audio_playing), style = MaterialTheme.typography.headlineMedium, color = c.onSurface)
             session.trackArtist?.let { Text(it, style = MaterialTheme.typography.titleMedium, color = c.onSurfaceVariant) }
-            Text("来自 ${session.peerName} · $SOURCE_LABEL", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.rx_apple_audio_from, session.peerName), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
         }
     }
 }
@@ -188,10 +190,11 @@ internal fun AppleCompatPinOverlay(pin: String, onDismiss: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("Apple 设备请求连接", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.rx_apple_pin_title), style = MaterialTheme.typography.headlineSmall)
+            val pinDesc = stringResource(R.string.rx_confirm_pin_desc, pin.toList().joinToString(" "))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "PIN ${pin.toList().joinToString(" ")}" },
+                modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = pinDesc },
             ) {
                 pin.forEach { ch ->
                     Box(Modifier.size(width = 64.dp, height = 76.dp).background(c.surfaceContainerHigh, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
@@ -199,8 +202,8 @@ internal fun AppleCompatPinOverlay(pin: String, onDismiss: () -> Unit) {
                     }
                 }
             }
-            Text("请在 iPhone / iPad / Mac 上输入此 PIN。配对后这台设备下次可直接连接。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-            Text("按返回键关闭", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.rx_apple_pin_hint), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.rx_press_back_close), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }
 }

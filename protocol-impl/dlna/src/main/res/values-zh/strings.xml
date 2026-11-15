@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- protocol-impl/dlna 中文文案；默认英文见 values/strings.xml。协议字段不翻译。 -->
+<resources>
+    <string name="dlna_title_video">视频 %1$d</string>
+    <string name="dlna_title_photo">照片 %1$d</string>
+    <string name="dlna_title_music">音乐 %1$d</string>
+</resources>

@@ -8,6 +8,7 @@ import com.benchan.wireless.screencasting.core.protocol.pairing.CastCode
 import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGrade
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import com.benchan.wireless.screencasting.core.rtc.stats.LatencyBreakdown
+import com.benchan.wireless.screencasting.feature.receiver.R
 
 /** 待机页信息（交互稿 11）。 */
 data class StandbyInfo(
@@ -21,12 +22,12 @@ data class StandbyInfo(
     val appleCompatAvailable: Boolean,
     val appleCompatEnabled: Boolean,
     /** 回到待机页时短暂显示的提示，例如“小张的 Pixel 8 已断开”“发送端已锁屏”。 */
-    val notice: String? = null,
+    val notice: UiText? = null,
     /** 当前网段能否使用投屏码（/24~/30）。 */
     val castCodeNetworkSupported: Boolean = true,
 ) {
     /** 投屏码不可用的原因（端口回退 / 网段不支持）；null = 可用或没有网络。 */
-    val castCodeUnavailableReason: String?
+    val castCodeUnavailableReason: UiText?
         get() = if (castCode != null) null else ReceiverCopy.castCodeUnavailableReason(lanAvailable, port, castCodeNetworkSupported)
 }
 
@@ -128,101 +129,106 @@ enum class NoticeTone { ERROR, WARNING, NEUTRAL }
 /** 交互稿 R08 的提示（“发生了什么 + 怎么办”，底部 4 秒）。图标与图标色按交互稿 v1.0.3。 */
 sealed class ControlNotice(
     val kind: NoticeKind,
-    val title: String,
-    val detail: String? = null,
+    val title: UiText,
+    val detail: UiText? = null,
     val icon: NoticeIcon = NoticeIcon.INFO,
     val tone: NoticeTone = NoticeTone.WARNING,
     /** 显示时长（交互稿 R08：默认 4 s，“不支持双指缩放”6 s）。 */
     val durationMs: Long = 4_000,
 ) {
     // —— 请求结果 ——
-    class Denied(cooldownSeconds: Long) : ControlNotice(NoticeKind.DENIED, "对方拒绝了控制请求", "$cooldownSeconds 秒后可以再次请求", NoticeIcon.CLOSE, NoticeTone.ERROR)
-    data object Timeout : ControlNotice(NoticeKind.TIMEOUT, "对方 30 秒内没有回应", "已视为拒绝", NoticeIcon.HOURGLASS, NoticeTone.NEUTRAL)
-    data object ServiceOff : ControlNotice(NoticeKind.SERVICE_OFF, "请在对方手机上开启无障碍服务", "对方手机已显示开启步骤", NoticeIcon.A11Y, NoticeTone.WARNING)
+    class Denied(cooldownSeconds: Long) : ControlNotice(
+        NoticeKind.DENIED, uiText(R.string.rx_ctl_denied),
+        uiPlural(R.plurals.rx_ctl_denied_cooldown, cooldownSeconds.toInt()), NoticeIcon.CLOSE, NoticeTone.ERROR,
+    )
+    data object Timeout : ControlNotice(NoticeKind.TIMEOUT, uiText(R.string.rx_ctl_timeout), uiText(R.string.rx_ctl_timeout_detail), NoticeIcon.HOURGLASS, NoticeTone.NEUTRAL)
+    data object ServiceOff : ControlNotice(NoticeKind.SERVICE_OFF, uiText(R.string.rx_ctl_service_off), uiText(R.string.rx_ctl_service_off_detail), NoticeIcon.A11Y, NoticeTone.WARNING)
 
     /** 对方关闭了通知，看不到开启步骤（PM 走查 G2）。 */
-    data object ServiceOffNoGuide : ControlNotice(NoticeKind.SERVICE_OFF, "请在对方手机上开启无障碍服务", "在对方手机「设置 → 反向控制」中按提示开启", NoticeIcon.A11Y, NoticeTone.WARNING)
-    data object NotEnabled : ControlNotice(NoticeKind.NOT_ENABLED, "对方未开启反向控制", "在对方手机「设置 → 反向控制」中开启", NoticeIcon.INFO, NoticeTone.WARNING)
+    data object ServiceOffNoGuide : ControlNotice(NoticeKind.SERVICE_OFF, uiText(R.string.rx_ctl_service_off), uiText(R.string.rx_ctl_service_off_no_guide), NoticeIcon.A11Y, NoticeTone.WARNING)
+    data object NotEnabled : ControlNotice(NoticeKind.NOT_ENABLED, uiText(R.string.rx_ctl_not_enabled), uiText(R.string.rx_ctl_not_enabled_detail), NoticeIcon.INFO, NoticeTone.WARNING)
 
     /** 对方版本没有 ctl 能力（PM 走查 G3）。 */
-    data object Unsupported : ControlNotice(NoticeKind.UNSUPPORTED, "对方的局域投屏版本不支持反向控制", "请在对方手机上更新到最新版本", NoticeIcon.REFRESH, NoticeTone.WARNING)
+    data object Unsupported : ControlNotice(NoticeKind.UNSUPPORTED, uiText(R.string.rx_ctl_unsupported), uiText(R.string.rx_ctl_update_peer), NoticeIcon.REFRESH, NoticeTone.WARNING)
     /** F24：发送端开着长辈模式（不指向任何设置入口，长辈设置里没有反向控制）。 */
-    data object ElderMode : ControlNotice(NoticeKind.NOT_ENABLED, "对方手机开着长辈模式，不能远程操作", "投屏不受影响", NoticeIcon.INFO, NoticeTone.NEUTRAL)
-    data object AdvancedProtection : ControlNotice(NoticeKind.AAPM, "对方手机开启了高级保护模式，无法被控制", "投屏不受影响", NoticeIcon.LOCK, NoticeTone.NEUTRAL)
+    data object ElderMode : ControlNotice(NoticeKind.NOT_ENABLED, uiText(R.string.rx_ctl_elder_mode), uiText(R.string.rx_ctl_casting_unaffected), NoticeIcon.INFO, NoticeTone.NEUTRAL)
+    data object AdvancedProtection : ControlNotice(NoticeKind.AAPM, uiText(R.string.rx_ctl_aapm), uiText(R.string.rx_ctl_casting_unaffected), NoticeIcon.LOCK, NoticeTone.NEUTRAL)
 
     /** 请求阶段对方已锁屏（PM 走查 G4）。 */
-    data object LockedRequest : ControlNotice(NoticeKind.LOCKED_REQUEST, "对方手机已锁屏", "请对方解锁后再请求", NoticeIcon.LOCK, NoticeTone.NEUTRAL)
+    data object LockedRequest : ControlNotice(NoticeKind.LOCKED_REQUEST, uiText(R.string.rx_ctl_locked_request), uiText(R.string.rx_ctl_locked_request_detail), NoticeIcon.LOCK, NoticeTone.NEUTRAL)
 
     // —— 控制中 ——
-    data object Revoked : ControlNotice(NoticeKind.ENDED, "对方已收回控制", null, NoticeIcon.HANDBACK, NoticeTone.NEUTRAL)
-    data object Locked : ControlNotice(NoticeKind.ENDED, "对方手机已锁屏，控制已结束", null, NoticeIcon.HANDBACK, NoticeTone.NEUTRAL)
+    data object Revoked : ControlNotice(NoticeKind.ENDED, uiText(R.string.rx_ctl_revoked), null, NoticeIcon.HANDBACK, NoticeTone.NEUTRAL)
+    data object Locked : ControlNotice(NoticeKind.ENDED, uiText(R.string.rx_ctl_locked), null, NoticeIcon.HANDBACK, NoticeTone.NEUTRAL)
 
     /** 控制暂停：按原因给出副文案（PM 走查 G5）。 */
     class Paused(reason: ControlReason?) : ControlNotice(NoticeKind.PAUSED, pausedTitle(reason), pausedDetail(reason), NoticeIcon.PAUSE, NoticeTone.WARNING)
 
     /** 落在对方受保护区域（每次控制提示一次；交互稿 v1.0.3 已同步为本文案）。 */
-    data object Blocked : ControlNotice(NoticeKind.BLOCKED, "这里不能远程操作", "状态栏和屏幕边缘的控制提示只能在对方手机上操作", NoticeIcon.INFO, NoticeTone.NEUTRAL)
+    data object Blocked : ControlNotice(NoticeKind.BLOCKED, uiText(R.string.rx_ctl_blocked), uiText(R.string.rx_ctl_blocked_detail), NoticeIcon.INFO, NoticeTone.NEUTRAL)
 
     /** 对方本机触摸打断了操作（交互稿 v1.0.3 R08，每次控制提示一次）。 */
-    data object LocalTouch : ControlNotice(NoticeKind.LOCAL_TOUCH, "对方正在操作手机", "已让对方优先，对方停手后可以继续操作", NoticeIcon.PHONE, NoticeTone.NEUTRAL)
+    data object LocalTouch : ControlNotice(NoticeKind.LOCAL_TOUCH, uiText(R.string.rx_ctl_local_touch), uiText(R.string.rx_ctl_local_touch_detail), NoticeIcon.PHONE, NoticeTone.NEUTRAL)
 
     /** TV：非首次获得控制（首次显示提示卡，UX 走查 G11）。 */
-    data object Granted : ControlNotice(NoticeKind.HINT, "已获得控制", "菜单键打开控制条", NoticeIcon.CHECK, NoticeTone.NEUTRAL)
+    data object Granted : ControlNotice(NoticeKind.HINT, uiText(R.string.rx_ctl_granted), uiText(R.string.rx_ctl_granted_detail), NoticeIcon.CHECK, NoticeTone.NEUTRAL)
 
     // —— B 期 · 能力与文字（交互稿 v1.0.3 原文；能力类为中性说明，只有密码框用 warning）——
-    data object TextUnsupported : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, "对方系统版本不支持文字输入", "需要 Android 13 及以上；点击、滑动仍可使用", NoticeIcon.KEYBOARD, NoticeTone.NEUTRAL)
-    data object DpadUnsupported : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, "对方系统版本不支持方向键模式", "需要 Android 13 及以上；光标模式仍可使用", NoticeIcon.DPAD, NoticeTone.NEUTRAL)
-    data object MediaUnsupported : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, "对方系统版本不支持播放 / 暂停键", "需要 Android 16 及以上；可以用光标点画面上的播放按钮", NoticeIcon.PAUSE, NoticeTone.NEUTRAL)
+    data object TextUnsupported : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, uiText(R.string.rx_ctl_text_unsupported), uiText(R.string.rx_ctl_text_unsupported_detail), NoticeIcon.KEYBOARD, NoticeTone.NEUTRAL)
+    data object DpadUnsupported : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, uiText(R.string.rx_ctl_dpad_unsupported), uiText(R.string.rx_ctl_dpad_unsupported_detail), NoticeIcon.DPAD, NoticeTone.NEUTRAL)
+    data object MediaUnsupported : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, uiText(R.string.rx_ctl_media_unsupported), uiText(R.string.rx_ctl_media_unsupported_detail), NoticeIcon.PAUSE, NoticeTone.NEUTRAL)
 
     /** 发送端回 IREJ{UNSUPPORTED}：每次控制提示一次（PM 走查 G9）。 */
-    data object UnsupportedOp : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, "对方手机不支持这个操作", "其他操作仍可使用", NoticeIcon.INFO, NoticeTone.NEUTRAL)
-    data object SecureField : ControlNotice(NoticeKind.SECURE_FIELD, "对方手机上是密码框，不能远程输入", "密码、验证码请让对方自己输入", NoticeIcon.LOCK, NoticeTone.WARNING)
-    data object NoEditor : ControlNotice(NoticeKind.NO_EDITOR, "对方手机上没有选中的输入框", "先点一下要输入的位置，再输入", NoticeIcon.KEYBOARD, NoticeTone.NEUTRAL)
-    data object DpadLongPress : ControlNotice(NoticeKind.HINT, "长按请切换光标模式", "方向键模式下确定键只能点击", NoticeIcon.DPAD, NoticeTone.NEUTRAL)
+    data object UnsupportedOp : ControlNotice(NoticeKind.UNSUPPORTED_FEATURE, uiText(R.string.rx_ctl_op_unsupported), uiText(R.string.rx_ctl_op_unsupported_detail), NoticeIcon.INFO, NoticeTone.NEUTRAL)
+    data object SecureField : ControlNotice(NoticeKind.SECURE_FIELD, uiText(R.string.rx_ctl_secure_field), uiText(R.string.rx_ctl_secure_field_detail), NoticeIcon.LOCK, NoticeTone.WARNING)
+    data object NoEditor : ControlNotice(NoticeKind.NO_EDITOR, uiText(R.string.rx_ctl_no_editor), uiText(R.string.rx_ctl_no_editor_detail), NoticeIcon.KEYBOARD, NoticeTone.NEUTRAL)
+    data object DpadLongPress : ControlNotice(NoticeKind.HINT, uiText(R.string.rx_ctl_dpad_long_press), uiText(R.string.rx_ctl_dpad_long_press_detail), NoticeIcon.DPAD, NoticeTone.NEUTRAL)
     /** 对方是旧版本（没有 multi 能力）：不支持双指缩放（C 期）。 */
     // —— C 期 · 多指与加固（交互稿 v1.0.4 原文）——
     data object PinchUnsupported : ControlNotice(
-        NoticeKind.UNSUPPORTED_FEATURE, "对方的局域投屏版本不支持双指缩放",
-        "请对方更新到最新版本；可在本机「设置 → 把接收端安装到电视」分享安装包给对方", NoticeIcon.REFRESH, NoticeTone.NEUTRAL, durationMs = 6_000,
+        NoticeKind.UNSUPPORTED_FEATURE, uiText(R.string.rx_ctl_pinch_unsupported),
+        uiText(R.string.rx_ctl_pinch_unsupported_detail), NoticeIcon.REFRESH, NoticeTone.NEUTRAL, durationMs = 6_000,
     )
 
     /** 首次发出双指缩放后（每次安装一次）。 */
-    data object PinchHint : ControlNotice(NoticeKind.HINT, "双指缩放会在松手后执行", "对方手机会按两指的变化缩放一次", NoticeIcon.PINCH, NoticeTone.NEUTRAL)
+    data object PinchHint : ControlNotice(NoticeKind.HINT, uiText(R.string.rx_ctl_pinch_hint), uiText(R.string.rx_ctl_pinch_hint_detail), NoticeIcon.PINCH, NoticeTone.NEUTRAL)
 
     /** 双指有一根落在黑边上（每次控制一次）。 */
-    data object PinchOutside : ControlNotice(NoticeKind.HINT, "双指需在画面内", "两根手指都要放在对方画面上", NoticeIcon.PINCH, NoticeTone.NEUTRAL)
+    data object PinchOutside : ControlNotice(NoticeKind.HINT, uiText(R.string.rx_ctl_pinch_outside), uiText(R.string.rx_ctl_pinch_outside_detail), NoticeIcon.PINCH, NoticeTone.NEUTRAL)
 
     /** D-3 兜底：敏感界面暂停超过 10 秒（每次暂停一次）。 */
-    data object SensitiveLong : ControlNotice(NoticeKind.HINT, "控制仍在暂停", "请让对方点一下手机上的「继续控制」，或切换一次应用", NoticeIcon.HOURGLASS, NoticeTone.NEUTRAL)
-    data object DpadNoFocus : ControlNotice(NoticeKind.HINT, "看不到焦点？", "按菜单键打开控制条，换成光标模式", NoticeIcon.CURSOR, NoticeTone.NEUTRAL)
+    data object SensitiveLong : ControlNotice(NoticeKind.HINT, uiText(R.string.rx_ctl_sensitive_long), uiText(R.string.rx_ctl_sensitive_long_detail), NoticeIcon.HOURGLASS, NoticeTone.NEUTRAL)
+    data object DpadNoFocus : ControlNotice(NoticeKind.HINT, uiText(R.string.rx_ctl_dpad_no_focus), uiText(R.string.rx_ctl_dpad_no_focus_detail), NoticeIcon.CURSOR, NoticeTone.NEUTRAL)
 }
 
-private fun pausedTitle(reason: ControlReason?): String = when (reason) {
-    ControlReason.OWN_APP -> "控制已暂停 · 对方在投屏应用内"
-    ControlReason.SENSITIVE_APP -> "控制已暂停 · 这里需要对方本人操作"
-    else -> "控制已暂停：${pausedText(reason)}"
+private fun pausedTitle(reason: ControlReason?): UiText = when (reason) {
+    ControlReason.OWN_APP -> uiText(R.string.rx_ctl_paused_own_app)
+    ControlReason.SENSITIVE_APP -> uiText(R.string.rx_ctl_paused_sensitive)
+    else -> uiText(R.string.rx_ctl_paused_with_reason, pausedText(reason))
 }
 
-private fun pausedDetail(reason: ControlReason?): String? = when (reason) {
-    ControlReason.RECONNECTING -> "网络恢复后自动继续"
-    ControlReason.PROTECTED -> "对方离开受保护的画面后自动恢复"
-    ControlReason.APP_HIDDEN -> "对方回到共享的应用后自动恢复"
-    ControlReason.WINDOWED -> "对方退出分屏后自动恢复"
-    ControlReason.OWN_APP -> "对方离开投屏应用后自动恢复"
-    ControlReason.SENSITIVE_APP -> "例如安装应用、授予权限、无障碍设置，只能由对方确认，离开后自动恢复"
+private fun pausedDetail(reason: ControlReason?): UiText? = when (reason) {
+    ControlReason.RECONNECTING -> uiText(R.string.rx_ctl_paused_detail_reconnecting)
+    ControlReason.PROTECTED -> uiText(R.string.rx_ctl_paused_detail_protected)
+    ControlReason.APP_HIDDEN -> uiText(R.string.rx_ctl_paused_detail_app_hidden)
+    ControlReason.WINDOWED -> uiText(R.string.rx_ctl_paused_detail_windowed)
+    ControlReason.OWN_APP -> uiText(R.string.rx_ctl_paused_detail_own_app)
+    ControlReason.SENSITIVE_APP -> uiText(R.string.rx_ctl_paused_detail_sensitive)
     else -> null
 }
 
 /** 接收端暂停原因（交互稿 R08）。 */
-fun pausedText(reason: ControlReason?): String = when (reason) {
-    ControlReason.RECONNECTING -> "正在重连"
-    ControlReason.PROTECTED -> "对方画面受保护"
-    ControlReason.APP_HIDDEN -> "对方离开了共享的应用"
-    ControlReason.WINDOWED -> "对方处于分屏"
-    ControlReason.OWN_APP -> "对方在投屏应用内"
-    ControlReason.SENSITIVE_APP -> "需对方本人操作"
-    else -> "对方暂时不可控制"
-}
+fun pausedText(reason: ControlReason?): UiText = uiText(
+    when (reason) {
+        ControlReason.RECONNECTING -> R.string.rx_ctl_pause_reconnecting
+        ControlReason.PROTECTED -> R.string.rx_ctl_pause_protected
+        ControlReason.APP_HIDDEN -> R.string.rx_ctl_pause_app_hidden
+        ControlReason.WINDOWED -> R.string.rx_ctl_pause_windowed
+        ControlReason.OWN_APP -> R.string.rx_ctl_pause_own_app
+        ControlReason.SENSITIVE_APP -> R.string.rx_ctl_pause_sensitive
+        else -> R.string.rx_ctl_pause_other
+    },
+)
 
 /** 第二根手指按下时的结果。 */
 enum class PinchStart { STARTED, UNSUPPORTED, OUTSIDE, INACTIVE }

@@ -104,6 +104,15 @@ import org.webrtc.RendererCommon
 import org.webrtc.SurfaceViewRenderer
 import org.webrtc.VideoSink
 import java.util.Locale
+import com.benchan.wireless.screencasting.feature.receiver.R
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.receiver.session.UiText
+import com.benchan.wireless.screencasting.feature.receiver.session.uiText
+import com.benchan.wireless.screencasting.feature.receiver.session.asString
+import com.benchan.wireless.screencasting.core.ui.text.labelRes
+import com.benchan.wireless.screencasting.core.ui.text.displayLabel
+import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGrade
+import androidx.compose.foundation.layout.wrapContentSize
 
 /**
  * 交互稿 13（镜像播放中 · 菜单键统计浮层）/ 14（重连中 · 保留最后一帧）/ 15（受保护内容提示）。
@@ -126,6 +135,8 @@ internal fun PlaybackScreen(
     onPinchHintShown: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val backAgainMessage = stringResource(R.string.rx_back_again_disconnect_cast)
+    val textPausedMessage = stringResource(R.string.rx_text_not_sent_paused)
     var overlay by remember { mutableStateOf(false) }
     // F18 G05：“一直显示延迟”只在本次投屏有效，结束即关
     var pinLatency by remember(session.sessionId) { mutableStateOf(false) }
@@ -293,7 +304,7 @@ internal fun PlaybackScreen(
             onDisconnect()
         } else {
             lastBack = now
-            Toast.makeText(context, "再按一次返回键断开投屏", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, backAgainMessage, Toast.LENGTH_SHORT).show()
         }
     }
     BackHandler(enabled = !modalShown && !controlling) { doubleBackToDisconnect() }
@@ -423,16 +434,16 @@ internal fun PlaybackScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = WscTheme.extended.warning)
-                        Text("正在重连…", style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                        Text(stringResource(R.string.rx_reconnecting), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                     }
-                    Text("${session.peerName} · 第 ${session.reconnectAttempt.coerceAtLeast(1)} 次 · 最长等待 30 秒", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.rx_reconnecting_detail, session.peerName, session.reconnectAttempt.coerceAtLeast(1)), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 }
-                Text("画面为断开前的最后一帧", Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(32.dp), style = MaterialTheme.typography.bodySmall, color = c.onScrim)
+                Text(stringResource(R.string.rx_last_frame), Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(32.dp), style = MaterialTheme.typography.bodySmall, color = c.onScrim)
             }
         } else if (!session.firstFrame) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CircularProgressIndicator()
-                Text("正在接收 ${session.peerName} 的画面…", color = c.onScrim, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.rx_receiving_from, session.peerName), color = c.onScrim, style = MaterialTheme.typography.bodyLarge)
             }
         }
 
@@ -455,7 +466,7 @@ internal fun PlaybackScreen(
             ) {
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 Text(
-                    PlaybackCopy.switching(session.gameMode), style = MaterialTheme.typography.titleMedium,
+                    PlaybackCopy.switching(session.gameMode).asString(), style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
@@ -489,6 +500,8 @@ internal fun PlaybackScreen(
         }
         // TV 3 米外可读：16 sp（labelLarge 在 TV 字号体系里是 16 sp）、图标 20 dp（UX 走查 P1-5）
         val badgeStyle = if (isTv) MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp) else MaterialTheme.typography.labelLarge
+        val badgeA11y = PlaybackCopy.badgeA11y(badgeText).asString()
+        val badgeLabel = badgeText?.asString().orEmpty()
         AnimatedVisibility(badgeText != null && !overlay, Modifier.align(Alignment.TopEnd), enter = fadeIn(), exit = fadeOut()) {
             Row(
                 Modifier.windowInsetsPadding(WindowInsets.safeDrawing)
@@ -498,12 +511,12 @@ internal fun PlaybackScreen(
                     // 读屏播报“已切换到游戏模式”“已降为 30 帧”（UX 走查 P2-11）
                     .semantics(mergeDescendants = true) {
                         liveRegion = LiveRegionMode.Polite
-                        contentDescription = PlaybackCopy.badgeA11y(badgeText)
+                        contentDescription = badgeA11y
                     },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 if (badgeText == PlaybackCopy.GAME_MODE_BADGE) Icon(Icons.Rounded.SportsEsports, null, Modifier.size(20.dp), tint = c.onScrim)
-                Text(badgeText.orEmpty(), color = c.onScrim, style = badgeStyle)
+                Text(badgeLabel, color = c.onScrim, style = badgeStyle)
             }
         }
 
@@ -512,8 +525,8 @@ internal fun PlaybackScreen(
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Rounded.AppsOutage, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("发送端已切换应用", style = MaterialTheme.typography.titleLarge)
-                    Text("回到被共享的应用后画面会自动恢复", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.rx_app_hidden_title), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.rx_app_hidden_detail), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -539,15 +552,16 @@ internal fun PlaybackScreen(
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Box(Modifier.size(8.dp).background(WscTheme.extended.latency(session.stats.grade), androidx.compose.foundation.shape.CircleShape))
+                        val pinnedA11y = PlaybackCopy.latencyA11y(pinnedLatency, session.gameMode).asString()
                         Text(
-                            "约 $pinnedLatency ms", color = c.onScrim,
+                            stringResource(R.string.rx_latency_pinned, pinnedLatency), color = c.onScrim,
                             style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp, fontFeatureSettings = "tnum"),
-                            modifier = Modifier.semantics { contentDescription = "延迟约 $pinnedLatency 毫秒，估算" },
+                            modifier = Modifier.semantics { contentDescription = pinnedA11y },
                         )
                     }
                 }
                 if (controlling) WscAppTheme(darkTheme = true) {
-                    ControlBadge(ctl, modeLabel = if (isTv) (if (effectiveMode == TvControlMode.DPAD) "方向键" else "光标") else null, tv = isTv)
+                    ControlBadge(ctl, modeLabel = if (isTv) stringResource(if (effectiveMode == TvControlMode.DPAD) R.string.rx_mode_dpad else R.string.rx_mode_cursor) else null, tv = isTv)
                 }
                 // 录音权限被拒 → “无声音”角标
                 if (noAudio) {
@@ -556,7 +570,7 @@ internal fun PlaybackScreen(
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Icon(Icons.Rounded.VolumeOff, null, Modifier.size(16.dp), tint = c.onScrim)
-                        Text("无声音", color = c.onScrim, style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(R.string.rx_no_audio), color = c.onScrim, style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
@@ -564,7 +578,7 @@ internal fun PlaybackScreen(
 
         AnimatedVisibility(hint && session.firstFrame && !overlay, Modifier.align(Alignment.BottomEnd), enter = fadeIn(), exit = fadeOut()) {
             Text(
-                PlaybackCopy.firstFrameHint(isTv, controlEntry, controlling),
+                PlaybackCopy.firstFrameHint(isTv, controlEntry, controlling).asString(),
                 Modifier.padding(horizontal = 48.dp, vertical = 27.dp).background(c.scrim.copy(alpha = ScrimAlpha.Text), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
                 color = c.onScrim, style = MaterialTheme.typography.bodySmall,
             )
@@ -651,7 +665,7 @@ internal fun PlaybackScreen(
                         onSend = { t ->
                             // 不能发送（暂停 / 已结束）时保留对话框与草稿并说明（UX G17 / PM G2）
                             if (session.control.phase != com.benchan.wireless.screencasting.core.protocol.control.ControlPhase.ACTIVE) {
-                                textError = "控制已暂停，文字未发送"
+                                textError = textPausedMessage
                             } else {
                                 control.sendText(t)
                                 lastTextSentAt = System.currentTimeMillis()
@@ -699,7 +713,15 @@ private fun VideoSurface(eglContext: EglBase.Context, attach: (VideoSink) -> Uni
             renderer.release()
         }
     }
-    AndroidView({ renderer }, Modifier.fillMaxSize())
+    // 等比显示、留黑边（PRD R-03）：SurfaceViewRenderer 的 SCALE_ASPECT_FIT 只在 onMeasure 里生效——它按画面比例量出
+    // 比可用区域小的尺寸；而 EglRenderer 与硬件缩放（setFixedSize）都会把画面裁成“视图自身的比例”。
+    // 如果直接 fillMaxSize，Compose 给的是 EXACTLY 约束，视图被撑满全屏，画面比例与屏幕不同时就被放大裁切
+    // （竖屏手机 → 横屏电视时上下被裁掉）。这里给宽松约束（AT_MOST）并居中：旋转 / 显示尺寸变化时 Compose 重新测量，
+    // 画面分辨率变化（例如切到游戏档、对方旋转）时 SurfaceViewRenderer 自己 requestLayout，都会重新等比布局。
+    // 触点换算（InputGeometry.videoRectInView）按外层容器尺寸居中等比计算，与这里的布局一致。
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        AndroidView({ renderer }, Modifier.wrapContentSize())
+    }
 }
 
 /**
@@ -741,30 +763,30 @@ private fun StatsOverlay(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("投屏统计", style = MaterialTheme.typography.titleMedium)
-            Text(PlaybackCopy.overlayCloseHint(isTv), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.rx_stats_title), Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleMedium)
+            Text(PlaybackCopy.overlayCloseHint(isTv).asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
         // 第一行：延迟约 xx ms（24 sp + 色阶圆点），下一行“估算”（不显示目标值）
-        Column(Modifier.semantics(mergeDescendants = true) { contentDescription = PlaybackCopy.latencyA11y(s.latencyMs, session.gameMode) }) {
+        val latencyA11y = PlaybackCopy.latencyA11y(s.latencyMs, session.gameMode).asString()
+        Column(Modifier.semantics(mergeDescendants = true) { contentDescription = latencyA11y }) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.size(10.dp).background(ext.latency(s.grade), androidx.compose.foundation.shape.CircleShape))
                 Text(
-                    PlaybackCopy.latencyHeadline(s.latencyMs),
+                    PlaybackCopy.latencyHeadline(s.latencyMs).asString(),
                     style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum"), color = c.onSurface,
                 )
-                s.grade?.let { Text(it.label, style = MaterialTheme.typography.bodyMedium, color = ext.latency(s.grade)) }
+                s.grade?.let { Text(it.displayLabel(), style = MaterialTheme.typography.bodyMedium, color = ext.latency(s.grade)) }
             }
-            Text(PlaybackCopy.latencySubline(session.gameMode), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(PlaybackCopy.latencySubline(session.gameMode).asString(), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
         s.breakdown?.let { b -> LatencySegments(b) }
-        StatRow("帧率", if (s.fps > 0) "${s.fps} 帧/秒" else "—")
-        StatRow("画质", PlaybackCopy.quality(s.height, session.profile, session.gameMode, session.senderLegacy))
+        StatRow(stringResource(R.string.rx_stat_fps), if (s.fps > 0) stringResource(R.string.rx_stat_fps_value, s.fps) else "—")
+        StatRow(stringResource(R.string.rx_stat_quality), PlaybackCopy.quality(s.height, session.profile, session.gameMode, session.senderLegacy).asString())
+        val hwLabel = s.hardwareDecoder?.let { stringResource(if (it) R.string.rx_decoder_hardware else R.string.rx_decoder_software) }
+        val llLabel = s.lowLatencyDecoder?.let { stringResource(if (it) R.string.rx_decoder_low_latency else R.string.rx_decoder_no_low_latency) }
         StatRow(
-            "解码",
-            listOfNotNull(
-                s.hardwareDecoder?.let { if (it) "硬件" else "软件" },
-                s.lowLatencyDecoder?.let { if (it) "低延迟" else "不支持低延迟" },
-            ).joinToString(" · ").ifBlank { s.codec ?: s.decoder ?: "—" },
+            stringResource(R.string.rx_stat_decoder),
+            listOfNotNull(hwLabel, llLabel).joinToString(" · ").ifBlank { s.codec ?: s.decoder ?: "—" },
         )
         // “一直显示延迟”（默认关，只在本次投屏有效）；方向键上移可达
         Row(
@@ -773,28 +795,28 @@ private fun StatsOverlay(
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("一直显示延迟", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.rx_pin_latency), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             Switch(checked = pinLatency, onCheckedChange = null)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            TvButton("关闭", onClose, Modifier.focusRequester(closeFocus))
-            TvButton("断开投屏", onDisconnect)
+            TvButton(stringResource(R.string.rx_close), onClose, Modifier.focusRequester(closeFocus))
+            TvButton(stringResource(R.string.rx_disconnect), onDisconnect)
         }
         // —— 下半：其余信息 ——
-        StatRow("来源", session.peerName)
+        StatRow(stringResource(R.string.rx_stat_source), session.peerName)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("协议", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.rx_stat_protocol), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), tint = c.tertiary)
-                Text("屏幕镜像 · 已加密", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.rx_protocol_mirror_encrypted), style = MaterialTheme.typography.bodyMedium)
             }
         }
-        StatRow("分辨率", if (s.width > 0) "${s.width} × ${s.height}" else "—")
-        StatRow("码率", if (s.bitrateKbps > 0) formatMbps(s.bitrateKbps) else "—")
-        StatRow("丢帧", String.format(Locale.US, "%.1f %%", s.dropPercent))
-        StatRow("编解码器", s.codec ?: s.decoder ?: "—")
+        StatRow(stringResource(R.string.rx_stat_resolution), if (s.width > 0) "${s.width} × ${s.height}" else "—")
+        StatRow(stringResource(R.string.rx_stat_bitrate), if (s.bitrateKbps > 0) formatMbps(s.bitrateKbps) else "—")
+        StatRow(stringResource(R.string.rx_stat_dropped), String.format(Locale.US, "%.1f %%", s.dropPercent))
+        StatRow(stringResource(R.string.rx_stat_codec), s.codec ?: s.decoder ?: "—")
         LatencySparkline(s.latencyHistory, Modifier.fillMaxWidth().height(56.dp))
-        Text("最近 60 秒 · 虚线 = “极佳”与“良好”的分界", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        Text(stringResource(R.string.rx_sparkline_caption, stringResource(LatencyGrade.EXCELLENT.labelRes), stringResource(LatencyGrade.GOOD.labelRes)), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
     }
 }
 
@@ -803,10 +825,10 @@ private fun StatsOverlay(
 private fun LatencySegments(b: LatencyBreakdown) {
     val c = MaterialTheme.colorScheme
     val parts = listOf(
-        "网络" to (b.networkMs to c.primary),
-        "缓冲" to (b.bufferMs to c.tertiary),
-        "解码" to (b.decodeMs to c.secondary),
-        "显示" to (b.displayMs to c.outline),
+        stringResource(R.string.rx_seg_network) to (b.networkMs to c.primary),
+        stringResource(R.string.rx_seg_buffer) to (b.bufferMs to c.tertiary),
+        stringResource(R.string.rx_seg_decode) to (b.decodeMs to c.secondary),
+        stringResource(R.string.rx_seg_display) to (b.displayMs to c.outline),
     )
     val total = parts.sumOf { it.second.first }.coerceAtLeast(1.0)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -848,62 +870,71 @@ private fun ProtectedCard(modifier: Modifier, onDismiss: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(Icons.Rounded.Shield, null, Modifier.size(36.dp), tint = c.tertiary)
-        Text("该内容可能受版权保护，无法镜像", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-        Text("这是视频应用的保护设置，不是连接故障。\n投屏仍在进行，手机切换到其他画面即可恢复。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.rx_protected_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.rx_protected_detail), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant, textAlign = TextAlign.Center)
         Column(Modifier.background(c.surfaceContainerHigh, RoundedCornerShape(16.dp)).padding(16.dp)) {
-            Text("建议改用推送", style = MaterialTheme.typography.titleMedium)
-            Text("在视频 App 里点「投屏」按钮，选择本机，原画质播放、手机可锁屏", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.rx_protected_push_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.rx_protected_push_detail), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
         }
-        TvButton("知道了", onDismiss, Modifier.focusRequester(focus))
+        TvButton(stringResource(R.string.rx_got_it), onDismiss, Modifier.focusRequester(focus))
         Box(Modifier.width(1.dp))
     }
 }
 
-/** 播放页提示文案按设备类型切换：TV 用遥控器，触屏设备（平板 / 手机当接收端）用轻点（C12）。 */
+/** 播放页提示文案按设备类型切换：TV 用遥控器，触屏设备（平板 / 手机当接收端）用轻点（C12）。文字在资源里（英文默认 / values-zh）。 */
 internal object PlaybackCopy {
     /** TV 按状态提示（UX 走查 G10）：有控制入口未控制 / 控制中 / 没有控制入口。 */
-    fun firstFrameHint(isTv: Boolean, controlEntry: Boolean = false, controlling: Boolean = false): String = when {
-        isTv && controlling -> "菜单键打开控制条 · 返回键 = 对方返回"
-        isTv && controlEntry -> "菜单键或长按返回 遥控手机 · 连按两次返回 断开投屏"
-        isTv -> "按确定键或菜单键查看连接信息 · 连按两次返回断开"
-        else -> "轻点屏幕查看连接信息 · 连按两次返回断开"
-    }
+    fun firstFrameHint(isTv: Boolean, controlEntry: Boolean = false, controlling: Boolean = false): UiText = uiText(
+        when {
+            isTv && controlling -> R.string.rx_hint_tv_controlling
+            isTv && controlEntry -> R.string.rx_hint_tv_control_entry
+            isTv -> R.string.rx_hint_tv
+            else -> R.string.rx_hint_touch
+        },
+    )
 
-    fun overlayCloseHint(isTv: Boolean): String = if (isTv) "按返回键收起" else "轻点画面收起"
+    fun overlayCloseHint(isTv: Boolean): UiText = uiText(if (isTv) R.string.rx_overlay_close_tv else R.string.rx_overlay_close_touch)
 
     // —— F18 游戏模式（交互稿 G 章节完成前的最小可用文案）——
-    const val GAME_MODE_BADGE = "游戏模式"
-    const val FPS_CAPPED_BADGE = "已降为 30 帧"
+    val GAME_MODE_BADGE: UiText = uiText(R.string.rx_badge_game_mode)
+    val FPS_CAPPED_BADGE: UiText = uiText(R.string.rx_badge_fps_capped)
 
-    fun latencyHeadline(ms: Int?): String = ms?.let { "延迟约 $it ms" } ?: "延迟 —"
+    fun latencyHeadline(ms: Int?): UiText = ms?.let { uiText(R.string.rx_latency_headline, it) } ?: uiText(R.string.rx_latency_headline_unknown)
 
     /** 界面不显示目标延迟数字（产品拍板），只写“估算”。 */
     @Suppress("UNUSED_PARAMETER")
-    fun latencySubline(game: Boolean): String = "估算"
+    fun latencySubline(game: Boolean): UiText = uiText(R.string.rx_latency_estimated)
 
     @Suppress("UNUSED_PARAMETER")
-    fun latencyA11y(ms: Int?, game: Boolean): String = ms?.let { "延迟约 $it 毫秒，估算" } ?: "延迟未知"
+    fun latencyA11y(ms: Int?, game: Boolean): UiText = ms?.let { uiText(R.string.rx_latency_a11y, it) } ?: uiText(R.string.rx_latency_a11y_unknown)
 
-    fun badgeA11y(badge: String?): String = when (badge) {
-        GAME_MODE_BADGE -> "已切换到游戏模式"
-        FPS_CAPPED_BADGE -> "已降为 30 帧"
-        else -> ""
+    fun badgeA11y(badge: UiText?): UiText = when (badge) {
+        GAME_MODE_BADGE -> uiText(R.string.rx_badge_game_mode_a11y)
+        FPS_CAPPED_BADGE -> uiText(R.string.rx_badge_fps_capped)
+        else -> UiText.Raw("")
     }
 
     /**
      * “720p · 游戏模式”/“1080p · 均衡”。发送端选了游戏档但本机接收链路没有按游戏模式建立时如实标注（PM 走查 P1-8）：
      * 新版发送端（做不到即时）→“低延迟缓冲：下次投屏生效”；旧版发送端 →“低延迟未开启”。
      */
-    fun quality(height: Int, profile: com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile?, game: Boolean, senderLegacy: Boolean = false): String {
-        val name = when {
-            game -> "游戏模式"
-            profile?.lowLatency == true -> profile.label + if (senderLegacy) "（低延迟未开启）" else "（低延迟缓冲：下次投屏生效）"
-            else -> profile?.label
+    fun quality(height: Int, profile: com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile?, game: Boolean, senderLegacy: Boolean = false): UiText {
+        val name: UiText? = when {
+            game -> uiText(R.string.rx_badge_game_mode)
+            profile?.lowLatency == true ->
+                uiText(if (senderLegacy) R.string.rx_quality_low_latency_off else R.string.rx_quality_low_latency_next, uiText(profile.labelRes))
+            else -> profile?.let { uiText(it.labelRes) }
         }
-        return listOfNotNull(height.takeIf { it > 0 }?.let { "${it}p" }, name).joinToString(" · ").ifBlank { "—" }
+        val res = height.takeIf { it > 0 }?.let { "${it}p" }
+        return when {
+            res != null && name != null -> uiText(R.string.rx_quality_with_resolution, res, name)
+            res != null -> UiText.Raw(res)
+            name != null -> name
+            else -> UiText.Raw("—")
+        }
     }
 
-    fun switching(toGame: Boolean): String = if (toGame) "正在切换到游戏模式…" else "正在切换画质…"
+    fun switching(toGame: Boolean): UiText = uiText(if (toGame) R.string.rx_switching_game else R.string.rx_switching_quality)
 
 }
 

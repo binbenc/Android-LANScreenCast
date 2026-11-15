@@ -1,5 +1,11 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.core.ui.components.formatApproxMs
+import com.benchan.wireless.screencasting.core.ui.text.displayLabel
+import com.benchan.wireless.screencasting.core.data.report.CastProtocol
+import com.benchan.wireless.screencasting.core.ui.R as UiR
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
 import com.benchan.wireless.screencasting.core.ui.components.tvInitialFocus
 import com.benchan.wireless.screencasting.core.ui.components.tvSafeArea
@@ -63,24 +69,24 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
     var confirmClear by remember { mutableStateOf(false) }
     val ext = WscTheme.extended
     Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
-        SettingsTopBar("投屏报告", onBack, actions = { IconButton(onClick = onExport, modifier = Modifier.tvFocusRing()) { Icon(Icons.Rounded.IosShare, "导出日志") } })
+        SettingsTopBar(stringResource(R.string.settings_report), onBack, actions = { IconButton(onClick = onExport, modifier = Modifier.tvFocusRing()) { Icon(Icons.Rounded.IosShare, stringResource(R.string.settings_report_export_logs)) } })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                SegmentedButton(range30, { viewModel.setRange30(true) }, SegmentedButtonDefaults.itemShape(0, 2), Modifier.tvInitialFocus().tvFocusRing()) { Text("最近 30 天") }
-                SegmentedButton(!range30, { viewModel.setRange30(false) }, SegmentedButtonDefaults.itemShape(1, 2), Modifier.tvFocusRing()) { Text("全部") }
+                SegmentedButton(range30, { viewModel.setRange30(true) }, SegmentedButtonDefaults.itemShape(0, 2), Modifier.tvInitialFocus().tvFocusRing()) { Text(stringResource(R.string.settings_report_range_30)) }
+                SegmentedButton(!range30, { viewModel.setRange30(false) }, SegmentedButtonDefaults.itemShape(1, 2), Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_report_range_all)) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Metric("投屏成功率", s.successRatePercent?.toString() ?: "—", "%", "${s.succeeded} / ${s.total} 次", null, Modifier.weight(1f))
-                Metric("断线次数", s.disconnects.toString(), "次", "其中 ${s.autoRecovered} 次自动恢复", null, Modifier.weight(1f))
+                Metric(stringResource(R.string.settings_report_success_rate), s.successRatePercent?.toString() ?: "—", "%", pluralStringResource(R.plurals.settings_report_success_sub, s.total, s.succeeded, s.total), null, Modifier.weight(1f))
+                Metric(stringResource(R.string.settings_report_disconnects), s.disconnects.toString(), stringResource(R.string.settings_report_unit_times), pluralStringResource(R.plurals.settings_report_recovered, s.autoRecovered, s.autoRecovered), null, Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val avgGrade = s.avgLatencyMs?.let(LatencyGrade::of)
                 val p95Grade = s.p95LatencyMs?.let(LatencyGrade::of)
-                Metric("平均延迟", s.avgLatencyMs?.toString() ?: "—", "ms", avgGrade?.label ?: "", avgGrade?.let(ext::latency), Modifier.weight(1f))
-                Metric("P95 延迟", s.p95LatencyMs?.toString() ?: "—", "ms", p95Grade?.label ?: "", p95Grade?.let(ext::latency), Modifier.weight(1f))
+                Metric(stringResource(R.string.settings_report_avg_latency), s.avgLatencyMs?.toString() ?: "—", "ms", avgGrade?.displayLabel() ?: "", avgGrade?.let(ext::latency), Modifier.weight(1f))
+                Metric(stringResource(R.string.settings_report_p95_latency), s.p95LatencyMs?.toString() ?: "—", "ms", p95Grade?.displayLabel() ?: "", p95Grade?.let(ext::latency), Modifier.weight(1f))
             }
             Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                Text("延迟分布 · 单位 ms", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_report_histogram_title), style = MaterialTheme.typography.titleSmall)
                 LatencyHistogram(s.histogram, Modifier.fillMaxWidth().height(96.dp).padding(top = 8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     listOf("0", "100", "150", "250", "320").forEach { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -89,92 +95,104 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
             s.gameLatencyP50Ms?.let { p50 ->
                 // F18（交互稿 G06 报告行）：游戏模式延迟与其他档位分开统计；数值 onSurface，色阶只用在圆点和等级字（UX 走查 P2-13）
                 val grade = LatencyGrade.of(p50)
-                val range = (if (range30) "最近 30 天" else "全部") + " · 共 " + ReportCopy.duration(s.gameDurationMs)
+                val range = stringResource(
+                    R.string.settings_report_game_range,
+                    stringResource(if (range30) R.string.settings_report_range_30 else R.string.settings_report_range_all),
+                    ReportCopy.duration(s.gameDurationMs),
+                )
+                val gradeLabel = grade.displayLabel()
+                val gameDesc = pluralStringResource(R.plurals.settings_report_game_desc, p50, p50, gradeLabel, range)
                 Row(
                     Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp)).padding(16.dp)
-                        .semantics(mergeDescendants = true) { contentDescription = "游戏模式延迟中位数约 $p50 毫秒，估算，${grade.label}，$range" },
+                        .semantics(mergeDescendants = true) { contentDescription = gameDesc },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(Icons.Rounded.SportsEsports, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Column(Modifier.weight(1f)) {
-                        Text("游戏模式延迟（中位数）", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.settings_report_game_title), style = MaterialTheme.typography.bodyLarge)
                         Text(range, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("约 $p50\u202Fms", style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"), color = MaterialTheme.colorScheme.onSurface)
+                        Text(formatApproxMs(p50), style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"), color = MaterialTheme.colorScheme.onSurface)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Box(Modifier.size(8.dp).background(ext.latency(grade), androidx.compose.foundation.shape.CircleShape))
-                            Text(grade.label, style = MaterialTheme.typography.labelMedium, color = ext.latency(grade))
+                            Text(gradeLabel, style = MaterialTheme.typography.labelMedium, color = ext.latency(grade))
                         }
                     }
                 }
             }
             if (s.byProtocol.isNotEmpty()) {
                 // 协议统计（交互稿 14-H：加“DLNA 推送”一类；推送不显示延迟）
-                Text("协议", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.settings_report_protocols), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 s.byProtocol.entries.sortedByDescending { it.value }.forEach { (p, n) ->
-                    val label = when (p) {
-                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.WSC -> "屏幕镜像"
-                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.DLNA -> "DLNA 接收"
-                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.AIRPLAY -> "兼容 Apple 设备（非官方）"
-                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.DLNA_PUSH -> "DLNA 推送"
-                    }
-                    val extra = if (p == com.benchan.wireless.screencasting.core.data.report.CastProtocol.DLNA_PUSH) {
+                    val label = stringResource(
+                        when (p) {
+                            CastProtocol.WSC -> R.string.settings_report_proto_mirroring
+                            CastProtocol.DLNA -> R.string.settings_report_proto_dlna
+                            CastProtocol.AIRPLAY -> R.string.settings_report_proto_apple
+                            CastProtocol.DLNA_PUSH -> R.string.settings_report_proto_dlna_push
+                        },
+                    )
+                    val extras = if (p == CastProtocol.DLNA_PUSH) {
                         listOfNotNull(
-                            s.pushSuccessRatePercent?.let { "成功率 $it%" },
-                            s.pushFirstPlayP50Ms?.let { "首次播放 P50 ${"%.1f".format(it / 1000.0)} 秒" },
-                        ).joinToString(" · ").let { if (it.isEmpty()) "" else " · $it" }
-                    } else ""
+                            s.pushSuccessRatePercent?.let { stringResource(R.string.settings_report_push_success, it) },
+                            s.pushFirstPlayP50Ms?.let { stringResource(R.string.settings_report_push_first_play, "%.1f".format(it / 1000.0)) },
+                        )
+                    } else emptyList()
+                    val countText = (listOf(pluralStringResource(R.plurals.settings_report_count, n, n)) + extras).joinToString(" · ")
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(label, style = MaterialTheme.typography.bodyLarge)
-                        Text("$n 次$extra", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(countText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             if (s.topDevices.isNotEmpty()) {
-                Text("常用设备", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.settings_report_top_devices), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 s.topDevices.forEach { d ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(d.name, style = MaterialTheme.typography.bodyLarge)
-                        Text("${d.count} 次 · ${d.avgLatencyMs?.let { "$it ms" } ?: "—"}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(pluralStringResource(R.plurals.settings_report_count, d.count, d.count) + " · " + (d.avgLatencyMs?.let { "$it ms" } ?: "—"), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             if (s.recentControl.isNotEmpty()) {
                 // 反向控制记录（F23，用户决策 D8）：只记录被谁控制、多长时间，不记坐标与内容
-                Text("反向控制", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                val dateFmt = remember { java.text.SimpleDateFormat("M月d日 HH:mm", java.util.Locale.CHINA) }
+                Text(stringResource(R.string.settings_report_remote_control), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                // 按当前语言取“月日 时:分”格式（中文为“M月d日 HH:mm”）
+                val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+                val dateFmt = remember(locale) { java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMdHHmm"), locale) }
                 s.recentControl.forEach { u ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("本次被 ${u.peerName} 控制 ${u.durationLabel}", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.settings_report_controlled, u.peerName, u.durationLabel), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                         Text(dateFmt.format(java.util.Date(u.endedAt)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Shield, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
-                Text("数据只保存在本机，不会上传", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { confirmClear = true }, modifier = Modifier.tvFocusRing()) { Text("清除记录") }
+                Text(stringResource(R.string.settings_report_local_only), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = { confirmClear = true }, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_report_clear)) }
             }
         }
     }
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("清除全部投屏记录？") },
-            text = { Text("清除后无法恢复。诊断日志不受影响。") },
-            confirmButton = { TextButton(onClick = { viewModel.clearReports(); confirmClear = false }, modifier = Modifier.tvFocusRing()) { Text("清除") } },
-            dismissButton = { TextButton(onClick = { confirmClear = false }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
+            title = { Text(stringResource(R.string.settings_report_clear_title)) },
+            text = { Text(stringResource(R.string.settings_report_clear_text)) },
+            confirmButton = { TextButton(onClick = { viewModel.clearReports(); confirmClear = false }, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.settings_report_clear_confirm)) } },
+            dismissButton = { TextButton(onClick = { confirmClear = false }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text(stringResource(UiR.string.core_ui_action_cancel)) } },
         )
     }
 }
 
 @Composable
 private fun Metric(title: String, value: String, unit: String, sub: String, subColor: Color?, modifier: Modifier) {
+    val desc = stringResource(R.string.settings_report_metric_desc, title, value, unit, sub)
     Column(
         modifier.background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp)).padding(16.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "$title $value $unit，$sub" },
+            .semantics(mergeDescendants = true) { contentDescription = desc },
     ) {
         Text(title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(verticalAlignment = Alignment.Bottom) {
@@ -187,13 +205,15 @@ private fun Metric(title: String, value: String, unit: String, sub: String, subC
 
 /** 报告页文案（纯函数）。 */
 internal object ReportCopy {
-    /** “3 小时”/“25 分钟”/“不到 1 分钟”。 */
+    /** “3 h”/“1 h 5 min”/“25 min”/“less than 1 min”（中文“3 小时”/“1 小时 5 分钟”/“25 分钟”/“不到 1 分钟”）。 */
+    @Composable
     fun duration(ms: Long): String {
-        val min = ms / 60_000
+        val min = (ms / 60_000).toInt()
         return when {
-            min >= 60 -> if (min % 60 == 0L || min >= 600) "${min / 60} 小时" else "${min / 60} 小时 ${min % 60} 分钟"
-            min >= 1 -> "$min 分钟"
-            else -> "不到 1 分钟"
+            min >= 60 -> if (min % 60 == 0 || min >= 600) stringResource(R.string.settings_duration_hours, min / 60)
+            else stringResource(R.string.settings_duration_hours_minutes, min / 60, min % 60)
+            min >= 1 -> stringResource(R.string.settings_duration_minutes, min)
+            else -> stringResource(R.string.settings_duration_under_minute)
         }
     }
 }

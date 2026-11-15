@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.core.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.core.ui.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,20 +50,20 @@ fun GameIntroDialog(onResult: (enable: Boolean) -> Unit) {
         icon = { Icon(Icons.Rounded.SportsEsports, null, tint = MaterialTheme.colorScheme.secondary) },
         title = {
             Text(
-                "开启游戏模式？",
+                stringResource(R.string.core_ui_game_intro_title),
                 if (isTv) Modifier.semantics { heading() } else Modifier.semantics { heading() }.focusRequester(titleFocus).focusable(),
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                IntroRow(Icons.Rounded.Speed, "延迟更低，画面更流畅", "清晰度降到 720p，每秒 60 帧；网络不稳时画面可能跳一下")
-                IntroRow(Icons.AutoMirrored.Rounded.VolumeUp, "声音可能比画面稍晚", "看视频建议用“均衡”")
-                IntroRow(Icons.Rounded.Thermostat, "手机发热和耗电会增加", "长时间玩，建议接上充电器")
+                IntroRow(Icons.Rounded.Speed, stringResource(R.string.core_ui_game_intro_latency_title), stringResource(R.string.core_ui_game_intro_latency_detail))
+                IntroRow(Icons.AutoMirrored.Rounded.VolumeUp, stringResource(R.string.core_ui_game_intro_audio_title), stringResource(R.string.core_ui_game_intro_audio_detail))
+                IntroRow(Icons.Rounded.Thermostat, stringResource(R.string.core_ui_game_intro_heat_title), stringResource(R.string.core_ui_game_intro_heat_detail))
             }
         },
         // “开启”在“取消”之后（读屏顺序，交互稿 G01）
-        dismissButton = { TextButton(onClick = { onResult(false) }, modifier = Modifier.focusRequester(cancelFocus).tvFocusRing()) { Text("取消") } },
-        confirmButton = { TextButton(onClick = { onResult(true) }, modifier = Modifier.tvFocusRing()) { Text("开启") } },
+        dismissButton = { TextButton(onClick = { onResult(false) }, modifier = Modifier.focusRequester(cancelFocus).tvFocusRing()) { Text(stringResource(R.string.core_ui_action_cancel)) } },
+        confirmButton = { TextButton(onClick = { onResult(true) }, modifier = Modifier.tvFocusRing()) { Text(stringResource(R.string.core_ui_action_turn_on)) } },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     )
 }

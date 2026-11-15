@@ -1,5 +1,9 @@
 package com.benchan.wireless.screencasting.core.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import com.benchan.wireless.screencasting.core.ui.text.labelRes
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.core.ui.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.Composable
@@ -19,7 +23,8 @@ import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
 fun LatencySparkline(values: List<Int>, modifier: Modifier = Modifier, maxMs: Int = 300) {
     val line = MaterialTheme.colorScheme.primary
     val guide = MaterialTheme.colorScheme.outline
-    Canvas(modifier.semantics { contentDescription = "最近 ${values.size} 秒延迟，最新 ${values.lastOrNull() ?: 0} 毫秒" }) {
+    val description = pluralStringResource(R.plurals.core_ui_sparkline_desc, values.size, values.size, values.lastOrNull() ?: 0)
+    Canvas(modifier.semantics { contentDescription = description }) {
         val y100 = size.height * (1 - 100f / maxMs)
         drawLine(guide, Offset(0f, y100), Offset(size.width, y100), strokeWidth = 1.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f)))
         if (values.size < 2) return@Canvas
@@ -53,10 +58,21 @@ fun LatencyHistogram(histogram: List<Int>, modifier: Modifier = Modifier, maxMs:
     }
 }
 
-/** 直方图的读屏描述：按延迟等级汇总样本数，例如“延迟分布：极佳 12 次，良好 3 次，一般 0 次，较差 1 次”。 */
-fun histogramDescription(histogram: List<Int>): String {
-    if (histogram.sum() == 0) return "延迟分布：暂无数据"
+/** 按延迟等级汇总直方图样本数（下标 = [LatencyGrade.ordinal]）；没有样本返回 null。 */
+fun latencyGradeCounts(histogram: List<Int>): IntArray? {
+    if (histogram.sum() == 0) return null
     val counts = IntArray(LatencyGrade.entries.size)
     histogram.forEachIndexed { i, n -> counts[LatencyGrade.of(i * 10 + 5).ordinal] += n }
-    return "延迟分布：" + LatencyGrade.entries.joinToString("，") { "${it.label} ${counts[it.ordinal]} 次" }
+    return counts
+}
+
+/** 直方图的读屏描述，例如“Latency distribution: Excellent 12 times, Good 3 times, Fair 0 times, Poor 1 time”。 */
+@Composable
+fun histogramDescription(histogram: List<Int>): String {
+    val counts = latencyGradeCounts(histogram) ?: return stringResource(R.string.core_ui_histogram_empty)
+    val sep = stringResource(R.string.core_ui_list_separator)
+    val items = LatencyGrade.entries.map { g ->
+        pluralStringResource(R.plurals.core_ui_histogram_item, counts[g.ordinal], stringResource(g.labelRes), counts[g.ordinal])
+    }
+    return stringResource(R.string.core_ui_histogram_desc, items.joinToString(sep))
 }

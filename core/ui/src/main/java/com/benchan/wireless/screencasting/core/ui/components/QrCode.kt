@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.core.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.core.ui.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,7 +30,7 @@ private val QrModule = Color(0xFF111418)
 
 /** 二维码：固定白底深码，不随主题反相（交互稿 11：保证识别率）。 */
 @Composable
-fun QrCode(content: String, modifier: Modifier = Modifier, description: String = "连接二维码") {
+fun QrCode(content: String, modifier: Modifier = Modifier, description: String = stringResource(R.string.core_ui_qr_default_desc)) {
     val matrix = remember(content) {
         runCatching {
             val m = QRCodeWriter().encode(

@@ -5,6 +5,9 @@ import com.benchan.wireless.screencasting.feature.sender.share.DirectShareShortc
 import com.benchan.wireless.screencasting.feature.sender.share.ReadMode
 import com.benchan.wireless.screencasting.feature.sender.share.ShareClassifier
 import com.benchan.wireless.screencasting.feature.sender.share.ShareCopy
+import com.benchan.wireless.screencasting.feature.sender.share.CopyFailure
+import com.benchan.wireless.screencasting.feature.sender.R
+import com.benchan.wireless.screencasting.feature.sender.ui.UiText
 import com.benchan.wireless.screencasting.feature.sender.share.ShareLimits
 import com.benchan.wireless.screencasting.feature.sender.share.ShareReadPolicy
 import com.benchan.wireless.screencasting.feature.sender.share.ShareText
@@ -152,20 +155,39 @@ class ShareLogicTest {
 
     @Test
     fun copyTexts() {
-        assertEquals("3 个视频 · 2 张照片", ShareCopy.summary(listOf(MediaKind.VIDEO, MediaKind.IMAGE, MediaKind.VIDEO, MediaKind.IMAGE, MediaKind.VIDEO)))
-        assertEquals("2 首音乐", ShareCopy.summary(listOf(MediaKind.AUDIO, MediaKind.AUDIO)))
-        assertEquals("正在准备文件 43%", ShareCopy.preparing(43, 100))
-        assertTrue(ShareCopy.preparing(320 * mb, null).startsWith("正在准备文件 · 已读取"))
-        assertEquals("约剩 20 秒", ShareCopy.remaining(15_000))
-        assertTrue(ShareCopy.remaining(170_000)!!.contains("约剩 3 分钟"))
+        // 摘要：按类型选 plurals、带数量，顺序固定为 视频 · 照片 · 音乐
+        assertEquals(
+            listOf(UiText.Plural(R.plurals.share_count_videos, 3), UiText.Plural(R.plurals.share_count_photos, 2)),
+            ShareCopy.summary(listOf(MediaKind.VIDEO, MediaKind.IMAGE, MediaKind.VIDEO, MediaKind.IMAGE, MediaKind.VIDEO)),
+        )
+        assertEquals(listOf(UiText.Plural(R.plurals.share_count_music, 2)), ShareCopy.summary(listOf(MediaKind.AUDIO, MediaKind.AUDIO)))
+        assertEquals(UiText.Res(R.string.share_preparing_percent, listOf(43)), ShareCopy.preparing(43, 100))
+        assertEquals(UiText.Res(R.string.share_preparing_read, listOf("320 MB")), ShareCopy.preparing(320 * mb, null))
+        // 剩余时间按档
+        assertEquals(UiText.Res(R.string.share_remaining_20s), ShareCopy.remaining(15_000))
+        assertEquals(UiText.Plural(R.plurals.share_remaining_long, 3), ShareCopy.remaining(170_000))
+        assertNull(ShareCopy.remaining(null))
         assertEquals(50, ShareCopy.announceStep(63))
         assertEquals(null, ShareCopy.percent(1, null))
-        assertEquals("3 个视频，2 张照片", ShareCopy.spoken("3 个视频 · 2 张照片"))
+        assertEquals("3 videos, 2 photos", ShareCopy.spoken("3 videos · 2 photos", ", "))
         // 复制失败给具体原因（不说“收回了读取授权”）
-        assertTrue(ShareCopy.copyFailure(com.benchan.wireless.screencasting.feature.sender.share.CopyFailure.NO_SPACE).first.contains("空间不足"))
-        assertTrue(ShareCopy.copyFailure(com.benchan.wireless.screencasting.feature.sender.share.CopyFailure.TOO_LARGE).second.contains("4 GB"))
-        assertFalse(ShareCopy.ELDER_NEW_TV.contains("DLNA"))
-        assertFalse(ShareCopy.firstUseNote(transferVideo = false).second.contains("视频由电视直接"))
+        assertEquals(UiText.Res(R.string.share_copy_no_space_title), ShareCopy.copyFailure(CopyFailure.NO_SPACE).first)
+        assertEquals(UiText.Res(R.string.share_copy_too_large_detail), ShareCopy.copyFailure(CopyFailure.TOO_LARGE).second)
+        // 首次说明：复制模式不提“视频由电视直接读取”
+        assertEquals(UiText.Res(R.string.share_first_use_copy), ShareCopy.firstUseNote(transferVideo = false).second)
+        assertEquals(UiText.Res(R.string.share_first_use_transfer), ShareCopy.firstUseNote(transferVideo = true).second)
+        // 第几项从 1 开始；空间不足单 / 多文件用不同资源
+        assertEquals(UiText.Res(R.string.share_item_skipped_gone, listOf(3)), ShareCopy.itemSkipped(2, gone = true))
+        assertEquals(UiText.Res(R.string.share_no_space_detail_single, listOf("2.0 GB", "1.0 GB")), ShareCopy.noSpaceDetail(1, 2 * gb, gb))
+        assertEquals(UiText.Plural(R.plurals.share_no_space_detail_multi, 3, listOf(3, "2.0 GB", "1.0 GB")), ShareCopy.noSpaceDetail(3, 2 * gb, gb))
+        assertEquals(UiText.Plural(R.plurals.share_rest_preparing_percent, 2, listOf(2, 40)), ShareCopy.restPreparing(2, 40))
+        assertEquals(UiText.Plural(R.plurals.share_rest_preparing, 2), ShareCopy.restPreparing(2, null))
+        // 替换说明：多项时带“（2 / 5）”
+        assertEquals(
+            UiText.Res(R.string.share_replace_body, listOf(UiText.Res(R.string.share_replace_now_multi, listOf("a.mp4", 2, 5)), "1 photo")),
+            ShareCopy.replaceBody("a.mp4", 1, 5, "1 photo"),
+        )
+        assertEquals(UiText.Res(R.string.share_replace_body, listOf("", "1 photo")), ShareCopy.replaceBody(null, 0, 1, "1 photo"))
     }
 
     // —— Direct Share 选设备（PRD 8.1.2 H）——

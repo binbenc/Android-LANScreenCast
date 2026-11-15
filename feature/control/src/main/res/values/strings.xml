@@ -1,8 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- feature/control (Remote control, sender side) strings. Default (English); Chinese in values-zh. -->
 <resources>
-    <!-- 系统“无障碍”列表里显示的服务名与说明（交互稿 R02：与系统界面用语一致） -->
-    <string name="ctl_service_label">局域投屏 · 反向控制</string>
-    <string name="ctl_service_description">投屏时，让你确认过的电视、平板或手机操作本机：模拟点击、滑动、滚动、方向键和返回 / 主页 / 最近任务，双指缩放，并可在你允许时向当前输入框输入文字（密码框除外）。为了安全，只读取当前应用和页面的名称（不含页面上的文字），例如在安装器、无障碍设置中暂停控制；不读取屏幕内容，不收集任何数据。只在你每次确认后的本次投屏中生效，可随时收回。</string>
-    <string name="ctl_channel_name">反向控制请求</string>
-    <string name="ctl_channel_desc">投屏时有设备请求操作本机，需要你确认</string>
+    <!-- Name and description shown in the system Accessibility list (R02: match system wording) -->
+    <string name="ctl_service_label">LAN Screen Cast · Remote control</string>
+    <string name="ctl_service_description">While casting, lets a TV, tablet or phone you\'ve approved operate this device: tap, swipe, scroll, D-pad, Back / Home / Recents, pinch to zoom, and, if you allow it, type into the current text field (except password fields). For safety, it only reads the name of the current app and screen (not any text on it), for example to pause control in the installer or accessibility settings. It doesn\'t read screen content or collect any data. It only works for the current cast after you confirm each time, and you can take back control at any time.</string>
+    <string name="ctl_channel_name">Remote control requests</string>
+    <string name="ctl_channel_desc">A device asks to operate this device while casting and needs your confirmation</string>
+
+    <!-- Pause reasons (R05 / R08) -->
+    <string name="ctl_pause_reconnecting">Reconnecting</string>
+    <string name="ctl_pause_protected">Screen is protected</string>
+    <string name="ctl_pause_app_hidden">Left the shared app</string>
+    <string name="ctl_pause_windowed">Not available in split screen</string>
+    <string name="ctl_pause_own_app">Not available in this app</string>
+    <string name="ctl_pause_sensitive">Not available on this screen</string>
+    <string name="ctl_pause_other">Paused</string>
+    <!-- Edge capsule -->
+    <string name="ctl_overlay_active">Controlled</string>
+    <string name="ctl_overlay_paused">Control paused · %1$s</string>
+    <string name="ctl_overlay_paused_short">Paused · %1$s</string>
+    <string name="ctl_overlay_continue">Continue</string>
+    <string name="ctl_overlay_revoke">Take back</string>
+    <string name="ctl_overlay_paused_desc">Control paused. This screen can\'t be controlled remotely</string>
+    <string name="ctl_overlay_continue_action">Continue control</string>
+    <string name="ctl_overlay_revoke_action">Take back control</string>
+    <string name="ctl_talkback_consent">A screen reader (such as TalkBack) is on. Their taps and swipes may not work properly</string>
+    <string name="ctl_talkback_card">With a screen reader on, their taps and swipes may not work properly</string>
+    <string name="ctl_privacy_short">It only recognizes which app and screen are open (not any text on it), to pause control automatically on some screens (such as installing apps or granting permissions). No data is collected.</string>
+    <string name="ctl_ended_locked">Control taken back: phone locked</string>
+
+    <!-- Notifications -->
+    <string name="ctl_request_title">%1$s wants to control this device</string>
+    <plurals name="ctl_request_text">
+        <item quantity="one">Tap to review and confirm · Declines automatically in %d second</item>
+        <item quantity="other">Tap to review and confirm · Declines automatically in %d seconds</item>
+    </plurals>
+    <string name="ctl_deny">Decline</string>
+    <string name="ctl_guide_text">Turn on the accessibility service first. Tap to see how</string>
+    <string name="ctl_service_stopped_title">The system turned off the accessibility service. Control ended</string>
+    <string name="ctl_service_stopped_text">Tap to see how to turn it back on</string>
+    <string name="ctl_guide_enabled_toast">Turned on. While casting, the other device can request control</string>
+
+    <!-- Consent (R03) -->
+    <string name="ctl_consent_from_cast">From the current cast · Encrypted</string>
+    <string name="ctl_consent_item_operate_text">They can see and operate your screen, such as tapping, swiping and typing</string>
+    <string name="ctl_consent_item_operate">They can see and operate your screen, such as tapping and swiping</string>
+    <string name="ctl_consent_item_session">Only for this cast. Ends automatically when casting stops</string>
+    <string name="ctl_consent_item_revoke">Take back control any time from the notification or the screen edge</string>
+    <string name="ctl_consent_item_warning">Don\'t let them enter passwords or codes, or make payments for you</string>
+    <string name="ctl_consent_go_home">After you allow, you\'ll go to the home screen so they can operate</string>
+    <string name="ctl_allow_once">Allow this time</string>
+    <string name="ctl_consent_ten_left">10 seconds left, then it declines automatically</string>
+    <plurals name="ctl_auto_deny">
+        <item quantity="one">Declines automatically in %d second</item>
+        <item quantity="other">Declines automatically in %d seconds</item>
+    </plurals>
+
+    <!-- Settings (R01) -->
+    <string name="ctl_settings_title">Remote control</string>
+    <string name="ctl_back">Back</string>
+    <string name="ctl_close">Close</string>
+    <string name="ctl_turn_on">Turn on</string>
+    <string name="ctl_settings_allow">Allow others to operate this device</string>
+    <string name="ctl_settings_allow_aapm">Advanced Protection is on. The system doesn\'t allow this app to use the accessibility service, so remote control is unavailable. Casting is not affected.</string>
+    <string name="ctl_settings_allow_desc">While casting, a TV, tablet or phone can ask to tap, swipe and more. You confirm on your phone every time</string>
+    <string name="ctl_settings_no_notif">No notification permission: while controlled, you can only take back control from the edge capsule</string>
+    <string name="ctl_settings_allow_notif">Allow notifications</string>
+    <string name="ctl_settings_auto_disabled">The accessibility service was turned off as you set</string>
+    <string name="ctl_settings_auto_disabled_desc">Turn it on again before the next control</string>
+    <string name="ctl_settings_service_still_on">This app\'s accessibility service is still on in system settings. It does nothing while remote control is off</string>
+    <string name="ctl_settings_turn_off_service">Turn off service</string>
+    <string name="ctl_settings_service_on">Accessibility service is on</string>
+    <string name="ctl_settings_one_more_step">One more step: turn on the accessibility service</string>
+    <string name="ctl_settings_one_more_step_desc">The system only allows simulated taps and typing through an accessibility service. This app doesn\'t read screen content. It only recognizes which app and screen are open, to pause control automatically on some screens (such as installing apps or granting permissions).</string>
+    <string name="ctl_settings_group_ops">Supported on this device</string>
+    <string name="ctl_cap_touch">Tap, long press, swipe, scroll</string>
+    <string name="ctl_cap_nav">Back, Home, Recents</string>
+    <string name="ctl_cap_pinch">Pinch to zoom</string>
+    <string name="ctl_cap_text_dpad">Text input, remote D-pad</string>
+    <string name="ctl_cap_media">Play / Pause key</string>
+    <string name="ctl_cap_requires_android">Requires Android %1$d or later</string>
+    <string name="ctl_cap_unsupported">Not supported on this device</string>
+    <string name="ctl_settings_group_security">Security</string>
+    <string name="ctl_settings_auto_disable">Turn off accessibility service after casting</string>
+    <string name="ctl_settings_auto_disable_desc">Don\'t keep permission to operate this device when not casting. You\'ll need to turn it on in system settings before each control</string>
+    <string name="ctl_settings_confirm_each">You confirm every cast</string>
+    <string name="ctl_settings_confirm_each_desc">Even for trusted devices. Ends immediately when casting stops, or the screen locks or turns off</string>
+    <string name="ctl_settings_own_app">This app can\'t be operated remotely</string>
+    <string name="ctl_settings_own_app_desc">This app\'s own screens can\'t be operated remotely. Control pauses automatically while you\'re in this app</string>
+    <string name="ctl_settings_sensitive">Screens like installing apps or granting permissions are for you only</string>
+    <string name="ctl_settings_sensitive_desc">Control tries to pause automatically on these screens</string>
+
+    <!-- Guide (R02) -->
+    <string name="ctl_guide_title">Turn on the accessibility service</string>
+    <string name="ctl_guide_subtitle">Remote control needs it to simulate taps and typing.</string>
+    <string name="ctl_guide_privacy_title">This app doesn\'t read screen content</string>
+    <string name="ctl_guide_step1">Tap “Open system settings” and go to Accessibility</string>
+    <string name="ctl_guide_step2">Under Downloaded apps, find “%1$s” and turn it on</string>
+    <string name="ctl_guide_step3">When the system asks, choose Allow, then return to this app</string>
+    <string name="ctl_guide_system_prompt">“View and control screen” in the system prompt is a generic description. This app doesn\'t request permission to read screen content</string>
+    <string name="ctl_guide_restricted_title">Switch is grayed out?</string>
+    <string name="ctl_guide_restricted_desc">Since Android 13, the system restricts apps not installed from an app store. Open App info, tap ⋮ at the top right → Allow restricted settings, then go back to step 2.</string>
+    <string name="ctl_guide_open_app_info">Open App info</string>
+    <string name="ctl_guide_unstable_title">Control keeps stopping?</string>
+    <string name="ctl_guide_unstable_desc">Some phones turn off accessibility services in the background. In system settings, allow this app to auto-start and run in the background (names vary by brand).</string>
+    <string name="ctl_guide_open_settings">Open system settings</string>
+    <string name="ctl_guide_not_now">Not now</string>
 </resources>

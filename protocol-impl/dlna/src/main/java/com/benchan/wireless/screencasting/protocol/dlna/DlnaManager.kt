@@ -71,6 +71,15 @@ class DlnaManager @Inject constructor(
     val playbackFailed: SharedFlow<Long> = _playbackFailed.asSharedFlow()
 
     private var http: LanHttpServer? = null
+    private val portStore = DlnaPortStore(java.io.File(context.noBackupFilesDir, "dlna_port"))
+
+    private val _httpPort = MutableStateFlow<Int?>(null)
+
+    /**
+     * 本机 DMR 当前的 HTTP 端口；null = DLNA 接收没在运行。接收端把它写进 mDNS TXT（`dlna=<端口>`），
+     * 发送端在 SSDP 不通时也能直接找到本机的设备描述。
+     */
+    val httpPort: StateFlow<Int?> = _httpPort.asStateFlow()
     private var ssdp: SsdpAdvertiser? = null
     private var gena: GenaManager? = null
     private var config: Pair<String, WscAdvert?>? = null
@@ -119,7 +128,8 @@ class DlnaManager @Inject constructor(
                 c.allow(remote, ua, title)
             }
         }
-        val server = LanHttpServer("dlna", preferredPort = 0) {
+        // 优先复用上次的端口（发送端记住的设备描述地址保持有效）；被占用时 LanHttpServer 回退到随机端口
+        val server = LanHttpServer("dlna", preferredPort = portStore.read() ?: 0) {
             dlnaModule(
                 description = { DlnaDescriptions.device(friendlyName, udn, wsc?.port, wsc?.deviceId, wsc?.fingerprintPrefix) },
                 actions = actions,
@@ -138,6 +148,8 @@ class DlnaManager @Inject constructor(
             return@withLock
         }
         http = server
+        portStore.write(port)
+        _httpPort.value = port
         multicastLock.acquire(LOCK_OWNER)
         val adv = SsdpAdvertiser(lan.address, udn, "http://${lan.ip}:$port/dlna/description.xml", wsc)
         adv.start(scope)
@@ -152,6 +164,7 @@ class DlnaManager @Inject constructor(
         ssdp = null
         http?.stop()
         http = null
+        _httpPort.value = null
         gena = null
         config = null
         multicastLock.release(LOCK_OWNER)

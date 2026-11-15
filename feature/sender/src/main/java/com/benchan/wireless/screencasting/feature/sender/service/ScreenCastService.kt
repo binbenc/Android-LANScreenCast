@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.feature.sender.service
 
+import com.benchan.wireless.screencasting.feature.sender.ui.labelRes
 import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
@@ -111,11 +112,11 @@ class ScreenCastService : LifecycleService() {
         val controlled = control.controlled && (state is SenderState.Casting || state is SenderState.Reconnecting)
         val (title, text) = when (state) {
             is SenderState.Casting if controlled && control.phase == ControlPhase.PAUSED && control.reason == ControlReason.SENSITIVE_APP ->
-                "${control.peerName} 正在控制本机" to "控制已暂停 · 此界面不可控制"
-            is SenderState.Casting if controlled -> "${control.peerName} 正在控制本机" to buildString {
-                append("投屏中 · ")
+                getString(R.string.sender_control_peer, control.peerName) to getString(R.string.sender_notif_control_paused)
+            is SenderState.Casting if controlled -> getString(R.string.sender_control_peer, control.peerName) to buildString {
+                append(getString(R.string.sender_notif_casting_prefix))
                 state.stats.latencyMs?.let { append(getString(R.string.sender_notif_latency, it)).append(" · ") }
-                append(state.profile.label)
+                append(getString(state.profile.labelRes))
             }
             // F18：切换画质进行中
             is SenderState.Casting if state.switchingTo != null -> getString(R.string.sender_notif_casting_to, state.target.name) to getString(R.string.sender_notif_switching)
@@ -126,7 +127,7 @@ class ScreenCastService : LifecycleService() {
             is SenderState.Casting -> getString(R.string.sender_notif_casting_to, state.target.name) to buildString {
                 state.stats.latencyMs?.let { append(getString(R.string.sender_notif_latency, it)).append(" · ") }
                 if (state.stats.bitrateKbps > 0) append(String.format(java.util.Locale.US, "%.1f Mbps", state.stats.bitrateKbps / 1000.0)).append(" · ")
-                append(state.profile.label)
+                append(getString(state.profile.labelRes))
             }
             is SenderState.Reconnecting -> getString(R.string.sender_notif_reconnecting) to getString(R.string.sender_notif_reconnecting_detail, state.target.name)
             is SenderState.Starting -> getString(R.string.sender_notif_casting_to, state.target.name) to getString(R.string.sender_notif_starting)
@@ -150,10 +151,10 @@ class ScreenCastService : LifecycleService() {
         if (controlled) {
             // 敏感界面暂停：[继续控制][收回控制][停止投屏]（交互稿 v1.0.4 通知示意）
             if (control.phase == ControlPhase.PAUSED && control.reason == ControlReason.SENSITIVE_APP) {
-                b.addAction(0, "继续控制", ControlActionReceiver.continueIntent(this))
+                b.addAction(0, getString(R.string.sender_control_continue), ControlActionReceiver.continueIntent(this))
             }
-            b.addAction(0, "收回控制", ControlActionReceiver.revokeIntent(this))
-            b.addAction(0, "停止投屏", stopIntent)
+            b.addAction(0, getString(R.string.sender_control_revoke), ControlActionReceiver.revokeIntent(this))
+            b.addAction(0, getString(R.string.sender_stop_casting), stopIntent)
             return b.build()
         }
         b.addAction(0, getString(R.string.sender_stop), stopIntent)

@@ -25,6 +25,32 @@ class DiscoveryParsingTest {
     }
 
     @Test
+    fun txtDlnaPortIsOptionalAndValidated() {
+        val base = WscTxt(1, "id-1", "TV", listOf("h264"), "fp")
+        // 旧版接收端：没有 dlna 键
+        assertNull(WscTxt.parse(base.toAttributes().mapValues { it.value.toByteArray() })!!.dlnaPort)
+        assertTrue("dlna" !in base.toAttributes())
+        val withPort = base.copy(dlnaPort = 49153)
+        assertEquals("49153", withPort.toAttributes()["dlna"])
+        assertEquals(withPort, WscTxt.parse(withPort.toAttributes().mapValues { it.value.toByteArray() }))
+        listOf("0", "65536", "-1", "abc", "").forEach { bad ->
+            val attrs = base.toAttributes().mapValues { it.value.toByteArray() } + ("dlna" to bad.toByteArray())
+            assertNull(bad, WscTxt.parse(attrs)!!.dlnaPort)
+        }
+    }
+
+    @Test
+    fun withDlnaPortAddsReplacesAndRemovesKey() {
+        val attrs = WscTxt(1, "id-1", "TV", listOf("h264"), "fp").toAttributes()
+        val on = WscTxt.withDlnaPort(attrs, 8200)
+        assertEquals("8200", on["dlna"])
+        assertEquals(attrs, on - "dlna")
+        assertEquals("8300", WscTxt.withDlnaPort(on, 8300)["dlna"])
+        assertEquals(attrs, WscTxt.withDlnaPort(on, null))
+        assertEquals(attrs, WscTxt.withDlnaPort(attrs, 70000))
+    }
+
+    @Test
     fun ssdpResponseWithWscHeadersIsWscDevice() {
         val msg = SsdpMessage.parse(
             "HTTP/1.1 200 OK\r\nST: urn:schemas-upnp-org:device:MediaRenderer:1\r\nUSN: uuid:u1::urn:x\r\n" +

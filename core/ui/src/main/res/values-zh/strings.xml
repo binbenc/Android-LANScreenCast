@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- core/ui 共享文案（中文）。与 values/strings.xml 一一对应。 -->
+<resources>
+    <string name="core_ui_action_cancel">取消</string>
+    <string name="core_ui_action_ok">确定</string>
+    <string name="core_ui_action_back">返回</string>
+    <string name="core_ui_action_close">关闭</string>
+    <string name="core_ui_action_retry">重试</string>
+    <string name="core_ui_action_delete">删除</string>
+    <string name="core_ui_action_turn_on">开启</string>
+    <string name="core_ui_list_separator">，</string>
+
+    <string name="core_ui_quality_smooth">流畅</string>
+    <string name="core_ui_quality_balanced">均衡</string>
+    <string name="core_ui_quality_high">高清</string>
+    <string name="core_ui_quality_game">游戏</string>
+    <string name="core_ui_quality_summary">%1$dp · %2$d 帧 · 最高 %3$d Mbps</string>
+
+    <string name="core_ui_latency_excellent">极佳</string>
+    <string name="core_ui_latency_good">良好</string>
+    <string name="core_ui_latency_fair">一般</string>
+    <string name="core_ui_latency_poor">较差</string>
+    <string name="core_ui_approx_ms">约 %1$d\u202Fms</string>
+
+    <string name="core_ui_capsule_switching">切换中</string>
+    <string name="core_ui_capsule_no_audio">无声音</string>
+    <string name="core_ui_capsule_controlled">被控制中</string>
+    <string name="core_ui_capsule_desc_switching">切换中，%1$s</string>
+    <plurals name="core_ui_capsule_desc_latency">
+        <item quantity="other">延迟约 %1$d 毫秒（估算）</item>
+    </plurals>
+    <string name="core_ui_capsule_desc_latency_unknown">延迟未知</string>
+    <string name="core_ui_capsule_desc_bitrate">码率 %1$s 兆比特每秒</string>
+    <string name="core_ui_capsule_desc_resolution">%1$s 帧</string>
+
+    <plurals name="core_ui_sparkline_desc">
+        <item quantity="other">最近 %1$d 秒延迟，最新 %2$d 毫秒</item>
+    </plurals>
+    <string name="core_ui_histogram_empty">延迟分布：暂无数据</string>
+    <string name="core_ui_histogram_desc">延迟分布：%1$s</string>
+    <plurals name="core_ui_histogram_item">
+        <item quantity="other">%1$s %2$d 次</item>
+    </plurals>
+
+    <string name="core_ui_badge_trusted">已信任</string>
+    <string name="core_ui_badge_new_device">新设备</string>
+    <string name="core_ui_encrypted">已加密 · %1$s</string>
+
+    <string name="core_ui_qr_default_desc">连接二维码</string>
+
+    <plurals name="core_ui_pin_entered_count">
+        <item quantity="other">已输入 %1$d 位，共 %2$d 位</item>
+    </plurals>
+    <plurals name="core_ui_pin_entered_digits">
+        <item quantity="other">已输入 %1$s，共 %2$d 位</item>
+    </plurals>
+
+    <string name="core_ui_game_intro_title">开启游戏模式？</string>
+    <string name="core_ui_game_intro_latency_title">延迟更低，画面更流畅</string>
+    <string name="core_ui_game_intro_latency_detail">清晰度降到 720p，每秒 60 帧；网络不稳时画面可能跳一下</string>
+    <string name="core_ui_game_intro_audio_title">声音可能比画面稍晚</string>
+    <string name="core_ui_game_intro_audio_detail">看视频建议用“均衡”</string>
+    <string name="core_ui_game_intro_heat_title">手机发热和耗电会增加</string>
+    <string name="core_ui_game_intro_heat_detail">长时间玩，建议接上充电器</string>
+</resources>

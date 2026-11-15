@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- protocol-impl/dlna strings. Default (English); Chinese in values-zh. Only user-facing titles; protocol fields are never translated. -->
+<resources>
+    <!-- Push title when the photo picker only gives a numeric file name (e.g. 1000000020.mp4) -->
+    <string name="dlna_title_video">Video %1$d</string>
+    <string name="dlna_title_photo">Photo %1$d</string>
+    <string name="dlna_title_music">Music %1$d</string>
+</resources>

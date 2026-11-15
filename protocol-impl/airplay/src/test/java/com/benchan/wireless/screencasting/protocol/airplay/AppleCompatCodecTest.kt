@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.protocol.airplay
 
+import com.benchan.wireless.screencasting.protocol.airplay.api.AppleFailure
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -163,11 +164,11 @@ class AppleCompatCodecTest {
         assertEquals(3, UxPlayFlags.of(requirePin = true, hls = true, h265 = false))
         assertEquals(7, UxPlayFlags.of(requirePin = true, hls = true, h265 = true))
         assertEquals("listen port failed", UxPlayStartError.describe(-4))
-        // 界面文案不含返回码、协议名
-        for (rc in listOf(-1, -2, -3, -4, -5, -42)) {
-            val msg = UxPlayStartError.userMessage(rc)
-            assertFalse(msg, msg.contains(rc.toString()) || msg.contains("mDNS") || msg.contains("AirPlay"))
-        }
+        // 界面只拿到原因枚举（文案在界面层资源里），返回码只进日志
+        assertEquals(AppleFailure.PUBLISH_FAILED, UxPlayStartError.failure(-1))
+        assertEquals(AppleFailure.PUBLISH_FAILED, UxPlayStartError.failure(-5))
+        assertEquals(AppleFailure.PORT_IN_USE, UxPlayStartError.failure(-4))
+        for (rc in listOf(-2, -3, -42, -100)) assertEquals(AppleFailure.START_ERROR, UxPlayStartError.failure(rc))
     }
 
     private fun bytes(vararg v: Int) = ByteArray(v.size) { v[it].toByte() }

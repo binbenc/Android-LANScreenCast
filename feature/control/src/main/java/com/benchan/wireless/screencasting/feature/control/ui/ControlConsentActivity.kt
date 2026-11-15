@@ -65,6 +65,8 @@ import com.benchan.wireless.screencasting.feature.control.SenderControlCoordinat
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import javax.inject.Inject
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 
 /**
  * 交互稿 R03：控制请求确认（每次投屏，可信设备也不跳过）。
@@ -143,11 +145,11 @@ private fun ConsentScreen(peer: String, deadline: Long, onDeny: () -> Unit, onAl
             Spacer(Modifier.height(32.dp))
             IconTile(painterResource(R.drawable.ic_stat_control))
             Spacer(Modifier.height(16.dp))
-            Text("$peer 请求操作本机", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.ctl_request_title, peer), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
-                Text("来自当前投屏 · 已加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.ctl_consent_from_cast), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
             }
             Spacer(Modifier.height(20.dp))
             Column(
@@ -158,11 +160,11 @@ private fun ConsentScreen(peer: String, deadline: Long, onDeny: () -> Unit, onAl
                 // 本机支持文字输入（Android 13+）时如实写出（两份走查）
                 ConsentItem(
                     rememberVectorPainter(Icons.AutoMirrored.Rounded.ScreenShare), c.onSurfaceVariant,
-                    if (android.os.Build.VERSION.SDK_INT >= 33) "对方能看到并操作你的屏幕，例如点击、滑动和输入文字" else "对方能看到并操作你的屏幕，例如点击和滑动",
+                    stringResource(if (android.os.Build.VERSION.SDK_INT >= 33) R.string.ctl_consent_item_operate_text else R.string.ctl_consent_item_operate),
                 )
-                ConsentItem(rememberVectorPainter(Icons.Rounded.History), c.onSurfaceVariant, "只在本次投屏有效，投屏结束后自动失效")
-                ConsentItem(painterResource(R.drawable.ic_control_handback), c.onSurfaceVariant, "随时可以在通知栏或屏幕边缘「收回」")
-                ConsentItem(rememberVectorPainter(Icons.Rounded.WarningAmber), WscTheme.extended.warning, "不要让对方代你输入密码、验证码或进行支付")
+                ConsentItem(rememberVectorPainter(Icons.Rounded.History), c.onSurfaceVariant, stringResource(R.string.ctl_consent_item_session))
+                ConsentItem(painterResource(R.drawable.ic_control_handback), c.onSurfaceVariant, stringResource(R.string.ctl_consent_item_revoke))
+                ConsentItem(rememberVectorPainter(Icons.Rounded.WarningAmber), WscTheme.extended.warning, stringResource(R.string.ctl_consent_item_warning))
             }
             // C 期：本机开着屏幕朗读（触摸浏览）时，卡片外的中性信息条（UX §4），实时监听开关
             if (touchExploration()) {
@@ -180,18 +182,19 @@ private fun ConsentScreen(peer: String, deadline: Long, onDeny: () -> Unit, onAl
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             // D9 说明放在按钮上方（UX G10）
             if (fromOwnApp) {
-                Text("允许后将回到桌面，对方即可操作", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = c.onSurface, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.ctl_consent_go_home), Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = c.onSurface, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(onClick = onDeny, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text("拒绝") }
-                Button(onClick = onAllow, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text("允许本次") }
+                FilledTonalButton(onClick = onDeny, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text(stringResource(R.string.ctl_deny)) }
+                Button(onClick = onAllow, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text(stringResource(R.string.ctl_allow_once)) }
             }
             Spacer(Modifier.height(8.dp))
             // 倒计时不做实时播报（每秒打断读屏），只在剩 10 秒时播报一次（UX 走查 G5）
-            Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (seconds in 1..10) "还剩 10 秒，之后自动拒绝" else "" })
+            val tenLeft = stringResource(R.string.ctl_consent_ten_left)
+            Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (seconds in 1..10) tenLeft else "" })
             Text(
-                "$seconds 秒后自动拒绝",
+                pluralStringResource(R.plurals.ctl_auto_deny, seconds.toInt(), seconds.toInt()),
                 Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 color = c.onSurfaceVariant,

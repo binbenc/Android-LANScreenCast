@@ -2,15 +2,21 @@ package com.benchan.wireless.screencasting.core.discovery.mdns
 
 import com.benchan.wireless.screencasting.core.protocol.WscProtocol
 
-/** mDNS TXT 记录（PRD 8.3.1）：v=协议版本, id=设备ID, n=设备名, caps=h264,h265,opus, fp=证书指纹前 8 字节。 */
+/**
+ * mDNS TXT 记录（PRD 8.3.1）：v=协议版本, id=设备ID, n=设备名, caps=h264,h265,opus, fp=证书指纹前 8 字节，
+ * 可选 dlna=本机 DLNA 接收（DMR）的 HTTP 端口（DLNA 接收开着时才带；旧版接收端没有，见 PROTOCOL.md 第 1 节）。
+ */
 data class WscTxt(
     val version: Int,
     val deviceId: String,
     val name: String,
     val caps: List<String>,
     val fingerprintPrefix: String,
+    val dlnaPort: Int? = null,
 ) {
-    fun toAttributes(): Map<String, String> = linkedMapOf(
+    fun toAttributes(): Map<String, String> = withDlnaPort(baseAttributes(), dlnaPort)
+
+    private fun baseAttributes(): Map<String, String> = linkedMapOf(
         WscProtocol.Txt.VERSION to version.toString(),
         WscProtocol.Txt.DEVICE_ID to deviceId,
         WscProtocol.Txt.NAME to truncateUtf8(name, MAX_NAME_BYTES),
@@ -31,7 +37,19 @@ data class WscTxt(
                 name = s(WscProtocol.Txt.NAME).orEmpty(),
                 caps = s(WscProtocol.Txt.CAPS)?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
                 fingerprintPrefix = s(WscProtocol.Txt.FINGERPRINT_PREFIX).orEmpty(),
+                dlnaPort = parsePort(s(WscProtocol.Txt.DLNA_PORT)),
             )
+        }
+
+        /** 端口必须是 1..65535 的十进制整数，否则视为没有（按旧版接收端处理）。 */
+        fun parsePort(value: String?): Int? = value?.trim()?.toIntOrNull()?.takeIf { it in 1..65535 }
+
+        /** 在已有 TXT 属性上加 / 去掉 `dlna` 键（[port] 为 null 表示 DLNA 接收没开）。 */
+        fun withDlnaPort(attributes: Map<String, String>, port: Int?): Map<String, String> {
+            val out = LinkedHashMap(attributes)
+            out.remove(WscProtocol.Txt.DLNA_PORT)
+            if (port != null && port in 1..65535) out[WscProtocol.Txt.DLNA_PORT] = port.toString()
+            return out
         }
 
         fun truncateUtf8(text: String, maxBytes: Int): String {

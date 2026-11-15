@@ -1,5 +1,8 @@
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import androidx.compose.runtime.mutableIntStateOf
+import com.benchan.wireless.screencasting.feature.sender.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -55,7 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal fun QrScannerScreen(onResult: (String) -> Boolean, onBack: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var hint by remember { mutableStateOf("对准电视待机页右侧的二维码") }
+    var hint by remember { mutableIntStateOf(R.string.sender_qr_hint) }
     val done = remember { AtomicBoolean(false) }
     val executor = remember { Executors.newSingleThreadExecutor() }
     BackHandler(onBack = onBack)
@@ -84,7 +87,7 @@ internal fun QrScannerScreen(onResult: (String) -> Boolean, onBack: () -> Unit) 
                             if (text != null && done.compareAndSet(false, true)) {
                                 ContextCompat.getMainExecutor(ctx).execute {
                                     if (!onResult(text)) {
-                                        hint = "这不是本应用的连接二维码"
+                                        hint = R.string.sender_qr_not_ours
                                         done.set(false)
                                     }
                                 }
@@ -98,7 +101,7 @@ internal fun QrScannerScreen(onResult: (String) -> Boolean, onBack: () -> Unit) 
                         provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
                     }.onFailure {
                         WscLog.w("QrScanner", "bind camera failed", it)
-                        hint = "无法打开相机，请改用投屏码"
+                        hint = R.string.sender_qr_camera_failed
                     }
                 }, ContextCompat.getMainExecutor(ctx))
                 view
@@ -109,11 +112,11 @@ internal fun QrScannerScreen(onResult: (String) -> Boolean, onBack: () -> Unit) 
             IconButton(
                 onClick = onBack,
                 modifier = Modifier.background(c.scrim.copy(alpha = ScrimAlpha.Text), CircleShape),
-            ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回", tint = c.onScrim) }
+            ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.sender_back), tint = c.onScrim) }
         }
         // 底部提示加 scrim 底衬，亮背景下也能看清（C7）
         Text(
-            hint,
+            stringResource(hint),
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 24.dp, vertical = 32.dp)
                 .background(c.scrim.copy(alpha = ScrimAlpha.Text), RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 10.dp)
                 .semantics { liveRegion = LiveRegionMode.Polite },

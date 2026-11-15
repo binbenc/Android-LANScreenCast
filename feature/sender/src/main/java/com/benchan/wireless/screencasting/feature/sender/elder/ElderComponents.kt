@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.feature.sender.elder
 
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.sender.R
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -144,9 +146,10 @@ fun ElderPage(
     val c = MaterialTheme.colorScheme
     val focus = remember { FocusRequester() }
     LaunchedEffect(title) { if (title != null) runCatching { focus.requestFocus() } }
+    val appName = stringResource(R.string.elder_app_name)
     Column(
         Modifier.fillMaxSize().background(c.surface).statusBarsPadding().navigationBarsPadding()
-            .semantics { paneTitle = title ?: topBar ?: "局域投屏" },
+            .semantics { paneTitle = title ?: topBar ?: appName },
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             if (back != null && onBack != null) {
@@ -220,10 +223,13 @@ fun HoldToConfirmButton(title: String, sub: String, actionLabel: String, onConfi
     var job by remember { mutableStateOf<Job?>(null) }
     val remainingSec = (3 - (progress.value * 3).toInt()).coerceIn(1, 3)
     val subText = when {
-        holding -> "继续按住… 还剩 $remainingSec 秒"
-        released -> "要按住 3 秒才能$actionLabel"
+        holding -> stringResource(R.string.elder_hold_keep, remainingSec)
+        released -> stringResource(R.string.elder_hold_needed, actionLabel)
         else -> sub
     }
+    val holdCd = stringResource(R.string.elder_hold_cd, title)
+    val holdAnnounce = stringResource(R.string.elder_hold_announce)
+    val hintLabel = stringResource(R.string.elder_hint)
     fun begin() {
         if (job?.isActive == true) return
         holding = true
@@ -251,11 +257,11 @@ fun HoldToConfirmButton(title: String, sub: String, actionLabel: String, onConfi
             .background(if (holding) c.surfaceContainerHigh else c.surfaceContainerLow, RoundedCornerShape(20.dp))
             .semantics(mergeDescendants = true) {
                 role = Role.Button
-                contentDescription = "$title，需要按住 3 秒，或使用操作菜单"
+                contentDescription = holdCd
                 stateDescription = subText
                 customActions = listOf(CustomAccessibilityAction(actionLabel) { onConfirmed(); true })
-                onClick(label = "提示") {
-                    view.announceForAccessibility("需要按住 3 秒，或使用操作菜单")
+                onClick(label = hintLabel) {
+                    view.announceForAccessibility(holdAnnounce)
                     true
                 }
             }
@@ -296,6 +302,7 @@ fun ElderKeypad(onDigit: (Char) -> Unit, onDelete: () -> Unit) {
     val t = LocalElderTypography.current
     val c = MaterialTheme.colorScheme
     val rows = listOf("123", "456", "789", " 0D")
+    val delete = stringResource(R.string.elder_delete)
     Column(Modifier.fillMaxWidth().background(c.surfaceContainer, RoundedCornerShape(20.dp)).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         rows.forEach { r ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -307,7 +314,7 @@ fun ElderKeypad(onDigit: (Char) -> Unit, onDelete: () -> Unit) {
                             Modifier.weight(1f).heightIn(min = ElderDimens.Key),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(c.surfaceContainerLowest, c.onSurface),
-                        ) { Text("删除", style = t.label) }
+                        ) { Text(delete, style = t.label) }
                         else -> Button(
                             onClick = { onDigit(ch) },
                             Modifier.weight(1f).heightIn(min = ElderDimens.Key),

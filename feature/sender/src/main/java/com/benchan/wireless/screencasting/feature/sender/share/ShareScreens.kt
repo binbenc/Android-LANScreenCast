@@ -86,6 +86,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.sender.R
+import com.benchan.wireless.screencasting.feature.sender.ui.UiText
+import com.benchan.wireless.screencasting.feature.sender.ui.asString
+import com.benchan.wireless.screencasting.feature.sender.ui.uiText
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -214,6 +220,7 @@ private fun SharePanel(vm: ShareViewModel, snackbar: SnackbarHostState, elder: B
     var drag by remember { mutableFloatStateOf(0f) }
     val dragState = rememberDraggableState { d -> drag = (drag + d).coerceAtLeast(0f) }
     val started = u.stage == ShareStage.STARTING || u.stage == ShareStage.STARTED
+    val paneTitleText = stringResource(R.string.share_title)
     // 推送前返回 = 放弃；S02 返回 = 换一台
     BackHandler {
         if (u.stage == ShareStage.STARTING) vm.changeDevice() else onClose()
@@ -232,7 +239,7 @@ private fun SharePanel(vm: ShareViewModel, snackbar: SnackbarHostState, elder: B
             Modifier.align(Alignment.BottomCenter).widthIn(max = 640.dp).fillMaxWidth().heightIn(max = maxHeight)
                 .offset { IntOffset(0, drag.toInt()) }
                 .background(c.surfaceContainerLow, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .semantics { paneTitle = ShareCopy.TITLE }
+                .semantics { paneTitle = paneTitleText }
                 .navigationBarsPadding()
                 .animateContentSize(),
         ) {
@@ -256,7 +263,7 @@ private fun SharePanel(vm: ShareViewModel, snackbar: SnackbarHostState, elder: B
                     ShareStage.CHECKING -> Row(Modifier.padding(vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(12.dp))
-                        Text("正在检查分享的文件…", style = body(elder))
+                        Text(stringResource(R.string.share_checking), style = body(elder))
                     }
                     ShareStage.BLOCKED -> u.block?.let { BlockBody(it, u, vm, elder) }
                     ShareStage.WEB_URL -> WebUrlBody(u, vm, elder)
@@ -290,17 +297,17 @@ private fun SharePanel(vm: ShareViewModel, snackbar: SnackbarHostState, elder: B
 @Composable
 private fun Header(u: ShareUi, vm: ShareViewModel, onClose: () -> Unit, elder: Boolean, started: Boolean) {
     val title = when (u.stage) {
-        ShareStage.STARTING -> "推送到 ${u.target?.name.orEmpty()}"
-        ShareStage.WEB_URL -> ShareCopy.WEB_TITLE
+        ShareStage.STARTING -> stringResource(R.string.share_header_push_to, u.target?.name.orEmpty())
+        ShareStage.WEB_URL -> stringResource(R.string.share_web_title)
         ShareStage.STARTED -> null
-        else -> if (u.reselect) "选好电视后，从相册重新选择" else ShareCopy.TITLE
+        else -> stringResource(if (u.reselect) R.string.share_reselect_title else R.string.share_title)
     }
     val focus = remember { FocusRequester() }
     LaunchedEffect(u.stage) { runCatching { focus.requestFocus() } }
     val iconSize = if (elder) 64.dp else 48.dp
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         if (u.stage == ShareStage.STARTING) {
-            IconButton(onClick = vm::changeDevice, Modifier.size(iconSize)) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "换一台电视") }
+            IconButton(onClick = vm::changeDevice, Modifier.size(iconSize)) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.share_change_tv)) }
         } else {
             Spacer(Modifier.width(12.dp))
         }
@@ -312,7 +319,7 @@ private fun Header(u: ShareUi, vm: ShareViewModel, onClose: () -> Unit, elder: B
         if (u.stage != ShareStage.STARTING) {
             // 推送开始后点 ✕ 只是关闭面板，推送继续（UX P1-14）
             IconButton(onClick = onClose, Modifier.size(iconSize)) {
-                Icon(Icons.Rounded.Close, contentDescription = if (started) ShareCopy.CLOSE_LABEL_CONTINUE else ShareCopy.CLOSE_LABEL)
+                Icon(Icons.Rounded.Close, contentDescription = stringResource(if (started) R.string.share_close_continue else R.string.share_close))
             }
         }
     }
@@ -326,8 +333,8 @@ private fun Footer(u: ShareUi, vm: ShareViewModel, elder: Boolean, onClose: () -
         ShareStage.BLOCKED -> u.block?.let { b -> { BlockButtons(b, vm, elder, onClose) } }
         ShareStage.WEB_URL -> ({ WebUrlButtons(vm, elder, onClose) })
         ShareStage.DIRECT_FINDING -> ({
-            ShareBtn("选其他电视", vm::cancelDirect, elder, BtnKind.TONAL)
-            ShareBtn("取消", onClose, elder, BtnKind.TEXT)
+            ShareBtn(stringResource(R.string.share_pick_other_tv), vm::cancelDirect, elder, BtnKind.TONAL)
+            ShareBtn(stringResource(R.string.share_cancel), onClose, elder, BtnKind.TEXT)
         })
         ShareStage.STARTING -> {
             val s = session?.takeIf { it.sessionId == u.sessionId }
@@ -335,12 +342,12 @@ private fun Footer(u: ShareUi, vm: ShareViewModel, elder: Boolean, onClose: () -
             if (s != null && failure != null) {
                 ({ FailureButtons(failure, s, u, vm, elder, onDiagnostics, onInstall) })
             } else {
-                ({ ShareBtn("取消推送", vm::cancelPush, elder, BtnKind.OUTLINED) })
+                ({ ShareBtn(stringResource(R.string.share_cancel_push), vm::cancelPush, elder, BtnKind.OUTLINED) })
             }
         }
         ShareStage.STARTED -> ({
-            ShareBtn("完成", onClose, elder)
-            ShareBtn("打开遥控", vm::openRemote, elder, BtnKind.TONAL)
+            ShareBtn(stringResource(R.string.share_done), onClose, elder)
+            ShareBtn(stringResource(R.string.share_open_remote), vm::openRemote, elder, BtnKind.TONAL)
         })
         else -> null
     }
@@ -365,7 +372,7 @@ private fun Summary(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
             // 单行中间省略（UX P2-19）
             Text(url, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
             if (u.stage == ShareStage.PICK) {
-                TextButton(onClick = vm::editUrl, Modifier.heightIn(min = if (elder) 64.dp else 48.dp)) { Text("修改", color = c.onSurface, style = rowTitle(elder)) }
+                TextButton(onClick = vm::editUrl, Modifier.heightIn(min = if (elder) 64.dp else 48.dp)) { Text(stringResource(R.string.share_edit), color = c.onSurface, style = rowTitle(elder)) }
             }
         }
         return
@@ -373,11 +380,12 @@ private fun Summary(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     val items = u.content.items
     if (items.isEmpty()) return
     val progress by vm.progress.collectAsStateWithLifecycle()
-    val prep = prepLine(items, progress)
-    val summary = ShareCopy.summary(items.map { it.kind })
+    val prep = prepLine(items, progress)?.asString()
+    val summary = summaryText(items.map { it.kind })
+    val separator = stringResource(R.string.share_spoken_separator)
     Row(
         Modifier.fillMaxWidth().padding(vertical = 8.dp).clearAndSetSemantics {
-            contentDescription = ShareCopy.spoken(listOfNotNull(summary, prep).joinToString("，"))
+            contentDescription = ShareCopy.spoken(listOfNotNull(summary, prep).joinToString(separator), separator)
         },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -389,18 +397,18 @@ private fun Summary(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
         }
         Column(Modifier.weight(1f).padding(start = 6.dp)) {
             Text(summary, style = rowTitle(elder))
-            if (items.size > 1) Text("按分享的顺序播放", style = small(elder), color = c.onSurfaceVariant)
+            if (items.size > 1) Text(stringResource(R.string.share_play_in_order), style = small(elder), color = c.onSurfaceVariant)
         }
     }
 }
 
 /** 摘要下方的准备进度；失败项单独计数（PM P2-3）。 */
-private fun prepLine(items: List<SharedItem>, progress: List<ItemProgress>): String? {
+private fun prepLine(items: List<SharedItem>, progress: List<ItemProgress>): UiText? {
     if (progress.isEmpty() || items.none { it.mode == ReadMode.COPY }) return null
     val active = progress.withIndex().filter { items.getOrNull(it.index)?.mode == ReadMode.COPY && it.value.phase != ItemPhase.SKIPPED }
     val failed = active.count { it.value.phase == ItemPhase.FAILED }
     if (active.all { it.value.phase == ItemPhase.READY || it.value.phase == ItemPhase.FAILED }) {
-        return if (failed > 0) ShareCopy.notReady(failed) else "文件已准备好"
+        return if (failed > 0) ShareCopy.notReady(failed) else uiText(R.string.share_prepared)
     }
     val total = active.sumOf { items[it.index].sizeBytes ?: 0L }.takeIf { active.all { a -> items[a.index].sizeBytes != null } }
     val copied = active.sumOf { if (it.value.phase == ItemPhase.READY) items[it.index].sizeBytes ?: it.value.copiedBytes else it.value.copiedBytes }
@@ -439,10 +447,10 @@ private fun InfoBar(title: String, detail: String?, elder: Boolean, icon: ImageV
 @Composable
 private fun Notices(u: ShareUi, elder: Boolean) {
     val cnt = u.content
-    if (cnt.ignored > 0) ShareCopy.ignored(cnt.ignored).let { InfoBar(it.first, it.second, elder) }
-    if (cnt.unreadable > 0) ShareCopy.unreadable(cnt.unreadable, cnt.unreadableReason).let { InfoBar(it.first, it.second, elder, Icons.Rounded.InsertDriveFile) }
-    if (cnt.truncated) InfoBar(ShareCopy.TRUNCATED, null, elder)
-    u.directMissed?.let { InfoBar(it, null, elder) }
+    if (cnt.ignored > 0) ShareCopy.ignored(cnt.ignored).let { InfoBar(it.first.asString(), it.second.asString(), elder) }
+    if (cnt.unreadable > 0) ShareCopy.unreadable(cnt.unreadable, cnt.unreadableReason).let { InfoBar(it.first.asString(), it.second.asString(), elder, Icons.Rounded.InsertDriveFile) }
+    if (cnt.truncated) InfoBar(stringResource(R.string.share_truncated), null, elder)
+    u.directMissed?.let { InfoBar(it.asString(), null, elder) }
 }
 
 @Composable
@@ -455,7 +463,7 @@ private fun PrepRow(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     val visibleAfter = remember { System.currentTimeMillis() + 1_000 }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); delay(250) } }
-    val line = prepLine(items, progress) ?: return
+    val line = prepLine(items, progress)?.asString() ?: return
     val done = progress.withIndex().filter { items.getOrNull(it.index)?.mode == ReadMode.COPY }.all { it.value.phase != ItemPhase.WAITING && it.value.phase != ItemPhase.COPYING }
     var doneAt by remember { mutableLongStateOf(0L) }
     if (done && doneAt == 0L) doneAt = now
@@ -465,11 +473,12 @@ private fun PrepRow(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     val pct = ShareCopy.percent(copied, total.takeIf { it > 0 })
     // 读屏：每 25% 播报一次，完成播报一次（UX P2-7）
     var lastStep by remember { mutableIntStateOf(-1) }
+    val res = LocalResources.current
     LaunchedEffect(ShareCopy.announceStep(pct), done) {
         val step = if (done) 100 else ShareCopy.announceStep(pct) ?: return@LaunchedEffect
         if (step != lastStep && step > 0) {
             lastStep = step
-            view.announce(if (done) line else "正在准备文件 $step%")
+            view.announce(if (done) line else res.getString(R.string.share_preparing_percent, step))
         }
     }
     if (now < visibleAfter && !done) return
@@ -479,7 +488,7 @@ private fun PrepRow(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (done) Icon(Icons.Rounded.CheckCircle, null, Modifier.size(18.dp), tint = WscTheme.extended.success)
             Text(line, Modifier.weight(1f).padding(start = if (done) 6.dp else 0.dp), style = body(elder))
-            if (!done) Text("选好电视后自动开始", style = small(elder), color = c.onSurfaceVariant)
+            if (!done) Text(stringResource(R.string.share_auto_start), style = small(elder), color = c.onSurfaceVariant)
         }
         if (!done) {
             if (pct != null) LinearProgressIndicator(progress = { pct / 100f }, Modifier.fillMaxWidth().padding(top = 4.dp))
@@ -504,18 +513,18 @@ private fun PickContent(u: ShareUi, vm: ShareViewModel, elder: Boolean, onDiagno
     Notices(u, elder)
     PrepRow(u, vm, elder)
     if (settings?.shareIntroDismissed == false && vm.neverPushed && !elder) {
-        val (t, d) = ShareCopy.firstUseNote(vm.transferVideo)
+        val (t, d) = ShareCopy.firstUseNote(vm.transferVideo).let { it.first.asString() to it.second.asString() }
         val c = MaterialTheme.colorScheme
         Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).background(c.surfaceContainer, RoundedCornerShape(12.dp)).padding(12.dp)) {
             Text(t, style = MaterialTheme.typography.bodyMedium)
             Text(d, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-            TextButton(onClick = { vm.dismissIntro() }, Modifier.align(Alignment.End)) { Text("知道了", color = c.onSurface) }
+            TextButton(onClick = { vm.dismissIntro() }, Modifier.align(Alignment.End)) { Text(stringResource(R.string.share_got_it), color = c.onSurface) }
         }
     }
     if (lan == null) {
-        EmptyState(Icons.Rounded.WifiOff, ShareCopy.NO_WIFI_TITLE, ShareCopy.NO_WIFI_DETAIL, elder) {
+        EmptyState(Icons.Rounded.WifiOff, stringResource(R.string.share_no_wifi_title), stringResource(R.string.share_no_wifi_detail), elder) {
             val ctx = LocalContext.current
-            ShareBtn("打开 Wi‑Fi 设置", { runCatching { ctx.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }, elder)
+            ShareBtn(stringResource(R.string.share_open_wifi), { runCatching { ctx.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }, elder)
         }
         return
     }
@@ -525,19 +534,20 @@ private fun PickContent(u: ShareUi, vm: ShareViewModel, elder: Boolean, onDiagno
     val pushable = rows.count { it.enabled }
     // 从空态自动换回列表时播报（UX P2-8）
     var wasEmpty by remember { mutableStateOf(false) }
+    val res = LocalResources.current
     LaunchedEffect(pushable > 0) {
-        if (pushable > 0 && wasEmpty) view.announce("找到 $pushable 台电视")
+        if (pushable > 0 && wasEmpty) view.announce(res.getQuantityString(R.plurals.share_found_tvs, pushable, pushable))
         wasEmpty = pushable == 0
     }
     if (pushable == 0 && elapsed >= 10_000) {
         // S06：任何时候发现设备都会自动换回列表
-        EmptyState(Icons.Rounded.Tv, ShareCopy.EMPTY_TITLE, ShareCopy.EMPTY_DETAIL, elder) {
-            ShareBtn("重新搜索", vm::restartDiscovery, elder)
-            ShareBtn("网络诊断", onDiagnostics, elder, BtnKind.TONAL)
-            if (!elder) ShareBtn("电视上没有投屏功能？", onInstall, elder, BtnKind.TEXT)
+        EmptyState(Icons.Rounded.Tv, stringResource(R.string.share_empty_title), stringResource(R.string.share_empty_detail), elder) {
+            ShareBtn(stringResource(R.string.share_rescan), vm::restartDiscovery, elder)
+            ShareBtn(stringResource(R.string.share_diagnostics), onDiagnostics, elder, BtnKind.TONAL)
+            if (!elder) ShareBtn(stringResource(R.string.share_no_cast_feature), onInstall, elder, BtnKind.TEXT)
         }
         rows.filter { !it.enabled }.forEach { DeviceRowView(it, elder) {} }
-        if (elder) InfoBar(ShareCopy.ELDER_NEW_TV, null, elder)
+        if (elder) InfoBar(stringResource(R.string.share_elder_new_tv), null, elder)
         return
     }
     val groups = rows.groupBy { it.group }
@@ -546,12 +556,12 @@ private fun PickContent(u: ShareUi, vm: ShareViewModel, elder: Boolean, onDiagno
         val list = groups[g].orEmpty()
         if (list.isEmpty()) continue
         val title = when (g) {
-            ShareGroup.FAMILY -> ShareCopy.GROUP_FAMILY
-            ShareGroup.RECENT -> ShareCopy.GROUP_RECENT
-            ShareGroup.DLNA -> if (elder) null else ShareCopy.GROUP_DLNA
-            ShareGroup.OWN -> if (elder) null else ShareCopy.GROUP_OWN
+            ShareGroup.FAMILY -> R.string.share_group_family
+            ShareGroup.RECENT -> R.string.share_group_recent
+            ShareGroup.DLNA -> if (elder) null else R.string.share_group_dlna
+            ShareGroup.OWN -> if (elder) null else R.string.share_group_own
             ShareGroup.DISABLED -> null
-        }
+        }?.let { stringResource(it) }
         title?.let {
             Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(it, Modifier.weight(1f).semantics { heading() }, style = groupStyle(elder), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -560,14 +570,14 @@ private fun PickContent(u: ShareUi, vm: ShareViewModel, elder: Boolean, onDiagno
                     TextButton(onClick = { unencryptedInfo = true }, Modifier.heightIn(min = 48.dp)) {
                         Icon(Icons.Rounded.Info, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(4.dp))
-                        Text("不加密", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.share_unencrypted), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 // 前 10 秒在第一个分组标题右侧显示“仍在搜索”（UX P2-12）
                 if (first && elapsed < 10_000) {
                     CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(6.dp))
-                    Text("仍在搜索", style = small(elder), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.share_searching_short), style = small(elder), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             first = false
@@ -576,10 +586,10 @@ private fun PickContent(u: ShareUi, vm: ShareViewModel, elder: Boolean, onDiagno
     }
     if (pushable == 0) repeat(3) { SkeletonRow() }
     if (elapsed >= 3_000 && pushable == 0) {
-        Text(ShareCopy.STILL_SEARCHING, Modifier.padding(vertical = 8.dp).semantics { liveRegion = LiveRegionMode.Polite }, style = small(elder), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.share_still_searching), Modifier.padding(vertical = 8.dp).semantics { liveRegion = LiveRegionMode.Polite }, style = small(elder), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     // 长辈模式只列家人设置 / 确认过的电视，给一句出路
-    if (elder) InfoBar(ShareCopy.ELDER_NEW_TV, null, elder)
+    if (elder) InfoBar(stringResource(R.string.share_elder_new_tv), null, elder)
     if (unencryptedInfo) UnencryptedInfoDialog { unencryptedInfo = false }
 }
 
@@ -588,12 +598,12 @@ private fun ConflictBanner(push: PushSessionState?, mirrorSt: SenderState, elder
     val c = MaterialTheme.colorScheme
     val text = when {
         push != null -> ShareCopy.bannerPushing(push.target.name, PushCopy.bannerStatus(push))
-        mirrorSt !is SenderState.Idle && !mirrorSt.isTerminal -> ShareCopy.bannerMirroring(mirrorTargetName(mirrorSt) ?: "电视")
+        mirrorSt !is SenderState.Idle && !mirrorSt.isTerminal -> ShareCopy.bannerMirroring(mirrorTargetName(mirrorSt) ?: uiText(R.string.share_tv))
         else -> null
     } ?: return
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).background(c.primaryContainer, RoundedCornerShape(12.dp)).padding(12.dp).semantics(mergeDescendants = true) {}) {
-        Text(text.first, style = body(elder), color = c.onPrimaryContainer)
-        Text(text.second, style = small(elder), color = c.onPrimaryContainer)
+        Text(text.first.asString(), style = body(elder), color = c.onPrimaryContainer)
+        Text(text.second.asString(), style = small(elder), color = c.onPrimaryContainer)
     }
 }
 
@@ -613,17 +623,20 @@ private fun DeviceRowView(row: ShareRow, elder: Boolean, onClick: () -> Unit) {
     val c = MaterialTheme.colorScheme
     val titleColor = if (row.enabled) c.onSurface else c.outline
     val subColor = if (row.enabled) c.onSurfaceVariant else c.outline
-    val spoken = listOfNotNull(row.name, if (!row.enabled) "不可用" else null, row.subtitle).joinToString("，")
+    val subtitle = row.subtitle.asString()
+    val separator = stringResource(R.string.share_spoken_separator)
+    val spoken = listOfNotNull(row.name, if (!row.enabled) stringResource(R.string.share_unavailable) else null, subtitle).joinToString(separator)
+    val pushingState = stringResource(R.string.share_pushing_state)
     // 置灰行可聚焦、读出原因，但不可点（没有水波纹，读屏不说“双击以激活”，UX P2-11）
     val interaction = if (row.enabled) Modifier.clickable(onClick = onClick) else Modifier.focusable()
     Row(
         Modifier.fillMaxWidth().heightIn(min = if (elder) ElderDimens.Row else 64.dp).then(interaction)
-            .clearAndSetSemantics { contentDescription = spoken; if (row.pushing) stateDescription = "正在推送，双击替换内容" }
+            .clearAndSetSemantics { contentDescription = spoken; if (row.pushing) stateDescription = pushingState }
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val icon = when {
-            row.subtitle == ShareCopy.AUDIO_ONLY || row.subtitle == ShareCopy.ELDER_AUDIO_SUB -> Icons.Rounded.MusicNote
+            row.audioOnly -> Icons.Rounded.MusicNote
             row.ownApp -> Icons.Rounded.ScreenShare
             else -> Icons.Rounded.PlayCircleOutline
         }
@@ -636,7 +649,7 @@ private fun DeviceRowView(row: ShareRow, elder: Boolean, onClick: () -> Unit) {
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(row.name, style = rowTitle(elder), color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(row.subtitle, style = small(elder), color = subColor)
+            Text(subtitle, style = small(elder), color = subColor)
         }
         // 长辈版不显示协议名
         if (!elder) {
@@ -701,15 +714,19 @@ private fun ResultCard(title: String, detail: String, elder: Boolean) {
 @Composable
 private fun BlockBody(block: ShareBlock, u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     when (block) {
-        ShareBlock.NothingSupported -> ResultCard(ShareCopy.NOTHING_TITLE, ShareCopy.NOTHING_DETAIL, elder)
-        is ShareBlock.Unreadable -> ResultCard(ShareCopy.UNREADABLE_TITLE, ShareCopy.unreadableDetail(block.reason) + "。可以选好电视后，在本应用里重新选择", elder)
+        ShareBlock.NothingSupported -> ResultCard(stringResource(R.string.share_nothing_title), stringResource(R.string.share_nothing_detail), elder)
+        is ShareBlock.Unreadable -> ResultCard(
+            stringResource(R.string.share_unreadable_block_title),
+            stringResource(R.string.share_unreadable_block_detail, ShareCopy.unreadableDetail(block.reason).asString()),
+            elder,
+        )
         is ShareBlock.NoSpace -> {
             val p = block.plan
             Summary(u, vm, elder)
-            ResultCard(ShareCopy.NO_SPACE_TITLE, ShareCopy.noSpaceDetail(p.total, p.requiredBytes, p.availableBytes - ShareLimits.RESERVE_BYTES), elder)
+            ResultCard(stringResource(R.string.share_no_space_title), ShareCopy.noSpaceDetail(p.total, p.requiredBytes, p.availableBytes - ShareLimits.RESERVE_BYTES).asString(), elder)
         }
-        ShareBlock.NoUrl -> ResultCard(ShareCopy.NO_URL_TITLE, ShareCopy.NO_URL_DETAIL, elder)
-        ShareBlock.PrepareFailed -> ResultCard(ShareCopy.PREPARE_FAILED_TITLE, ShareCopy.PREPARE_FAILED_DETAIL, elder)
+        ShareBlock.NoUrl -> ResultCard(stringResource(R.string.share_no_url_title), stringResource(R.string.share_no_url_detail), elder)
+        ShareBlock.PrepareFailed -> ResultCard(stringResource(R.string.share_prepare_failed_title), stringResource(R.string.share_prepare_failed_detail), elder)
     }
 }
 
@@ -718,23 +735,23 @@ private fun BlockBody(block: ShareBlock, u: ShareUi, vm: ShareViewModel, elder: 
 private fun BlockButtons(block: ShareBlock, vm: ShareViewModel, elder: Boolean, onClose: () -> Unit) {
     when (block) {
         ShareBlock.NothingSupported -> {
-            ShareBtn("知道了", onClose, elder)
-            ShareBtn(ShareCopy.WEB_MIRROR, vm::useMirror, elder, BtnKind.OUTLINED)
+            ShareBtn(stringResource(R.string.share_got_it), onClose, elder)
+            ShareBtn(stringResource(R.string.share_web_mirror), vm::useMirror, elder, BtnKind.OUTLINED)
         }
         is ShareBlock.Unreadable -> {
-            if (!elder) ShareBtn("在本应用里重新选", vm::reselectInApp, elder)
-            ShareBtn(if (elder) "知道了" else "取消", onClose, elder, if (elder) BtnKind.PRIMARY else BtnKind.OUTLINED)
+            if (!elder) ShareBtn(stringResource(R.string.share_reselect_in_app), vm::reselectInApp, elder)
+            ShareBtn(stringResource(if (elder) R.string.share_got_it else R.string.share_cancel), onClose, elder, if (elder) BtnKind.PRIMARY else BtnKind.OUTLINED)
         }
         is ShareBlock.NoSpace -> {
             val p = block.plan
-            if (p.fitCount > 0) ShareBtn(ShareCopy.onlyFirst(p.fitCount, p.fitBytes), vm::onlyFirst, elder)
-            ShareBtn(ShareCopy.WEB_MIRROR, vm::useMirror, elder, BtnKind.OUTLINED)
-            ShareBtn("取消", onClose, elder, BtnKind.TEXT)
+            if (p.fitCount > 0) ShareBtn(ShareCopy.onlyFirst(p.fitCount, p.fitBytes).asString(), vm::onlyFirst, elder)
+            ShareBtn(stringResource(R.string.share_web_mirror), vm::useMirror, elder, BtnKind.OUTLINED)
+            ShareBtn(stringResource(R.string.share_cancel), onClose, elder, BtnKind.TEXT)
         }
-        ShareBlock.NoUrl -> ShareBtn("知道了", onClose, elder)
+        ShareBlock.NoUrl -> ShareBtn(stringResource(R.string.share_got_it), onClose, elder)
         ShareBlock.PrepareFailed -> {
-            ShareBtn("知道了", onClose, elder)
-            ShareBtn(ShareCopy.WEB_MIRROR, vm::useMirror, elder, BtnKind.OUTLINED)
+            ShareBtn(stringResource(R.string.share_got_it), onClose, elder)
+            ShareBtn(stringResource(R.string.share_web_mirror), vm::useMirror, elder, BtnKind.OUTLINED)
         }
     }
 }
@@ -746,13 +763,14 @@ private fun WebUrlBody(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     val c = MaterialTheme.colorScheme
     val mirrorSt by vm.mirrorState.collectAsStateWithLifecycle()
     val mirroringTo = mirrorTargetName(mirrorSt)?.takeIf { mirrorSt !is SenderState.Idle && !mirrorSt.isTerminal }
+    val urlCd = stringResource(R.string.share_url_cd, u.content.url.orEmpty().toCharArray().joinToString(" "))
     Text(
         u.content.url.orEmpty(),
         Modifier.fillMaxWidth().padding(vertical = 8.dp).background(c.surfaceContainerHighest, RoundedCornerShape(12.dp)).padding(12.dp)
-            .semantics { contentDescription = "网址：" + u.content.url.orEmpty().toCharArray().joinToString(" ") },
+            .semantics { contentDescription = urlCd },
         style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), color = c.onSurface,
     )
-    Text(mirroringTo?.let(ShareCopy::webMirroring) ?: ShareCopy.WEB_DETAIL, style = body(elder), color = c.onSurface)
+    Text(mirroringTo?.let { ShareCopy.webMirroring(it).asString() } ?: stringResource(R.string.share_web_detail), style = body(elder), color = c.onSurface)
 }
 
 @Composable
@@ -760,15 +778,20 @@ private fun WebUrlButtons(vm: ShareViewModel, elder: Boolean, onClose: () -> Uni
     val c = MaterialTheme.colorScheme
     val mirrorSt by vm.mirrorState.collectAsStateWithLifecycle()
     val mirroring = mirrorSt !is SenderState.Idle && !mirrorSt.isTerminal
+    val sep = stringResource(R.string.share_spoken_separator)
+    val mirrorLabel = stringResource(R.string.share_web_mirror)
+    val mirrorNote = stringResource(R.string.share_web_mirror_note)
+    val pushLabel = stringResource(R.string.share_web_push)
+    val pushNote = stringResource(R.string.share_web_push_note)
     if (mirroring) {
-        ShareBtn("知道了", onClose, elder)
+        ShareBtn(stringResource(R.string.share_got_it), onClose, elder)
     } else {
-        ShareBtn(ShareCopy.WEB_MIRROR, vm::useMirror, elder, spoken = ShareCopy.WEB_MIRROR + "，" + ShareCopy.WEB_MIRROR_NOTE)
+        ShareBtn(mirrorLabel, vm::useMirror, elder, spoken = mirrorLabel + sep + mirrorNote)
         // 说明已经包含在按钮的读屏描述里，不再单独读一遍（UX P2-14）
-        Text(ShareCopy.WEB_MIRROR_NOTE, Modifier.clearAndSetSemantics { }, style = small(elder), color = c.onSurfaceVariant)
+        Text(mirrorNote, Modifier.clearAndSetSemantics { }, style = small(elder), color = c.onSurfaceVariant)
     }
-    ShareBtn(ShareCopy.WEB_PUSH, vm::pushWebAnyway, elder, if (mirroring) BtnKind.TONAL else BtnKind.OUTLINED, spoken = ShareCopy.WEB_PUSH + "，" + ShareCopy.WEB_PUSH_NOTE)
-    Text(ShareCopy.WEB_PUSH_NOTE, Modifier.clearAndSetSemantics { }, style = small(elder), color = c.onSurfaceVariant)
+    ShareBtn(pushLabel, vm::pushWebAnyway, elder, if (mirroring) BtnKind.TONAL else BtnKind.OUTLINED, spoken = pushLabel + sep + pushNote)
+    Text(pushNote, Modifier.clearAndSetSemantics { }, style = small(elder), color = c.onSurfaceVariant)
 }
 
 // ------------------------------------------------------------------ S08 Direct Share 紧凑面板
@@ -781,8 +804,8 @@ private fun DirectFinding(u: ShareUi, elder: Boolean) {
         CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
-            Text(ShareCopy.directFinding(u.directName ?: "电视"), style = rowTitle(elder))
-            Text("最多 5 秒 · 文件同时在准备", style = small(elder), color = c.onSurfaceVariant)
+            Text(ShareCopy.directFinding(u.directName ?: stringResource(R.string.share_tv)).asString(), style = rowTitle(elder))
+            Text(stringResource(R.string.share_direct_hint), style = small(elder), color = c.onSurfaceVariant)
         }
     }
     // 5 秒进度（UX P2-17）
@@ -804,7 +827,7 @@ private fun StartingContent(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     val session by vm.session.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
     val s = session?.takeIf { it.sessionId == u.sessionId }
-    val tv = u.target?.name ?: "电视"
+    val tv = u.target?.name ?: stringResource(R.string.share_tv)
     val c = MaterialTheme.colorScheme
     Summary(u, vm, elder)
     // 失败：换成 P13 对应失败卡（紧凑版）；按钮在页脚
@@ -812,7 +835,8 @@ private fun StartingContent(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     if (s != null && failure != null) {
         // 分享副本复制失败：说具体原因，不说“手机收回了读取授权”（PM P1-8）
         val copyFail = if (failure == PushError.FILE_UNREADABLE) vm.copyFailureFor(s) else null
-        val (title, detail) = copyFail?.let(ShareCopy::copyFailure) ?: PushCopy.failure(failure, tv, s.current, s.ownApp).let { it.title to it.detail }
+        val (title, detail) = copyFail?.let { ShareCopy.copyFailure(it).let { (t, d) -> t.asString() to d.asString() } }
+            ?: pushFailureTexts(failure, tv, s)
         ResultCard(title, detail, elder)
         return
     }
@@ -827,30 +851,30 @@ private fun StartingContent(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     val startedAt = remember { System.currentTimeMillis() }
     Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (u.content.url == null) {
-            Step(prepDone, !prepDone, ShareCopy.preparingFirst(u.content.items.size > 1), elder)
+            Step(prepDone, !prepDone, ShareCopy.preparingFirst(u.content.items.size > 1).asString(), elder)
             if (!prepDone && first != null) {
                 val pct = ShareCopy.percent(first.copiedBytes, firstItem?.sizeBytes)
-                Text(pct?.let { "$it %" } ?: ShareCopy.bytes(first.copiedBytes, null), Modifier.clearAndSetSemantics { }, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
+                Text(pct?.let { "$it %" } ?: ShareCopy.bytes(first.copiedBytes, null).asString(), Modifier.clearAndSetSemantics { }, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
                 if (pct != null) {
                     LinearProgressIndicator(progress = { pct / 100f }, Modifier.fillMaxWidth())
                     val elapsed = System.currentTimeMillis() - startedAt
                     val eta = if (pct in 3..99 && elapsed > 1_000) elapsed * (100 - pct) / pct else null
                     Row(Modifier.fillMaxWidth()) {
-                        Text(ShareCopy.bytes(first.copiedBytes, firstItem?.sizeBytes), Modifier.weight(1f), style = small(elder), color = c.onSurfaceVariant)
-                        ShareCopy.remaining(eta)?.let { Text(it, style = small(elder), color = c.onSurfaceVariant) }
+                        Text(ShareCopy.bytes(first.copiedBytes, firstItem?.sizeBytes).asString(), Modifier.weight(1f), style = small(elder), color = c.onSurfaceVariant)
+                        ShareCopy.remaining(eta)?.let { Text(it.asString(), style = small(elder), color = c.onSurfaceVariant) }
                     }
                 } else {
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                 }
             }
         }
-        Step(loading || phase == PushPhase.PLAYING, connecting, ShareCopy.connectStep(tv), elder)
-        Step(false, loading, if (loading) "电视正在加载…" else ShareCopy.PLAY_STEP, elder)
-        transcoding?.let { Text("正在转换视频 ${it.progress}%", style = body(elder)) }
+        Step(loading || phase == PushPhase.PLAYING, connecting, ShareCopy.connectStep(tv).asString(), elder)
+        Step(false, loading, stringResource(if (loading) R.string.share_tv_loading else R.string.share_play_step), elder)
+        transcoding?.let { Text(stringResource(R.string.share_transcoding, it.progress), style = body(elder)) }
         if (s?.ownApp == true || s?.engine?.loadingSlow == true) {
-            Text("如果电视上出现确认提示，请用遥控器点「允许」", style = body(elder), color = c.onSurface)
+            Text(stringResource(R.string.share_allow_hint), style = body(elder), color = c.onSurface)
         }
-        Text(ShareCopy.LEAVE_NOTE, style = small(elder), color = c.onSurfaceVariant)
+        Text(stringResource(R.string.share_leave_note), style = small(elder), color = c.onSurfaceVariant)
     }
 }
 
@@ -861,10 +885,10 @@ private fun FailureButtons(error: PushError, s: PushSessionState, u: ShareUi, vm
     val actions: List<PushCopy.Action> = when {
         copyFail != null -> listOf(PushCopy.Action.OTHER_DEVICE, PushCopy.Action.USE_MIRROR)
         error == PushError.URL_FAILED -> listOf(PushCopy.Action.EDIT_URL, PushCopy.Action.USE_MIRROR)
-        else -> PushCopy.failure(error, u.target?.name ?: "电视", s.current, s.ownApp).let { listOfNotNull(it.primary, it.secondary, it.tertiary) }
+        else -> pushFailureActions(error, u.target?.name ?: stringResource(R.string.share_tv), s)
     }.let { a -> if (elder) a.filter { it != PushCopy.Action.INSTALL_APP && it != PushCopy.Action.DIAGNOSTICS }.ifEmpty { listOf(PushCopy.Action.OTHER_DEVICE) } else a }
     actions.forEachIndexed { i, a ->
-        ShareBtn(a.label, { onFailureAction(a, vm, onDiagnostics, onInstall) }, elder, if (i == 0) BtnKind.PRIMARY else BtnKind.OUTLINED)
+        ShareBtn(actionLabel(a), { onFailureAction(a, vm, onDiagnostics, onInstall) }, elder, if (i == 0) BtnKind.PRIMARY else BtnKind.OUTLINED)
     }
 }
 
@@ -910,9 +934,9 @@ private fun StartedContent(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
     val progress by vm.progress.collectAsStateWithLifecycle()
     val s = session?.takeIf { it.sessionId == u.sessionId }
     val c = MaterialTheme.colorScheme
-    val tv = u.target?.name ?: "电视"
+    val tv = u.target?.name ?: stringResource(R.string.share_tv)
     val photo = s?.current?.kind == MediaKind.IMAGE
-    val title = ShareCopy.started(tv, photo)
+    val title = ShareCopy.started(tv, photo).asString()
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -921,7 +945,7 @@ private fun StartedContent(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
         }
         Text(title, Modifier.focusRequester(focus).focusable().semantics { heading(); liveRegion = LiveRegionMode.Polite }, style = titleStyle(elder))
         s?.current?.let { cur ->
-            Text(if (s.items.size > 1) "第 ${cur.index + 1} / ${s.items.size} 项 · ${cur.title}" else cur.title, style = body(elder), color = c.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(if (s.items.size > 1) stringResource(R.string.share_item_of, cur.index + 1, s.items.size, cur.title) else cur.title, style = body(elder), color = c.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         val copies = u.content.items.withIndex().filter { it.value.mode == ReadMode.COPY }
         if (copies.size > 1 && progress.isNotEmpty()) {
@@ -936,7 +960,7 @@ private fun StartedContent(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(8.dp))
-                        Text(ShareCopy.restPreparing(pending, pct), style = body(elder))
+                        Text(ShareCopy.restPreparing(pending, pct).asString(), style = body(elder))
                     }
                     if (pct != null) LinearProgressIndicator(progress = { pct / 100f }, Modifier.fillMaxWidth().padding(top = 6.dp))
                 }
@@ -944,12 +968,12 @@ private fun StartedContent(u: ShareUi, vm: ShareViewModel, elder: Boolean) {
                 Row(Modifier.fillMaxWidth().background(c.surfaceContainer, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.CheckCircle, null, Modifier.size(18.dp), tint = WscTheme.extended.success)
                     Spacer(Modifier.width(8.dp))
-                    Text(ShareCopy.allReady(u.content.items.size - failed.size), style = body(elder))
+                    Text(ShareCopy.allReady(u.content.items.size - failed.size).asString(), style = body(elder))
                 }
             }
-            failed.forEach { InfoBar(ShareCopy.itemSkipped(it.index, progress[it.index].failure == CopyFailure.GONE), null, elder, Icons.Rounded.InsertDriveFile) }
+            failed.forEach { InfoBar(ShareCopy.itemSkipped(it.index, progress[it.index].failure == CopyFailure.GONE).asString(), null, elder, Icons.Rounded.InsertDriveFile) }
         }
-        Text(ShareCopy.STARTED_NOTE, style = small(elder), color = c.onSurfaceVariant)
+        Text(stringResource(R.string.share_started_note), style = small(elder), color = c.onSurfaceVariant)
     }
 }
 
@@ -961,28 +985,31 @@ private fun ShareDialogs(vm: ShareViewModel, elder: Boolean) {
     val session by vm.session.collectAsStateWithLifecycle()
     val mirrorSt by vm.mirrorState.collectAsStateWithLifecycle()
     val u by vm.ui.collectAsStateWithLifecycle()
-    val transcodeTail = if (session?.transcode?.phase == TranscodeUi.Phase.RUNNING || session?.transcode?.phase == TranscodeUi.Phase.PAUSED_THERMAL) ShareCopy.TRANSCODE_TAIL else ""
-    val newSummary = u.content.url?.let { "网址" } ?: ShareCopy.summary(u.content.kinds)
+    val transcodeTail = if (session?.transcode?.phase == TranscodeUi.Phase.RUNNING || session?.transcode?.phase == TranscodeUi.Phase.PAUSED_THERMAL) stringResource(R.string.share_transcode_tail) else ""
+    val newSummary = if (u.content.url != null) stringResource(R.string.share_url_word) else summaryText(u.content.kinds)
+    val currentTv = session?.target?.name ?: stringResource(R.string.share_current_tv)
     when (val dialog = d) {
         // 长辈模式不会走到首次确认（只列确认过的电视）
         is ShareDialog.Confirm -> PushConfirmDialog(dialog.row.target!!, onCancel = vm::dismissDialog, onConfirm = vm::confirmDialog)
         is ShareDialog.Replace -> {
             val s = session
             PushMutexDialog(
-                ShareCopy.replaceTitle(dialog.row.name),
-                ShareCopy.replaceBody(s?.current?.title, s?.engine?.index ?: 0, s?.items?.size ?: 1, newSummary) + transcodeTail,
-                "替换", onCancel = vm::dismissDialog, onConfirm = vm::confirmDialog,
+                ShareCopy.replaceTitle(dialog.row.name).asString(),
+                ShareCopy.replaceBody(s?.current?.title, s?.engine?.index ?: 0, s?.items?.size ?: 1, newSummary).asString().let { body ->
+                    if (transcodeTail.isEmpty()) body else stringResource(R.string.share_body_with_tail, body, transcodeTail)
+                },
+                stringResource(R.string.share_replace_confirm), onCancel = vm::dismissDialog, onConfirm = vm::confirmDialog,
             )
         }
         is ShareDialog.Switch -> PushMutexDialog(
-            ShareCopy.switchTitle(session?.target?.name ?: "当前电视", dialog.row.name),
-            "${session?.target?.name ?: "当前电视"}会停止播放。$transcodeTail",
-            "改为推送到 ${dialog.row.name}", onCancel = vm::dismissDialog, onConfirm = vm::confirmDialog,
+            ShareCopy.switchTitle(currentTv, dialog.row.name).asString(),
+            stringResource(R.string.share_switch_body, currentTv, transcodeTail).trimEnd(),
+            stringResource(R.string.share_switch_confirm, dialog.row.name), onCancel = vm::dismissDialog, onConfirm = vm::confirmDialog,
         )
         is ShareDialog.StopMirror -> PushMutexDialog(
-            ShareCopy.stopMirrorTitle(dialog.row.name, dialog.connecting),
-            ShareCopy.stopMirrorBody(mirrorTargetName(mirrorSt)),
-            ShareCopy.stopMirrorConfirm(dialog.connecting), onCancel = vm::dismissDialog, onConfirm = vm::confirmDialog,
+            ShareCopy.stopMirrorTitle(dialog.row.name, dialog.connecting).asString(),
+            ShareCopy.stopMirrorBody(mirrorTargetName(mirrorSt)).asString(),
+            ShareCopy.stopMirrorConfirm(dialog.connecting).asString(), onCancel = vm::dismissDialog, onConfirm = vm::confirmDialog,
         )
         ShareDialog.EditUrl -> EditUrlDialog(u.content.url.orEmpty(), elder, onDismiss = vm::dismissDialog, onConfirm = vm::setUrl)
         null -> Unit
@@ -998,22 +1025,44 @@ private fun EditUrlDialog(initial: String, elder: Boolean, onDismiss: () -> Unit
     val ok = PushCopy.isPushableUrl(text)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("修改网址", style = if (elder) LocalElderTypography.current.title else MaterialTheme.typography.headlineSmall) },
+        title = { Text(stringResource(R.string.share_edit_url_title), style = if (elder) LocalElderTypography.current.title else MaterialTheme.typography.headlineSmall) },
         text = {
             Column {
                 OutlinedTextField(
                     text, { text = it },
-                    label = { Text(ShareCopy.URL_LABEL) },
+                    label = { Text(stringResource(R.string.share_url_label)) },
                     singleLine = false,
                     textStyle = (if (elder) LocalElderTypography.current.body else MaterialTheme.typography.bodyMedium).copy(fontFamily = FontFamily.Monospace),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done, autoCorrectEnabled = false),
                     keyboardActions = KeyboardActions(onDone = { if (ok) onConfirm(text) }),
                     modifier = Modifier.fillMaxWidth().focusRequester(focus),
                 )
-                Text(PushCopy.urlKindHint(text), style = small(elder), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(urlKindHintText(text), style = small(elder), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(text) }, enabled = ok) { Text(ShareCopy.URL_CONFIRM) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        confirmButton = { TextButton(onClick = { onConfirm(text) }, enabled = ok) { Text(stringResource(R.string.share_url_confirm)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.share_cancel)) } },
     )
 }
+
+// ------------------------------------------------------------------ 文案辅助
+
+/** 内容摘要“3 个视频 · 2 张照片”（各段按系统语言解析，用“ · ”连接）。 */
+@Composable
+private fun summaryText(kinds: List<MediaKind>): String = ShareCopy.summary(kinds).map { it.asString() }.joinToString(" · ")
+
+// 以下几处复用 F13 推送文案（[PushCopy]），集中在这里便于对齐它的接口。
+
+@Composable
+private fun pushFailureTexts(error: PushError, tv: String, s: PushSessionState): Pair<String, String> =
+    PushCopy.failure(error, tv, s.current, s.ownApp).let { it.title.asString() to it.detail.asString() }
+
+@Composable
+private fun pushFailureActions(error: PushError, tv: String, s: PushSessionState): List<PushCopy.Action> =
+    PushCopy.failure(error, tv, s.current, s.ownApp).let { listOfNotNull(it.primary, it.secondary, it.tertiary) }
+
+@Composable
+private fun actionLabel(a: PushCopy.Action): String = stringResource(a.labelRes)
+
+@Composable
+private fun urlKindHintText(url: String): String = PushCopy.urlKindHint(url).asString()

@@ -109,7 +109,7 @@ class MediaPushService : LifecycleService() {
     }
 
     private fun setUp() {
-        val p = RemotePushPlayer(controller).also { player = it }
+        val p = RemotePushPlayer(this, controller).also { player = it }
         val stopButton = CommandButton.Builder(CommandButton.ICON_STOP)
             .setDisplayName(getString(R.string.push_stop_push))
             .setSessionCommand(SessionCommand(COMMAND_STOP, Bundle.EMPTY))
@@ -298,7 +298,8 @@ class MediaPushService : LifecycleService() {
         if (t != null && (t.phase == TranscodeUi.Phase.RUNNING || t.phase == TranscodeUi.Phase.PAUSED_THERMAL)) {
             val hot = t.phase == TranscodeUi.Phase.PAUSED_THERMAL
             val detail = if (hot) getString(R.string.push_notif_transcode_hot_detail, t.progress)
-            else getString(R.string.push_notif_transcoding_detail, name) + (PushCopy.minutes(t.etaMs)?.let { " · 约剩 ${it.removePrefix("约 ")}" } ?: "")
+            else (PushCopy.remaining(t.etaMs)?.let { getString(R.string.push_join_dot, getString(R.string.push_notif_transcoding_detail, name), it.resolve(this)) }
+                ?: getString(R.string.push_notif_transcoding_detail, name))
             return base(if (hot) getString(R.string.push_notif_transcode_hot) else getString(R.string.push_notif_transcoding, t.progress), detail)
                 .setProgress(100, t.progress, t.progress == 0)
                 .addAction(0, getString(R.string.push_cancel), action(ACTION_CANCEL_TRANSCODE, 10))
@@ -318,9 +319,9 @@ class MediaPushService : LifecycleService() {
                 return base(getString(R.string.push_notif_connecting, name), s.current?.title.orEmpty()).apply { stop(this) }.build()
             PushPhase.FAILED -> {
                 val f = PushCopy.failure(e.failure?.error ?: com.benchan.wireless.screencasting.protocol.upnp.dmc.PushError.UNREACHABLE, name, s.current, s.ownApp)
-                return base(getString(R.string.push_notif_failed, f.title), name).apply { stop(this) }.build()
+                return base(getString(R.string.push_notif_failed, f.title.resolve(this)), name).apply { stop(this) }.build()
             }
-            PushPhase.AWAITING_CHOICE -> return base(title, "等你选择转换方式").apply { stop(this) }.build()
+            PushPhase.AWAITING_CHOICE -> return base(title, getString(R.string.push_awaiting_choice_title)).apply { stop(this) }.build()
             else -> Unit
         }
         if (e.idleWarning) {
@@ -334,7 +335,7 @@ class MediaPushService : LifecycleService() {
         val times = if (cur?.kind != MediaKind.IMAGE && e.positionMs != null) "${PushCopy.time(e.positionMs)} / ${PushCopy.time(e.durationMs)}" else null
         val text = listOfNotNull(cur?.title, count, times).joinToString(" · ")
         // 锁屏公开版本：不含文件名（交互稿 P12，跟随系统锁屏通知隐私设置）
-        val pubText = listOfNotNull(cur?.let { PushCopy.kindLabel(it.kind) }, count).joinToString(" · ")
+        val pubText = listOfNotNull(cur?.let { getString(PushCopy.kindLabelRes(it.kind)) }, count).joinToString(" · ")
         val pub = base(title, pubText).build()
         val b = base(title, text).setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setPublicVersion(pub)
         thumbs["${s.sessionId}-${e.index}"]?.let { b.setLargeIcon(it) }
@@ -366,11 +367,11 @@ class MediaPushService : LifecycleService() {
         val launch = packageManager.getLaunchIntentForPackage(packageName)?.apply { addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP) }
         val contentIntent = launch?.let { PendingIntent.getActivity(this, 1, it, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT) }
         val title = if (ended.reason == PushEndReason.USER_STOPPED && ended.failure == null) getString(R.string.push_notif_ended_plain)
-        else getString(R.string.push_notif_ended, PushCopy.endTitle(ended, s.target.name).first)
+        else getString(R.string.push_notif_ended, PushCopy.endTitle(ended, s.target.name).first.resolve(this))
         val n = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_cast)
             .setContentTitle(title)
-            .setContentText(getString(R.string.push_notif_ended_detail, s.target.name, PushCopy.minutes(ended.durationMs)?.removePrefix("约 ") ?: PushCopy.time(ended.durationMs)))
+            .setContentText(getString(R.string.push_notif_ended_detail, s.target.name, PushCopy.duration(ended.durationMs)?.resolve(this) ?: PushCopy.time(ended.durationMs)))
             .setSilent(true)
             .setAutoCancel(true)
             .setTimeoutAfter(60_000)

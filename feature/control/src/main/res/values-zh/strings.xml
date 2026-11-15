@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- feature/control（反向控制 · 发送端）中文文案；默认英文见 values/strings.xml。 -->
+<resources>
+    <!-- 系统“无障碍”列表里显示的服务名与说明（交互稿 R02：与系统界面用语一致） -->
+    <string name="ctl_service_label">局域投屏 · 反向控制</string>
+    <string name="ctl_service_description">投屏时，让你确认过的电视、平板或手机操作本机：模拟点击、滑动、滚动、方向键和返回 / 主页 / 最近任务，双指缩放，并可在你允许时向当前输入框输入文字（密码框除外）。为了安全，只读取当前应用和页面的名称（不含页面上的文字），例如在安装器、无障碍设置中暂停控制；不读取屏幕内容，不收集任何数据。只在你每次确认后的本次投屏中生效，可随时收回。</string>
+    <string name="ctl_channel_name">反向控制请求</string>
+    <string name="ctl_channel_desc">投屏时有设备请求操作本机，需要你确认</string>
+
+    <!-- 暂停原因（R05 / R08） -->
+    <string name="ctl_pause_reconnecting">正在重连</string>
+    <string name="ctl_pause_protected">画面受保护</string>
+    <string name="ctl_pause_app_hidden">已离开共享的应用</string>
+    <string name="ctl_pause_windowed">分屏时不可控制</string>
+    <string name="ctl_pause_own_app">本应用内不可控制</string>
+    <string name="ctl_pause_sensitive">此界面不可控制</string>
+    <string name="ctl_pause_other">暂停</string>
+    <!-- 边缘胶囊 -->
+    <string name="ctl_overlay_active">控制中</string>
+    <string name="ctl_overlay_paused">控制已暂停 · %1$s</string>
+    <string name="ctl_overlay_paused_short">已暂停 · %1$s</string>
+    <string name="ctl_overlay_continue">继续</string>
+    <string name="ctl_overlay_revoke">收回</string>
+    <string name="ctl_overlay_paused_desc">控制已暂停，此界面不可远程控制</string>
+    <string name="ctl_overlay_continue_action">继续控制</string>
+    <string name="ctl_overlay_revoke_action">收回控制</string>
+    <string name="ctl_talkback_consent">本机开着屏幕朗读（如 TalkBack），对方的点击和滑动可能无法正常生效</string>
+    <string name="ctl_talkback_card">开着屏幕朗读时，对方的点击和滑动可能无法正常生效</string>
+    <string name="ctl_privacy_short">只识别当前打开的是哪个应用、哪个页面（不含页面上的文字），用于在一些界面（例如安装应用、授予权限）自动暂停控制。不收集任何数据。</string>
+    <string name="ctl_ended_locked">已收回控制：手机已锁屏</string>
+
+    <!-- 通知 -->
+    <string name="ctl_request_title">%1$s 请求操作本机</string>
+    <plurals name="ctl_request_text">
+        <item quantity="other">点按查看并确认 · %d 秒后自动拒绝</item>
+    </plurals>
+    <string name="ctl_deny">拒绝</string>
+    <string name="ctl_guide_text">需要先开启无障碍服务，点按查看开启步骤</string>
+    <string name="ctl_service_stopped_title">无障碍服务已被系统关闭，控制已结束</string>
+    <string name="ctl_service_stopped_text">点按查看如何重新开启</string>
+    <string name="ctl_guide_enabled_toast">已开启，投屏时对方可以请求控制</string>
+
+    <!-- 确认页（R03） -->
+    <string name="ctl_consent_from_cast">来自当前投屏 · 已加密</string>
+    <string name="ctl_consent_item_operate_text">对方能看到并操作你的屏幕，例如点击、滑动和输入文字</string>
+    <string name="ctl_consent_item_operate">对方能看到并操作你的屏幕，例如点击和滑动</string>
+    <string name="ctl_consent_item_session">只在本次投屏有效，投屏结束后自动失效</string>
+    <string name="ctl_consent_item_revoke">随时可以在通知栏或屏幕边缘「收回」</string>
+    <string name="ctl_consent_item_warning">不要让对方代你输入密码、验证码或进行支付</string>
+    <string name="ctl_consent_go_home">允许后将回到桌面，对方即可操作</string>
+    <string name="ctl_allow_once">允许本次</string>
+    <string name="ctl_consent_ten_left">还剩 10 秒，之后自动拒绝</string>
+    <plurals name="ctl_auto_deny">
+        <item quantity="other">%d 秒后自动拒绝</item>
+    </plurals>
+
+    <!-- 设置（R01） -->
+    <string name="ctl_settings_title">反向控制</string>
+    <string name="ctl_back">返回</string>
+    <string name="ctl_close">关闭</string>
+    <string name="ctl_turn_on">去开启</string>
+    <string name="ctl_settings_allow">允许对方操作本机</string>
+    <string name="ctl_settings_allow_aapm">本机开启了高级保护模式，系统不允许本应用使用无障碍服务，反向控制不可用。投屏不受影响。</string>
+    <string name="ctl_settings_allow_desc">投屏时，电视、平板或手机可以请求点击、滑动等操作。每次都需要你在手机上确认</string>
+    <string name="ctl_settings_no_notif">没有通知权限：被控制时只能从屏幕边缘胶囊收回</string>
+    <string name="ctl_settings_allow_notif">允许通知</string>
+    <string name="ctl_settings_auto_disabled">无障碍服务已按你的设置关闭</string>
+    <string name="ctl_settings_auto_disabled_desc">下次被控制前再开启</string>
+    <string name="ctl_settings_service_still_on">系统设置中本应用的无障碍服务仍是开启状态；反向控制关闭时它不会做任何事</string>
+    <string name="ctl_settings_turn_off_service">关闭服务</string>
+    <string name="ctl_settings_service_on">无障碍服务已开启</string>
+    <string name="ctl_settings_one_more_step">还差一步：开启无障碍服务</string>
+    <string name="ctl_settings_one_more_step_desc">系统只允许通过无障碍服务模拟点击和输入。本应用不读取屏幕内容，只识别当前打开的是哪个应用、哪个页面，用于在一些界面（例如安装应用、授予权限）自动暂停控制。</string>
+    <string name="ctl_settings_group_ops">本机支持的操作</string>
+    <string name="ctl_cap_touch">点击、长按、滑动、滚动</string>
+    <string name="ctl_cap_nav">返回、主页、最近任务</string>
+    <string name="ctl_cap_pinch">双指缩放</string>
+    <string name="ctl_cap_text_dpad">文字输入、遥控器方向键</string>
+    <string name="ctl_cap_media">播放 / 暂停键</string>
+    <string name="ctl_cap_requires_android">需要 Android %1$d 及以上</string>
+    <string name="ctl_cap_unsupported">本机不支持</string>
+    <string name="ctl_settings_group_security">安全</string>
+    <string name="ctl_settings_auto_disable">投屏结束后自动关闭无障碍服务</string>
+    <string name="ctl_settings_auto_disable_desc">不投屏时不保留操作本机的权限。每次被控制前需重新到系统设置开启</string>
+    <string name="ctl_settings_confirm_each">每次投屏都要你确认</string>
+    <string name="ctl_settings_confirm_each_desc">已信任的设备也不例外；投屏结束、锁屏或熄屏后立即失效</string>
+    <string name="ctl_settings_own_app">本应用不能被远程操作</string>
+    <string name="ctl_settings_own_app_desc">本应用自己的界面不能被远程操作；你在本应用内时控制会自动暂停</string>
+    <string name="ctl_settings_sensitive">安装应用、授予权限等界面只能由你本人操作</string>
+    <string name="ctl_settings_sensitive_desc">控制会在这类界面尽量自动暂停</string>
+
+    <!-- 引导（R02） -->
+    <string name="ctl_guide_title">开启无障碍服务</string>
+    <string name="ctl_guide_subtitle">反向控制需要它来模拟点击和输入。</string>
+    <string name="ctl_guide_privacy_title">本应用不读取屏幕内容</string>
+    <string name="ctl_guide_step1">点「去系统设置」，进入「无障碍」</string>
+    <string name="ctl_guide_step2">在「已下载的应用」中找到「%1$s」，打开开关</string>
+    <string name="ctl_guide_step3">系统提示时选「允许」，再返回本应用</string>
+    <string name="ctl_guide_system_prompt">系统提示里的「查看和控制屏幕」是通用说明，本应用没有申请读取屏幕内容的权限</string>
+    <string name="ctl_guide_restricted_title">开关是灰色的，打不开？</string>
+    <string name="ctl_guide_restricted_desc">Android 13 起，系统会限制非应用商店安装的应用。打开「应用信息」，点右上角 ⋮ →「允许受限制的设置」，再回到第 2 步。</string>
+    <string name="ctl_guide_open_app_info">打开应用信息</string>
+    <string name="ctl_guide_unstable_title">控制经常自己失效？</string>
+    <string name="ctl_guide_unstable_desc">部分手机会在后台关闭无障碍服务。请在系统设置里允许本应用「自启动」和「后台运行」（各品牌名称不同）。</string>
+    <string name="ctl_guide_open_settings">去系统设置</string>
+    <string name="ctl_guide_not_now">暂不开启</string>
+</resources>

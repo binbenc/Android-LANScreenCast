@@ -80,6 +80,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.compose.ui.res.stringResource
+import com.benchan.wireless.screencasting.feature.control.R
 
 @HiltViewModel
 class RemoteControlSettingsViewModel @Inject constructor(
@@ -141,18 +143,19 @@ fun RemoteControlSettingsScreen(
     val notificationLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { _ -> }
+    val enabledMessage = stringResource(R.string.ctl_guide_enabled_toast)
     LaunchedEffect(justEnabled) {
         if (justEnabled) {
             onJustEnabledShown()
-            snackbar.showSnackbar("已开启，投屏时对方可以请求控制")
+            snackbar.showSnackbar(enabledMessage)
         }
     }
 
     Box(Modifier.fillMaxSize().background(c.surface)) {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             TopAppBar(
-                title = { Text("反向控制") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") } },
+                title = { Text(stringResource(R.string.ctl_settings_title)) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.ctl_back)) } },
             )
             Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
                 Row(
@@ -169,13 +172,9 @@ fun RemoteControlSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("允许对方操作本机", style = MaterialTheme.typography.bodyLarge, color = if (aapm) c.outline else c.onSurface)
+                        Text(stringResource(R.string.ctl_settings_allow), style = MaterialTheme.typography.bodyLarge, color = if (aapm) c.outline else c.onSurface)
                         Text(
-                            if (aapm) {
-                                "本机开启了高级保护模式，系统不允许本应用使用无障碍服务，反向控制不可用。投屏不受影响。"
-                            } else {
-                                "投屏时，电视、平板或手机可以请求点击、滑动等操作。每次都需要你在手机上确认"
-                            },
+                            stringResource(if (aapm) R.string.ctl_settings_allow_aapm else R.string.ctl_settings_allow_desc),
                             style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                         )
                     }
@@ -197,7 +196,7 @@ fun RemoteControlSettingsScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Rounded.NotificationsOff, null, Modifier.size(18.dp), tint = c.onSurfaceVariant)
-                            Text("没有通知权限：被控制时只能从屏幕边缘胶囊收回", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = c.onSurface)
+                            Text(stringResource(R.string.ctl_settings_no_notif), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = c.onSurface)
                         }
                         TextButton(onClick = {
                             val activity = context as? android.app.Activity
@@ -209,7 +208,7 @@ fun RemoteControlSettingsScreen(
                             } else {
                                 com.benchan.wireless.screencasting.core.ui.util.openAppNotificationSettings(context)
                             }
-                        }) { Text("允许通知") }
+                        }) { Text(stringResource(R.string.ctl_settings_allow_notif)) }
                     }
                 }
                 val autoDisabled by viewModel.autoDisabled.collectAsStateWithLifecycle()
@@ -219,24 +218,24 @@ fun RemoteControlSettingsScreen(
                         Modifier.padding(horizontal = 16.dp, vertical = 4.dp).fillMaxWidth()
                             .background(c.surfaceContainer, RoundedCornerShape(16.dp)).padding(horizontal = 16.dp, vertical = 12.dp),
                     ) {
-                        Text("无障碍服务已按你的设置关闭", style = MaterialTheme.typography.labelLarge)
-                        Text("下次被控制前再开启", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                        TextButton(onClick = { openServiceDetails(context) }) { Text("去开启") }
+                        Text(stringResource(R.string.ctl_settings_auto_disabled), style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.ctl_settings_auto_disabled_desc), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        TextButton(onClick = { openServiceDetails(context) }) { Text(stringResource(R.string.ctl_turn_on)) }
                     }
                 }
                 if (!enabled && !aapm && serviceOn) {
                     // 系统设置里服务仍开着、应用内已关闭：服务不会做任何事，给出一键关闭（PM 走查 G9）
                     Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Rounded.Info, null, Modifier.size(18.dp), tint = c.onSurfaceVariant)
-                        Text("系统设置中本应用的无障碍服务仍是开启状态；反向控制关闭时它不会做任何事", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                        TextButton(onClick = viewModel::disableService) { Text("关闭服务") }
+                        Text(stringResource(R.string.ctl_settings_service_still_on), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        TextButton(onClick = viewModel::disableService) { Text(stringResource(R.string.ctl_settings_turn_off_service)) }
                     }
                 }
                 if (enabled && !aapm) {
                     if (serviceOn) {
                         Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Rounded.CheckCircle, null, Modifier.size(18.dp), tint = ext.success)
-                            Text("无障碍服务已开启", style = MaterialTheme.typography.bodyMedium, color = ext.success)
+                            Text(stringResource(R.string.ctl_settings_service_on), style = MaterialTheme.typography.bodyMedium, color = ext.success)
                         }
                     } else if (!autoDisabled) {
                         Column(
@@ -245,27 +244,27 @@ fun RemoteControlSettingsScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(Icons.Rounded.Accessibility, null, Modifier.size(18.dp), tint = ext.onWarningContainer)
-                                Text("还差一步：开启无障碍服务", style = MaterialTheme.typography.labelLarge, color = ext.onWarningContainer)
+                                Text(stringResource(R.string.ctl_settings_one_more_step), style = MaterialTheme.typography.labelLarge, color = ext.onWarningContainer)
                             }
                             Spacer(Modifier.height(4.dp))
-                            Text("系统只允许通过无障碍服务模拟点击和输入。本应用不读取屏幕内容，只识别当前打开的是哪个应用、哪个页面，用于在一些界面（例如安装应用、授予权限）自动暂停控制。", style = MaterialTheme.typography.bodySmall, color = ext.onWarningContainer)
+                            Text(stringResource(R.string.ctl_settings_one_more_step_desc), style = MaterialTheme.typography.bodySmall, color = ext.onWarningContainer)
                             Spacer(Modifier.height(12.dp))
-                            Button(onClick = onOpenGuide) { Text("去开启") }
+                            Button(onClick = onOpenGuide) { Text(stringResource(R.string.ctl_turn_on)) }
                         }
                     }
                 }
                 // 能力行 = 当前构建已实现 × 本机系统版本（D2）；已实现但本机版本不够的项用 outline 色说明原因，不隐藏
-                GroupLabel("本机支持的操作")
+                GroupLabel(stringResource(R.string.ctl_settings_group_ops))
                 // 支持的行不写副文案；不支持的行用 outline 写原因（UX 走查 G15）
-                CapabilityRow("点击、长按、滑动、滚动", null, true)
-                CapabilityRow("返回、主页、最近任务", null, true)
-                CapabilityRow("双指缩放", null, true)
+                CapabilityRow(stringResource(R.string.ctl_cap_touch), null, true)
+                CapabilityRow(stringResource(R.string.ctl_cap_nav), null, true)
+                CapabilityRow(stringResource(R.string.ctl_cap_pinch), null, true)
                 val api33 = Build.VERSION.SDK_INT >= 33
                 val api36 = Build.VERSION.SDK_INT >= 36
-                CapabilityRow("文字输入、遥控器方向键", if (api33) null else "需要 Android 13 及以上", api33)
-                CapabilityRow("播放 / 暂停键", if (api36) null else "需要 Android 16 及以上", api36)
+                CapabilityRow(stringResource(R.string.ctl_cap_text_dpad), if (api33) null else stringResource(R.string.ctl_cap_requires_android, 13), api33)
+                CapabilityRow(stringResource(R.string.ctl_cap_media), if (api36) null else stringResource(R.string.ctl_cap_requires_android, 16), api36)
                 HorizontalDivider(Modifier.padding(vertical = 8.dp), color = c.outlineVariant)
-                GroupLabel("安全")
+                GroupLabel(stringResource(R.string.ctl_settings_group_security))
                 // C 期：投屏结束后自动关闭无障碍服务（默认关）。与下方安全行同一对齐方式：前置图标 + 文字列（UX G6）
                 val autoDisable by viewModel.autoDisable.collectAsStateWithLifecycle()
                 val switchOk = enabled && !aapm
@@ -278,8 +277,8 @@ fun RemoteControlSettingsScreen(
                 ) {
                     Icon(Icons.Rounded.Accessibility, null, tint = if (switchOk) c.tertiary else c.outline)
                     Column(Modifier.weight(1f)) {
-                        Text("投屏结束后自动关闭无障碍服务", style = MaterialTheme.typography.bodyLarge, color = if (switchOk) c.onSurface else c.outline)
-                        Text("不投屏时不保留操作本机的权限。每次被控制前需重新到系统设置开启", style = MaterialTheme.typography.bodySmall, color = if (switchOk) c.onSurfaceVariant else c.outline)
+                        Text(stringResource(R.string.ctl_settings_auto_disable), style = MaterialTheme.typography.bodyLarge, color = if (switchOk) c.onSurface else c.outline)
+                        Text(stringResource(R.string.ctl_settings_auto_disable_desc), style = MaterialTheme.typography.bodySmall, color = if (switchOk) c.onSurfaceVariant else c.outline)
                     }
                     Switch(
                         checked = autoDisable, onCheckedChange = null, enabled = switchOk,
@@ -293,23 +292,23 @@ fun RemoteControlSettingsScreen(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Icon(Icons.Rounded.Shield, null, tint = c.tertiary)
                     Column {
-                        Text("每次投屏都要你确认", style = MaterialTheme.typography.bodyLarge)
-                        Text("已信任的设备也不例外；投屏结束、锁屏或熄屏后立即失效", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        Text(stringResource(R.string.ctl_settings_confirm_each), style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.ctl_settings_confirm_each_desc), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                     }
                 }
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Icon(Icons.Rounded.Lock, null, tint = c.tertiary)
                     Column {
-                        Text("本应用不能被远程操作", style = MaterialTheme.typography.bodyLarge)
-                        Text("本应用自己的界面不能被远程操作；你在本应用内时控制会自动暂停", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        Text(stringResource(R.string.ctl_settings_own_app), style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.ctl_settings_own_app_desc), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                     }
                 }
                 // C 期敏感界面（PM G3）；如实说明识别范围（D-2 ③）
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Icon(Icons.Rounded.Shield, null, tint = c.tertiary)
                     Column {
-                        Text("安装应用、授予权限等界面只能由你本人操作", style = MaterialTheme.typography.bodyLarge)
-                        Text("控制会在这类界面尽量自动暂停", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        Text(stringResource(R.string.ctl_settings_sensitive), style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.ctl_settings_sensitive_desc), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                     }
                 }
             }
@@ -333,7 +332,8 @@ private fun CapabilityRow(title: String, detail: String?, supported: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Icon(if (supported) Icons.Rounded.Check else Icons.Rounded.Info, null, Modifier.size(20.dp), tint = if (supported) WscTheme.extended.success else c.outline)
-        Column(Modifier.semantics(mergeDescendants = true) { if (!supported) stateDescription = "本机不支持" }) {
+        val unsupported = stringResource(R.string.ctl_cap_unsupported)
+        Column(Modifier.semantics(mergeDescendants = true) { if (!supported) stateDescription = unsupported }) {
             Text(title, style = MaterialTheme.typography.bodyLarge, color = if (supported) c.onSurface else c.outline)
             detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = if (supported) c.onSurfaceVariant else c.outline) }
         }
@@ -364,14 +364,14 @@ fun AccessibilityGuideScreen(
     val showRestricted = remember { Build.VERSION.SDK_INT >= 33 && isSideloaded(context) }
     Column(Modifier.fillMaxSize().background(c.surface).navigationBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(4.dp)) {
-            IconButton(onClick = onBack) { Icon(Icons.Rounded.Close, "关闭") }
+            IconButton(onClick = onBack) { Icon(Icons.Rounded.Close, stringResource(R.string.ctl_close)) }
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
             IconTile(rememberVectorPainter(Icons.Rounded.Accessibility))
             Spacer(Modifier.height(16.dp))
-            Text("开启无障碍服务", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.ctl_guide_title), style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(4.dp))
-            Text("反向控制需要它来模拟点击和输入。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.ctl_guide_subtitle), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             // 披露卡（交互稿 v1.0.4，用户决策 D-1）：放在步骤之前，知情在前、动作在后；读屏合并为一个节点
             Row(
@@ -381,50 +381,50 @@ fun AccessibilityGuideScreen(
             ) {
                 Icon(Icons.Rounded.Shield, null, Modifier.size(20.dp), tint = c.tertiary)
                 Column {
-                    Text("本应用不读取屏幕内容", style = MaterialTheme.typography.labelLarge, color = c.onSurface)
+                    Text(stringResource(R.string.ctl_guide_privacy_title), style = MaterialTheme.typography.labelLarge, color = c.onSurface)
                     Spacer(Modifier.height(4.dp))
                     Text(com.benchan.wireless.screencasting.feature.control.ControlCopy.PRIVACY_SHORT, style = MaterialTheme.typography.bodySmall, color = c.onSurface)
                 }
             }
             Spacer(Modifier.height(12.dp))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Step(1, "点「去系统设置」，进入「无障碍」")
-                Step(2, "在「已下载的应用」中找到「局域投屏 · 反向控制」，打开开关")
-                Step(3, "系统提示时选「允许」，再返回本应用")
+                Step(1, stringResource(R.string.ctl_guide_step1))
+                Step(2, stringResource(R.string.ctl_guide_step2, stringResource(R.string.ctl_service_label)))
+                Step(3, stringResource(R.string.ctl_guide_step3))
                 // G4：系统确认框里的“查看和控制屏幕”是通用说明
                 Text(
-                    "系统提示里的「查看和控制屏幕」是通用说明，本应用没有申请读取屏幕内容的权限",
+                    stringResource(R.string.ctl_guide_system_prompt),
                     Modifier.padding(start = 36.dp), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                 )
             }
             if (showRestricted) {
                 Spacer(Modifier.height(16.dp))
                 Column(Modifier.fillMaxWidth().background(c.surfaceContainerLow, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text("开关是灰色的，打不开？", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.ctl_guide_restricted_title), style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Android 13 起，系统会限制非应用商店安装的应用。打开「应用信息」，点右上角 ⋮ →「允许受限制的设置」，再回到第 2 步。",
+                        stringResource(R.string.ctl_guide_restricted_desc),
                         style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
                     )
-                    TextButton(onClick = { openAppDetailsSettings(context) }) { Text("打开应用信息") }
+                    TextButton(onClick = { openAppDetailsSettings(context) }) { Text(stringResource(R.string.ctl_guide_open_app_info)) }
                 }
             }
             Spacer(Modifier.height(8.dp))
             Column(Modifier.fillMaxWidth().background(c.surfaceContainerLow, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 12.dp)) {
-                Text("控制经常自己失效？", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.ctl_guide_unstable_title), style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(4.dp))
-                Text("部分手机会在后台关闭无障碍服务。请在系统设置里允许本应用「自启动」和「后台运行」（各品牌名称不同）。", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                Text(stringResource(R.string.ctl_guide_unstable_desc), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
             }
 
             Spacer(Modifier.height(16.dp))
         }
         Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { openAccessibilitySettings(context) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("去系统设置") }
+            Button(onClick = { openAccessibilitySettings(context) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.ctl_guide_open_settings)) }
             Spacer(Modifier.height(4.dp))
             TextButton(onClick = {
                 viewModel.setEnabled(false)
                 onBack()
-            }) { Text("暂不开启") }
+            }) { Text(stringResource(R.string.ctl_guide_not_now)) }
         }
     }
 }

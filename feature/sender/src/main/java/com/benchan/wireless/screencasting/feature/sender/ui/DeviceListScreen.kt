@@ -2,6 +2,9 @@
 
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import com.benchan.wireless.screencasting.feature.sender.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MusicNote
@@ -129,13 +132,13 @@ internal fun DeviceListScreen(
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         TopAppBar(
-            title = { Text("投屏") },
+            title = { Text(stringResource(R.string.sender_title)) },
             actions = {
                 // 04：没找到设备时提供“重新搜索”
                 if (showDiagnostics) {
-                    IconButton(onClick = onRefresh) { Icon(Icons.Rounded.Refresh, contentDescription = "重新搜索") }
+                    IconButton(onClick = onRefresh) { Icon(Icons.Rounded.Refresh, contentDescription = stringResource(R.string.sender_search_again)) }
                 }
-                IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, contentDescription = "设置") }
+                IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.sender_settings)) }
             },
         )
         if (ui.lan == null) {
@@ -157,7 +160,7 @@ internal fun DeviceListScreen(
             LazyColumn(Modifier.weight(1f), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)) {
                 item {
                     Text(
-                        if (ui.count == 0) "正在搜索同一网段的设备 · 已发现 0" else "已发现 ${ui.count} 台 · ${if (ui.searching) "仍在搜索" else "搜索已暂停"}",
+                        if (ui.count == 0) stringResource(R.string.sender_searching_none) else pluralStringResource(R.plurals.sender_found_count, ui.count, ui.count, stringResource(if (ui.searching) R.string.sender_still_searching else R.string.sender_search_paused)),
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                             .semantics { liveRegion = LiveRegionMode.Polite },
                         style = MaterialTheme.typography.bodyMedium,
@@ -175,12 +178,12 @@ internal fun DeviceListScreen(
                 }
                 val longClick: (DeviceRow) -> Unit = { row -> if (row.dlnaOnly) onDlnaDetail(row) else menuRow = row }
                 if (ui.recent.isNotEmpty()) {
-                    item { SectionTitle("最近使用") }
+                    item { SectionTitle(stringResource(R.string.sender_section_recent)) }
                     items(ui.recent, key = { "r-" + it.device.deviceId }) { row ->
                         DeviceRowItem(row, onClick = { click(row) }, onLongClick = { longClick(row) }, onPush = { onPush(row) })
                     }
                 }
-                if (ui.nearby.isNotEmpty() || ui.count == 0) item { SectionTitle("附近设备") }
+                if (ui.nearby.isNotEmpty() || ui.count == 0) item { SectionTitle(stringResource(R.string.sender_section_nearby)) }
                 if (ui.nearby.isEmpty() && ui.count == 0) {
                     items(3) { SkeletonRow() }
                 } else {
@@ -210,12 +213,12 @@ internal fun DeviceListScreen(
             onDismissRequest = { menuRow = null },
             title = { Text(row.device.name) },
             text = {
-                Text("地址 ${row.device.host}:${row.device.port}\n" + if (row.trusted) "已信任：再次连接无需输入 PIN" else "尚未配对")
+                Text(stringResource(R.string.sender_device_address, row.device.host, row.device.port) + "\n" + stringResource(if (row.trusted) R.string.sender_device_trusted else R.string.sender_device_unpaired))
             },
             confirmButton = {
-                TextButton(onClick = { onForget(row); menuRow = null }, enabled = row.trusted || row.recent != null) { Text("移除信任") }
+                TextButton(onClick = { onForget(row); menuRow = null }, enabled = row.trusted || row.recent != null) { Text(stringResource(R.string.sender_remove_trust)) }
             },
-            dismissButton = { TextButton(onClick = { menuRow = null }) { Text("关闭") } },
+            dismissButton = { TextButton(onClick = { menuRow = null }) { Text(stringResource(R.string.sender_close)) } },
         )
     }
 }
@@ -240,22 +243,26 @@ private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -
     // 本应用接收端同时发现了 DLNA：整行仍是镜像，行尾另有“推送”按钮（交互稿 P01，D13-1）
     val wscPush = !dlna && d.canPush
     val subtitle = when {
-        dlna && row.pushedAt != null && !row.pushing -> "推送 · 上次 ${relativeTime(row.pushedAt)}"
-        dlna -> PushCopy.dlnaSubtitle(audioOnly, row.pushing, row.disambiguation)
-        row.pushing -> "正在推送"
-        wscPush -> "镜像 · 也可推送"
-        row.recent != null -> "屏幕镜像 · 上次 ${relativeTime(row.recent.lastUsedAt)}"
-        row.trusted -> "屏幕镜像 · ${d.host}"
-        else -> "屏幕镜像 · 首次连接需输入 PIN"
+        dlna && row.pushedAt != null && !row.pushing -> stringResource(R.string.sender_sub_push_last, relativeTime(row.pushedAt).asString())
+        dlna -> PushCopy.dlnaSubtitle(audioOnly, row.pushing, row.disambiguation).asString()
+        row.pushing -> stringResource(R.string.sender_sub_pushing)
+        wscPush -> stringResource(R.string.sender_sub_mirror_push)
+        row.recent != null -> stringResource(R.string.sender_sub_mirror_last, relativeTime(row.recent.lastUsedAt).asString())
+        row.trusted -> stringResource(R.string.sender_sub_mirror_host, d.host)
+        else -> stringResource(R.string.sender_sub_mirror_first)
     }
+    val pushLabel = stringResource(R.string.sender_push)
+    val clickLabel = stringResource(if (dlna) R.string.sender_push else R.string.sender_start_mirroring)
+    val longClickLabel = stringResource(R.string.sender_device_details)
+    val pushToDesc = stringResource(R.string.sender_push_to, d.name)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onClickLabel = if (dlna) "推送" else "开始镜像", onLongClickLabel = "设备详情")
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onClickLabel = clickLabel, onLongClickLabel = longClickLabel)
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .semantics {
-                if (wscPush) customActions = listOf(CustomAccessibilityAction("推送") { onPush(); true })
+                if (wscPush) customActions = listOf(CustomAccessibilityAction(pushLabel) { onPush(); true })
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -289,12 +296,12 @@ private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -
             // 视觉 32 dp 高、触控 48 dp（第 1 轮 UX P2-30）
             OutlinedButton(
                 onClick = onPush,
-                modifier = Modifier.minimumInteractiveComponentSize().height(32.dp).semantics { contentDescription = "推送到 ${d.name}" },
+                modifier = Modifier.minimumInteractiveComponentSize().height(32.dp).semantics { contentDescription = pushToDesc },
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
             ) {
                 Icon(Icons.Rounded.PlayArrow, null, Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("推送")
+                Text(pushLabel)
             }
         } else {
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = c.onSurfaceVariant)
@@ -306,20 +313,21 @@ private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -
 @Composable
 private fun DlnaSectionTitle(onInfo: () -> Unit) {
     val c = MaterialTheme.colorScheme
+    val infoDesc = stringResource(R.string.sender_dlna_unencrypted_a11y)
     FlowRow(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp)) {
         Text(
-            "电视自带投屏 · 只能推送",
+            stringResource(R.string.sender_dlna_section),
             Modifier.padding(top = 12.dp, bottom = 4.dp, end = 8.dp).semantics { heading() },
             style = MaterialTheme.typography.titleSmall, color = c.primary,
         )
         Row(
             Modifier.heightIn(min = 48.dp).clickable(onClick = onInfo).padding(horizontal = 8.dp)
-                .semantics(mergeDescendants = true) { contentDescription = "电视自带投屏不加密，了解详情" },
+                .semantics(mergeDescendants = true) { contentDescription = infoDesc },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Rounded.Info, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
             Spacer(Modifier.width(4.dp))
-            Text("不加密", style = MaterialTheme.typography.labelMedium, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.sender_unencrypted), style = MaterialTheme.typography.labelMedium, color = c.onSurfaceVariant)
         }
     }
 }
@@ -330,14 +338,14 @@ private fun PushingBanner(b: PushBanner, onOpen: () -> Unit) {
     val c = MaterialTheme.colorScheme
     Row(
         Modifier.padding(horizontal = 16.dp, vertical = 4.dp).fillMaxWidth()
-            .background(c.primaryContainer, RoundedCornerShape(16.dp)).clickable(onClickLabel = "回到遥控页", onClick = onOpen).padding(16.dp),
+            .background(c.primaryContainer, RoundedCornerShape(16.dp)).clickable(onClickLabel = stringResource(R.string.sender_back_to_remote), onClick = onOpen).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(Icons.Rounded.PlayCircleOutline, null, tint = c.onPrimaryContainer)
         Column(Modifier.weight(1f)) {
-            Text("正在推送到 ${b.targetName}", style = MaterialTheme.typography.titleSmall, color = c.onPrimaryContainer)
-            Text(b.status, style = MaterialTheme.typography.bodySmall, color = c.onPrimaryContainer)
+            Text(stringResource(R.string.sender_pushing_to, b.targetName), style = MaterialTheme.typography.titleSmall, color = c.onPrimaryContainer)
+            Text(b.status.asString(), style = MaterialTheme.typography.bodySmall, color = c.onPrimaryContainer)
         }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = c.onPrimaryContainer)
     }
@@ -366,23 +374,23 @@ private fun FallbackCard(onScan: () -> Unit, onCastCode: () -> Unit, onManualIp:
         Modifier.padding(16.dp).fillMaxWidth().background(c.surfaceContainerLow, RoundedCornerShape(16.dp)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("没看到你的电视？", style = MaterialTheme.typography.titleMedium)
-        Text("路由器可能拦截了自动发现。可以直接连接：", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-        Text("电视自带投屏需要路由器允许设备互相发现", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        Text(stringResource(R.string.sender_fallback_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.sender_fallback_body), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+        Text(stringResource(R.string.sender_fallback_dlna_note), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         // FlowRow：200% 字号 / 窄屏时按钮自动换行（C11）
         FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onScan) {
                 Icon(Icons.Rounded.QrCodeScanner, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("扫码连接")
+                Text(stringResource(R.string.sender_scan_to_connect))
             }
             FilledTonalButton(onClick = onCastCode) {
                 Icon(Icons.Rounded.Pin, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("输入投屏码")
+                Text(stringResource(R.string.sender_enter_cast_code))
             }
         }
-        TextButton(onClick = onManualIp) { Text("手动输入 IP 地址") }
+        TextButton(onClick = onManualIp) { Text(stringResource(R.string.sender_manual_ip)) }
     }
 }
 
@@ -395,8 +403,8 @@ private fun NoLanCard(onDiagnostics: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(Icons.Rounded.WifiOff, null, tint = ext.onWarningContainer)
-        Text("没有连接 Wi‑Fi。手机和电视要连同一个路由器。", Modifier.weight(1f), color = ext.onWarningContainer, style = MaterialTheme.typography.bodyMedium)
-        TextButton(onClick = onDiagnostics) { Text("诊断") }
+        Text(stringResource(R.string.sender_no_lan), Modifier.weight(1f), color = ext.onWarningContainer, style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = onDiagnostics) { Text(stringResource(R.string.sender_diagnose)) }
     }
 }
 
@@ -415,42 +423,42 @@ private fun NotFoundContent(
     LazyColumn(modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Column(Modifier.padding(top = 16.dp)) {
-                Text("没有发现设备", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.sender_not_found_title), style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(8.dp))
-                Text("已搜索 ${elapsed / 1000} 秒。多半是网络设置导致的，可以按下面检查：", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+                Text(pluralStringResource(R.plurals.sender_not_found_body, (elapsed / 1000).toInt(), (elapsed / 1000).toInt()), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
             }
         }
         item {
             if (lan != null) {
-                CheckRow(true, "手机已连接 ${if (lan.transport == LanInfo.Transport.ETHERNET) "有线网络" else "Wi‑Fi"}", "本机地址 ${lan.ip}，电视应为 ${lan.subnetHint}")
+                CheckRow(true, stringResource(R.string.sender_check_connected, stringResource(if (lan.transport == LanInfo.Transport.ETHERNET) R.string.sender_check_ethernet else R.string.sender_check_wifi)), stringResource(R.string.sender_check_connected_detail, lan.ip, lan.subnetHint))
             } else {
-                CheckRow(false, "手机没有连接 Wi‑Fi", "请先连接家里的路由器")
+                CheckRow(false, stringResource(R.string.sender_check_no_wifi), stringResource(R.string.sender_check_no_wifi_detail))
             }
         }
-        item { CheckRow(null, "电视和手机连的是同一个路由器吗？", "双频路由的 2.4G 与 5G 有时互不相通") }
-        item { CheckRow(null, "路由器是否开启了“AP 隔离”？", "也叫无线隔离 / 客户端隔离") }
-        item { CheckRow(null, "是否连接了“访客网络”？", "访客网络通常禁止设备互访，请换到主网络") }
+        item { CheckRow(null, stringResource(R.string.sender_check_same_router), stringResource(R.string.sender_check_same_router_detail)) }
+        item { CheckRow(null, stringResource(R.string.sender_check_ap_isolation), stringResource(R.string.sender_check_ap_isolation_detail)) }
+        item { CheckRow(null, stringResource(R.string.sender_check_guest), stringResource(R.string.sender_check_guest_detail)) }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onScan) {
                     Icon(Icons.Rounded.QrCodeScanner, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("扫码连接")
+                    Text(stringResource(R.string.sender_scan_to_connect))
                 }
-                FilledTonalButton(onClick = onCastCode) { Text("输入投屏码") }
+                FilledTonalButton(onClick = onCastCode) { Text(stringResource(R.string.sender_enter_cast_code)) }
             }
         }
         item {
             Text(
-                "电视自带投屏需要路由器允许设备互相发现", Modifier.padding(horizontal = 16.dp),
+                stringResource(R.string.sender_fallback_dlna_note), Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
             )
         }
-        item { TextButton(onClick = onDiagnostics) { Text("完整网络诊断（组播检测）") } }
+        item { TextButton(onClick = onDiagnostics) { Text(stringResource(R.string.sender_full_diagnostics)) } }
         item {
             FlowRow(itemVerticalAlignment = Alignment.CenterVertically) {
-                Text("电视还没装接收端？", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-                TextButton(onClick = onInstallHelp) { Text("获取安装方法") }
+                Text(stringResource(R.string.sender_no_receiver), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+                TextButton(onClick = onInstallHelp) { Text(stringResource(R.string.sender_get_install)) }
             }
         }
         item { Spacer(Modifier.height(8.dp)) }
@@ -462,9 +470,9 @@ private fun CheckRow(confirmed: Boolean?, title: String, detail: String) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
     val (icon, tint, label) = when (confirmed) {
-        true -> Triple(Icons.Rounded.CheckCircle, ext.success, "已确认")
-        false -> Triple(Icons.Rounded.WifiOff, c.error, "有问题")
-        null -> Triple(Icons.Rounded.HelpOutline, ext.warning, "需你确认")
+        true -> Triple(Icons.Rounded.CheckCircle, ext.success, stringResource(R.string.sender_check_confirmed))
+        false -> Triple(Icons.Rounded.WifiOff, c.error, stringResource(R.string.sender_check_problem))
+        null -> Triple(Icons.Rounded.HelpOutline, ext.warning, stringResource(R.string.sender_check_please_confirm))
     }
     Row(
         Modifier.fillMaxWidth().background(c.surfaceContainerLow, RoundedCornerShape(12.dp)).padding(12.dp)
@@ -489,7 +497,7 @@ private fun EncryptedFooter() {
     ) {
         Icon(Icons.Rounded.Lock, null, Modifier.size(14.dp), tint = c.tertiary)
         Spacer(Modifier.width(4.dp))
-        Text("屏幕镜像全程加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        Text(stringResource(R.string.sender_encrypted_footer), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
     }
 }
 
@@ -499,10 +507,10 @@ private fun BottomBar(onScan: () -> Unit, onCastCode: () -> Unit, onManualIp: ()
     Column(Modifier.fillMaxWidth().background(c.surfaceContainer).navigationBarsPadding().reportFooterHeight().padding(vertical = 8.dp)) {
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             TextButton(onClick = onScan, modifier = Modifier.heightIn(min = 48.dp)) {
-                Icon(Icons.Rounded.QrCodeScanner, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("扫码")
+                Icon(Icons.Rounded.QrCodeScanner, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.sender_scan))
             }
             TextButton(onClick = onCastCode, modifier = Modifier.heightIn(min = 48.dp)) {
-                Icon(Icons.Rounded.Pin, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("投屏码")
+                Icon(Icons.Rounded.Pin, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.sender_cast_code))
             }
             TextButton(onClick = onManualIp, modifier = Modifier.heightIn(min = 48.dp)) {
                 Icon(Icons.Rounded.Link, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("IP")
@@ -511,7 +519,7 @@ private fun BottomBar(onScan: () -> Unit, onCastCode: () -> Unit, onManualIp: ()
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Lock, null, Modifier.size(14.dp), tint = c.tertiary)
             Spacer(Modifier.width(4.dp))
-            Text("屏幕镜像全程加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(stringResource(R.string.sender_encrypted_footer), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }
 }
@@ -523,32 +531,32 @@ internal fun ManualIpDialog(onDismiss: () -> Unit, onConnect: (String) -> Boolea
     var error by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("手动输入 IP 地址") },
+        title = { Text(stringResource(R.string.sender_manual_ip)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("在电视待机页上可以看到地址，例如 192.168.1.128 : 8443", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.sender_manual_ip_hint), style = MaterialTheme.typography.bodyMedium)
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ':' }; error = false },
                     singleLine = true,
                     isError = error,
-                    label = { Text("IP 地址:端口") },
-                    supportingText = { if (error) Text("地址格式不正确") },
+                    label = { Text(stringResource(R.string.sender_manual_ip_label)) },
+                    supportingText = { if (error) Text(stringResource(R.string.sender_manual_ip_error)) },
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri),
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { if (!onConnect(text)) error = true }) { Text("连接") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        confirmButton = { TextButton(onClick = { if (!onConnect(text)) error = true }) { Text(stringResource(R.string.sender_connect)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.sender_cancel)) } },
     )
 }
 
-internal fun relativeTime(at: Long): String {
-    val d = (System.currentTimeMillis() - at).coerceAtLeast(0) / 1000
+internal fun relativeTime(at: Long, now: Long = System.currentTimeMillis()): UiText {
+    val d = ((now - at).coerceAtLeast(0) / 1000).toInt()
     return when {
-        d < 60 -> "刚刚"
-        d < 3600 -> "${d / 60} 分钟前"
-        d < 86_400 -> "${d / 3600} 小时前"
-        else -> "${d / 86_400} 天前"
+        d < 60 -> uiText(R.string.sender_time_just_now)
+        d < 3600 -> uiPlural(R.plurals.sender_time_minutes_ago, d / 60)
+        d < 86_400 -> uiPlural(R.plurals.sender_time_hours_ago, d / 3600)
+        else -> uiPlural(R.plurals.sender_time_days_ago, d / 86_400)
     }
 }

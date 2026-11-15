@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.protocol.dlna.dmc
 
+import com.benchan.wireless.screencasting.protocol.dlna.R
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -352,7 +353,7 @@ class DmcController @Inject constructor(
                 }
                 is PushInput.Local -> {
                     val mime = (resolver.getType(input.uri) ?: input.mimeHint ?: "application/octet-stream").let(MediaMime::normalize)
-                    val name = displayTitle(input.displayName ?: ContentUriSource.displayName(resolver, input.uri), mime, i)
+                    val name = displayTitle(input.displayName ?: ContentUriSource.displayName(resolver, input.uri), mime, i) { k, n -> numberedTitle(context, k, n) }
                     PushItemInfo(i, MediaMime.kindOf(mime) ?: MediaKind.VIDEO, remote = false, title = name, mime = mime, uri = input.uri)
                 }
             }
@@ -843,16 +844,21 @@ class DmcController @Inject constructor(
          * 界面标题（只在手机界面显示，不进日志）。系统照片选择器出于隐私只给 “1000000020.mp4” 这种数字名，
          * 这时改用“视频 3”“照片 5”（第 1 轮 EMU-3）。
          */
-        fun displayTitle(name: String?, mime: String, index: Int): String {
-            val kind = when (MediaMime.kindOf(mime)) {
-                MediaKind.IMAGE -> "照片"
-                MediaKind.AUDIO -> "音乐"
-                else -> "视频"
-            }
+        fun displayTitle(name: String?, mime: String, index: Int, numbered: (MediaKind, Int) -> String): String {
             val n = name?.trim().orEmpty()
-            if (n.isEmpty() || PICKER_ID_NAME.matches(n)) return "$kind ${index + 1}"
+            if (n.isEmpty() || PICKER_ID_NAME.matches(n)) return numbered(MediaMime.kindOf(mime) ?: MediaKind.VIDEO, index + 1)
             return n
         }
+
+        /** “Video 3 / 视频 3”这类编号标题的文字（资源：英文默认 / values-zh）。 */
+        fun numberedTitle(context: Context, kind: MediaKind, number: Int): String = context.getString(
+            when (kind) {
+                MediaKind.IMAGE -> R.string.dlna_title_photo
+                MediaKind.AUDIO -> R.string.dlna_title_music
+                else -> R.string.dlna_title_video
+            },
+            number,
+        )
 
         private val PICKER_ID_NAME = Regex("^\\d{6,}(\\.[A-Za-z0-9]{1,5})?$")
 

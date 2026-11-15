@@ -70,6 +70,10 @@ import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
 import com.benchan.wireless.screencasting.feature.receiver.session.ReceiverControl
 import com.benchan.wireless.screencasting.feature.receiver.session.pausedText
 import kotlinx.coroutines.delay
+import com.benchan.wireless.screencasting.feature.receiver.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.benchan.wireless.screencasting.feature.receiver.session.asString
 
 /** TV 控制条无操作自动收起（交互稿 R09：8 s）。 */
 internal const val TV_CONTROL_BAR_IDLE_MS = 8_000L
@@ -203,51 +207,54 @@ internal fun TvControlBar(
                 val left = if (control.phase == ControlPhase.PENDING) ((control.pendingDeadline - now + 999) / 1_000).coerceAtLeast(0) else null
                 StatusRow(
                     dot = null,
-                    title = "等待 $peer 确认…" + (left?.let { " $it" } ?: ""),
-                    subtitle = "请在对方手机上点「允许本次」",
+                    title = if (left != null) stringResource(R.string.rx_ctl_waiting_countdown, peer, left.toInt()) else stringResource(R.string.rx_ctl_waiting, peer),
+                    subtitle = stringResource(R.string.rx_ctl_waiting_detail),
                     onClose = { act(onClose) },
                     leading = { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp, color = c.primary) },
                 )
                 // 倒计时只在剩 10 秒时播报一次
-                Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (left != null && left in 1..10) "还剩 10 秒" else "" })
+                val tenLeft = stringResource(R.string.rx_ctl_ten_seconds_left)
+                Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (left != null && left in 1..10) tenLeft else "" })
                 ButtonFlow {
-                    TvButton("取消请求", { act(actions::cancelRequest) }, Modifier.focusRequester(first).focusRequester(last).tvInitialFocus())
+                    TvButton(stringResource(R.string.rx_ctl_cancel_request), { act(actions::cancelRequest) }, Modifier.focusRequester(first).focusRequester(last).tvInitialFocus())
                 }
             }
             control.controlling -> {
                 val paused = control.phase == ControlPhase.PAUSED
+                val dpadHint = stringResource(R.string.rx_ctl_dpad_unsupported)
+                val textHint = stringResource(R.string.rx_ctl_text_unsupported)
                 StatusRow(
                     dot = if (paused) WscTheme.extended.warning else c.primary,
-                    title = if (paused) "控制已暂停 · ${pausedText(control.reason)}" else "正在控制 $peer",
-                    subtitle = focusHint ?: "返回键 = 对方返回",
+                    title = if (paused) stringResource(R.string.rx_ctl_badge_paused, pausedText(control.reason).asString()) else stringResource(R.string.rx_ctl_controlling, peer),
+                    subtitle = focusHint ?: stringResource(R.string.rx_ctl_tv_back_hint),
                     onClose = { act(onClose) },
                     // 修饰符作用在关闭 × 上：控制中默认焦点“关闭”
                     modifier = Modifier.tvInitialFocus(),
                 )
                 ButtonFlow {
-                    TvButton("光标", { act { onMode(TvControlMode.CURSOR) } }, Modifier.focusRequester(first), selected = mode == TvControlMode.CURSOR)
+                    TvButton(stringResource(R.string.rx_mode_cursor), { act { onMode(TvControlMode.CURSOR) } }, Modifier.focusRequester(first), selected = mode == TvControlMode.CURSOR)
                     // 对方低于 Android 13：按钮仍可聚焦，聚焦时状态行说明原因、每次按下都提示（交互稿 R11 / v1.0.3）
                     TvButton(
-                        if (dpadOk) "方向键" else "方向键（对方不支持）",
+                        if (dpadOk) stringResource(R.string.rx_mode_dpad) else stringResource(R.string.rx_mode_dpad_unsupported),
                         { act { if (dpadOk) onMode(TvControlMode.DPAD) else actions.notifyUnsupported(ControlFeatures.DPAD, force = true) } },
-                        Modifier.onFocusChanged { focusHint = if (it.isFocused && !dpadOk) "对方系统版本不支持方向键模式" else focusHint.takeUnless { h -> h == "对方系统版本不支持方向键模式" } },
+                        Modifier.onFocusChanged { focusHint = if (it.isFocused && !dpadOk) dpadHint else focusHint.takeUnless { h -> h == dpadHint } },
                         selected = mode == TvControlMode.DPAD && dpadOk,
                         unavailable = !dpadOk,
                     )
-                    TvButton("主页", { act { actions.key(RemoteKey.HOME) } }, enabled = !paused)
-                    TvButton("最近任务", { act { actions.key(RemoteKey.RECENTS) } }, enabled = !paused)
+                    TvButton(stringResource(R.string.rx_key_home), { act { actions.key(RemoteKey.HOME) } }, enabled = !paused)
+                    TvButton(stringResource(R.string.rx_key_recents), { act { actions.key(RemoteKey.RECENTS) } }, enabled = !paused)
                     TvButton(
-                        "输入文字",
+                        stringResource(R.string.rx_ctl_input_text),
                         { act { if (textOk) onTextInput() else actions.notifyUnsupported(ControlFeatures.TEXT, force = true) } },
-                        Modifier.onFocusChanged { focusHint = if (it.isFocused && !textOk) "对方系统版本不支持文字输入" else focusHint.takeUnless { h -> h == "对方系统版本不支持文字输入" } },
+                        Modifier.onFocusChanged { focusHint = if (it.isFocused && !textOk) textHint else focusHint.takeUnless { h -> h == textHint } },
                         enabled = !paused,
                         unavailable = !textOk,
                     )
                 }
                 ButtonFlow {
-                    TvButton("退出控制", { act(actions::exit) })
-                    TvButton("连接信息", { act(onShowStats) })
-                    TvButton("断开投屏", { act(onDisconnect) }, Modifier.focusRequester(last))
+                    TvButton(stringResource(R.string.rx_ctl_exit), { act(actions::exit) })
+                    TvButton(stringResource(R.string.rx_ctl_connection_info), { act(onShowStats) })
+                    TvButton(stringResource(R.string.rx_disconnect), { act(onDisconnect) }, Modifier.focusRequester(last))
                 }
             }
             else -> {
@@ -255,18 +262,22 @@ internal fun TvControlBar(
                 StatusRow(
                     dot = c.outline,
                     title = peer,
-                    subtitle = if (cooldownLeft > 0) "$cooldownLeft 秒后可以再次请求" else "未控制 · 对方确认后可用遥控器操作手机",
+                    subtitle = if (cooldownLeft > 0) {
+                        pluralStringResource(R.plurals.rx_ctl_denied_cooldown, cooldownLeft.toInt(), cooldownLeft.toInt())
+                    } else {
+                        stringResource(R.string.rx_ctl_tv_request_hint)
+                    },
                     onClose = { act(onClose) },
                 )
                 ButtonFlow {
                     val canRequest = cooldownLeft == 0L
                     TvButton(
-                        "请求控制", { act(actions::request) },
+                        stringResource(R.string.rx_ctl_request), { act(actions::request) },
                         Modifier.focusRequester(first).then(if (!openedInCooldown) Modifier.tvInitialFocus() else Modifier),
                         enabled = canRequest, emphasis = true,
                     )
-                    TvButton("连接信息", { act(onShowStats) }, if (openedInCooldown) Modifier.tvInitialFocus() else Modifier)
-                    TvButton("断开投屏", { act(onDisconnect) }, Modifier.focusRequester(last))
+                    TvButton(stringResource(R.string.rx_ctl_connection_info), { act(onShowStats) }, if (openedInCooldown) Modifier.tvInitialFocus() else Modifier)
+                    TvButton(stringResource(R.string.rx_disconnect), { act(onDisconnect) }, Modifier.focusRequester(last))
                 }
             }
         }
@@ -294,7 +305,7 @@ private fun StatusRow(
             Text(title, Modifier.semantics { heading() }, style = MaterialTheme.typography.titleMedium)
             Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
         }
-        TvIconButton(androidx.compose.material.icons.Icons.Rounded.Close, "关闭", onClose, modifier)
+        TvIconButton(androidx.compose.material.icons.Icons.Rounded.Close, stringResource(R.string.rx_close), onClose, modifier)
     }
 }
 
@@ -321,34 +332,34 @@ internal fun TvControlHintCard(onDismiss: () -> Unit, modifier: Modifier = Modif
         modifier.widthIn(max = 360.dp).background(c.surfaceContainerHigh, RoundedCornerShape(24.dp)).padding(horizontal = 26.dp, vertical = 22.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("用遥控器操作手机", Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.rx_ctl_hint_title), Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
         // 记住的模式是方向键模式时显示方向键模式说明（交互稿 v1.0.3）
         (
             if (mode == TvControlMode.DPAD) {
                 listOf(
-                    "方向键" to "移动对方手机的焦点",
-                    "确定" to "点击当前焦点",
-                    "返回" to "对方手机的“返回”",
-                    "菜单" to "控制条：换光标模式、退出、断开",
+                    R.string.rx_ctl_hint_key_dpad to R.string.rx_ctl_hint_dpad_move_focus,
+                    R.string.rx_ctl_hint_key_ok to R.string.rx_ctl_hint_dpad_ok,
+                    R.string.rx_ctl_hint_key_back to R.string.rx_ctl_hint_back,
+                    R.string.rx_ctl_hint_key_menu to R.string.rx_ctl_hint_dpad_menu,
                 )
             } else {
                 listOf(
-                    "方向键" to "移动光标，按住加速",
-                    "确定" to "点击",
-                    "长按确定" to "长按",
-                    "顶 / 底边继续按" to "滚动页面",
-                    "返回" to "对方手机的“返回”",
-                    "菜单" to "控制条：退出、断开",
+                    R.string.rx_ctl_hint_key_dpad to R.string.rx_ctl_hint_cursor_move,
+                    R.string.rx_ctl_hint_key_ok to R.string.rx_ctl_hint_cursor_ok,
+                    R.string.rx_ctl_hint_key_hold_ok to R.string.rx_ctl_hint_cursor_hold,
+                    R.string.rx_ctl_hint_key_edge to R.string.rx_ctl_hint_cursor_scroll,
+                    R.string.rx_ctl_hint_key_back to R.string.rx_ctl_hint_back,
+                    R.string.rx_ctl_hint_key_menu to R.string.rx_ctl_hint_cursor_menu,
                 )
             }
             ).forEach { (k, v) ->
             Row {
-                Text(k, Modifier.width(132.dp), style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
-                Text(v, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(k), Modifier.width(132.dp), style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
+                Text(stringResource(v), style = MaterialTheme.typography.bodyLarge)
             }
         }
         Spacer(Modifier.height(4.dp))
-        TvButton("知道了", onDismiss, Modifier.focusRequester(focus), emphasis = true)
+        TvButton(stringResource(R.string.rx_got_it), onDismiss, Modifier.focusRequester(focus), emphasis = true)
     }
 }
 
@@ -376,20 +387,21 @@ internal fun RemoteTextDialog(
     // 到上限变 error 色并只播报一次“已达到 1000 字上限”（计数本身不设 liveRegion）
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("输入到 $peer", Modifier.semantics { heading() }) },
+        title = { Text(stringResource(R.string.rx_text_dialog_title, peer), Modifier.semantics { heading() }) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "将输入到对方手机当前选中的输入框。密码、验证码请让对方自己输入。",
+                    stringResource(R.string.rx_text_dialog_desc),
                     style = if (tv) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
                     color = c.onSurfaceVariant,
                 )
+                val fieldDesc = stringResource(R.string.rx_text_dialog_field)
                 OutlinedTextField(
                     value = draft,
                     onValueChange = { onDraftChange(it.take(max)) },
                     modifier = Modifier.fillMaxWidth().focusRequester(focus).then(if (tv) Modifier.tvFocusRing(8.dp) else Modifier)
-                        .semantics { contentDescription = "要输入的文字" },
-                    placeholder = { Text("要输入的文字") },
+                        .semantics { contentDescription = fieldDesc },
+                    placeholder = { Text(fieldDesc) },
                     isError = error != null,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(onSend = { if (canSend) onSend(draft) }),
@@ -403,19 +415,20 @@ internal fun RemoteTextDialog(
                     color = if (atLimit) c.error else c.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
                 )
-                Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (atLimit) "已达到 1000 字上限" else "" })
+                val limitDesc = stringResource(R.string.rx_text_dialog_limit, max)
+                Box(Modifier.size(1.dp).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = if (atLimit) limitDesc else "" })
                 error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.error) }
             }
         },
         confirmButton = {
             if (tv) {
-                TvButton("输入", { onSend(draft) }, enabled = canSend, emphasis = true)
+                TvButton(stringResource(R.string.rx_text_dialog_send), { onSend(draft) }, enabled = canSend, emphasis = true)
             } else {
-                TextButton(onClick = { onSend(draft) }, enabled = canSend, colors = androidx.compose.material3.ButtonDefaults.textButtonColors(disabledContentColor = c.outline)) { Text("输入") }
+                TextButton(onClick = { onSend(draft) }, enabled = canSend, colors = androidx.compose.material3.ButtonDefaults.textButtonColors(disabledContentColor = c.outline)) { Text(stringResource(R.string.rx_text_dialog_send)) }
             }
         },
         dismissButton = {
-            if (tv) TvButton("取消", onDismiss) else TextButton(onClick = onDismiss) { Text("取消") }
+            if (tv) TvButton(stringResource(R.string.rx_cancel), onDismiss) else TextButton(onClick = onDismiss) { Text(stringResource(R.string.rx_cancel)) }
         },
     )
 }

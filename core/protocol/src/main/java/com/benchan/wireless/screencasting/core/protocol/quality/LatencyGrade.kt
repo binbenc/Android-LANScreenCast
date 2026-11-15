@@ -1,10 +1,26 @@
 package com.benchan.wireless.screencasting.core.protocol.quality
 
+import com.benchan.wireless.screencasting.core.common.l10n.L10n
+import java.util.Locale
+
 /**
  * 延迟色阶（交互稿 03；阈值来自 PRD 1.3）：<100 极佳、100–150 良好、150–250 一般、>250 较差。
  */
-enum class LatencyGrade(val label: String) {
-    EXCELLENT("极佳"), GOOD("良好"), FAIR("一般"), POOR("较差");
+enum class LatencyGrade {
+    EXCELLENT, GOOD, FAIR, POOR;
+
+    /**
+     * 等级文字（Excellent/Good/Fair/Poor，中文环境为 极佳/良好/一般/较差）。
+     * Android UI 请优先用 `core/ui` 的 `LatencyGrade.labelRes` / `displayLabel()`；这里供纯 JVM 代码与兼容旧调用点。
+     */
+    val label: String get() = label(Locale.getDefault())
+
+    fun label(locale: Locale): String = when (this) {
+        EXCELLENT -> L10n.text("Excellent", "极佳", locale)
+        GOOD -> L10n.text("Good", "良好", locale)
+        FAIR -> L10n.text("Fair", "一般", locale)
+        POOR -> L10n.text("Poor", "较差", locale)
+    }
 
     companion object {
         fun of(latencyMs: Int): LatencyGrade = when {

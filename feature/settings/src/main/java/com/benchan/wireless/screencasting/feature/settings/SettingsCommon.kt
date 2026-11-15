@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import com.benchan.wireless.screencasting.core.ui.R as UiR
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -31,7 +33,7 @@ internal fun SettingsTopBar(
             IconButton(
                 onClick = onBack,
                 modifier = (if (initialFocus) Modifier.tvInitialFocus() else Modifier).tvFocusRing(),
-            ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "返回") }
+            ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(UiR.string.core_ui_action_back)) }
         },
         actions = actions,
     )

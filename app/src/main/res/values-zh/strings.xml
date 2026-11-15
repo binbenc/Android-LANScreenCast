@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 中文文案，与 values/strings.xml 一一对应。 -->
+<resources>
+    <!-- 产品正式名称待定（PRD Q6），交互稿占位名“局域投屏” -->
+    <string name="app_name">局域投屏</string>
+
+    <string name="app_onboarding_headline">把手机画面，\n安静地送到大屏</string>
+    <string name="app_onboarding_subtitle">局域网直连 · GPL‑3.0 开源，代码可审计</string>
+    <string name="app_onboarding_no_ads_title">没有广告，永久免费</string>
+    <string name="app_onboarding_no_ads_detail">不接入任何广告、统计、崩溃上报 SDK</string>
+    <string name="app_onboarding_no_account_title">不需要账号</string>
+    <string name="app_onboarding_no_account_detail">打开即用，不索要手机号</string>
+    <string name="app_onboarding_offline_title">不连接互联网</string>
+    <string name="app_onboarding_offline_detail">画面只在你家的局域网内传输，屏幕镜像全程加密</string>
+    <string name="app_onboarding_use_as">这台设备用来</string>
+    <string name="app_onboarding_mode_sender_title">投屏到别处</string>
+    <string name="app_onboarding_mode_sender_subtitle">发送端</string>
+    <string name="app_onboarding_mode_receiver_title">接收投屏</string>
+    <string name="app_onboarding_mode_receiver_subtitle">把本机当作屏幕</string>
+    <string name="app_onboarding_mode_recommended">%1$s · 本机推荐</string>
+    <string name="app_onboarding_start">开始使用</string>
+    <string name="app_onboarding_tv_missing">电视还没装接收端？</string>
+    <string name="app_onboarding_install_help">获取安装方法</string>
+
+    <string name="app_elder_exit_notice">已退出长辈模式，可以在设置里重新打开</string>
+    <string name="app_elder_got_it">知道了</string>
+    <string name="app_elder_recommend_title">字太小？可以打开长辈模式</string>
+    <string name="app_elder_recommend_detail">大字大按钮，一键投到家里的电视</string>
+    <string name="app_elder_recommend_no">不用了</string>
+    <string name="app_elder_recommend_yes">去看看</string>
+    <string name="app_elder_no_new_tv">长辈模式下不能连新的电视，请家人帮忙设置</string>
+    <string name="app_elder_use_home_buttons">长辈模式下请用首页的大按钮放照片和视频</string>
+</resources>

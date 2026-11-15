@@ -34,6 +34,9 @@ object WscProtocol {
         const val NAME = "n"
         const val CAPS = "caps"
         const val FINGERPRINT_PREFIX = "fp"
+
+        /** 可选：本机 DLNA 接收（DMR）的 HTTP 端口，DLNA 接收开着时才带；描述地址固定为 `http://<host>:<dlna>/dlna/description.xml`。旧版接收端没有该键。 */
+        const val DLNA_PORT = "dlna"
     }
 
     /** 能力字符串。 */
