@@ -199,7 +199,7 @@ internal fun AppleCompatPinOverlay(pin: String, onDismiss: () -> Unit) {
                     }
                 }
             }
-            Text("请在 iPhone / iPad 上输入此 PIN。配对后这台设备下次可直接连接。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text("请在 iPhone / iPad / Mac 上输入此 PIN。配对后这台设备下次可直接连接。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
             Text("按返回键关闭", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }

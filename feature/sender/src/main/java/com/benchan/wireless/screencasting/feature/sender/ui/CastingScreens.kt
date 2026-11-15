@@ -2,6 +2,12 @@
 
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.TouchApp
+import androidx.compose.ui.res.painterResource
+import com.benchan.wireless.screencasting.core.protocol.control.ControlPhase
+import com.benchan.wireless.screencasting.feature.control.ControlCopy
+import com.benchan.wireless.screencasting.feature.control.ControlUi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,6 +96,7 @@ import kotlinx.coroutines.delay
 @Composable
 internal fun CaptureIntroSheet(
     targetName: String,
+    forceWholeScreen: Boolean = false,
     audioEnabled: Boolean,
     onAudioChange: (Boolean) -> Unit,
     onContinue: (skipNextTime: Boolean) -> Unit,
@@ -105,8 +112,19 @@ internal fun CaptureIntroSheet(
         ) {
             Text("开始镜像前，还有一步", style = MaterialTheme.typography.titleLarge)
             Text("系统会询问是否允许录屏，请选择：", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-            ChoiceRow(true, "共享整个屏幕", "切换 App 时电视画面不中断", recommended = true)
-            ChoiceRow(false, "共享单个应用", "离开该应用后，电视会显示占位画面")
+            ChoiceRow(true, "共享整个屏幕", "切换 App 时电视画面不中断", recommended = !forceWholeScreen)
+            if (forceWholeScreen) {
+                // 用户决策 D1：开启反向控制时只共享整个屏幕
+                Row(
+                    Modifier.fillMaxWidth().background(c.surfaceContainerLow, RoundedCornerShape(12.dp)).padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(Icons.Rounded.TouchApp, null, Modifier.size(18.dp), tint = c.primary)
+                    Text("已开启反向控制，将共享整个屏幕；只想共享单个应用可在设置中关闭反向控制", style = MaterialTheme.typography.bodySmall)
+                }
+            } else {
+                ChoiceRow(false, "共享单个应用", "离开该应用后，电视会显示占位画面")
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Shield, null, Modifier.size(18.dp), tint = c.tertiary)
                 Text("画面加密传输，只发送到 $targetName", style = MaterialTheme.typography.bodyMedium)
@@ -161,10 +179,18 @@ private fun ChoiceRow(selected: Boolean, title: String, detail: String, recommen
         RadioButton(selected = selected, onClick = null)
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
-                if (recommended) Text("推荐", style = MaterialTheme.typography.labelSmall, color = c.primary)
+                // primaryContainer 底上只用 onPrimaryContainer（onSurfaceVariant 在该底上对比度不足）
+                Text(title, style = MaterialTheme.typography.titleSmall, color = if (selected) c.onPrimaryContainer else c.onSurface)
+                if (recommended) {
+                    Text(
+                        "推荐",
+                        Modifier.background(c.primary, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = c.onPrimary,
+                    )
+                }
             }
-            Text(detail, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = if (selected) c.onPrimaryContainer else c.onSurfaceVariant)
         }
     }
 }
@@ -185,6 +211,9 @@ internal fun CastingScreen(
     notificationNeedsSettings: Boolean = false,
     onAllowNotifications: () -> Unit = {},
     onDismissNotificationTip: () -> Unit = {},
+    control: ControlUi = ControlUi(),
+    onRevokeControl: () -> Unit = {},
+    onContinueControl: () -> Unit = {},
 ) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
@@ -214,9 +243,11 @@ internal fun CastingScreen(
             StatusCapsule(
                 latencyMs = s.latencyMs,
                 grade = s.grade,
-                bitrateKbps = s.bitrateKbps.takeIf { it > 0 },
-                resolutionLabel = if (s.height > 0) "${minOf(s.width, s.height)}p${s.fps}" else null,
+                // 被控制中隐藏码率与分辨率段，给“被控制中”让出空间（UX 走查 G7）
+                bitrateKbps = s.bitrateKbps.takeIf { it > 0 && !control.controlled },
+                resolutionLabel = if (s.height > 0 && !control.controlled) "${minOf(s.width, s.height)}p${s.fps}" else null,
                 noAudio = state.audio == AudioState.NO_PERMISSION || state.audio == AudioState.OFF,
+                controlled = control.controlled,
             )
             if (state.audio == AudioState.SILENT_SUSPECTED) {
                 Text("一直没有声音：正在播放的 App 可能禁止了声音捕获", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, textAlign = TextAlign.Center)
@@ -228,6 +259,7 @@ internal fun CastingScreen(
                 Text("当前画面可能受保护（黑屏），建议改用视频 App 的“投屏”按钮推送", style = MaterialTheme.typography.bodySmall, color = ext.warning, textAlign = TextAlign.Center)
             }
         }
+        if (control.controlled) ControlCard(control, onRevokeControl, onContinueControl)
         if (showNotificationTip) {
             // 可关闭的通知权限提示（S-c）
             Row(
@@ -277,6 +309,83 @@ internal fun CastingScreen(
         Spacer(Modifier.height(8.dp))
     }
     StopFooter(onStop)
+    }
+}
+
+/**
+ * 交互稿 R04：被控制中的控制卡。primaryContainer 表达“正在发生的授权”而非警告；“收回控制”是卡内唯一按钮。
+ */
+@Composable
+private fun ControlCard(control: ControlUi, onRevoke: () -> Unit, onContinueControl: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    val since = rememberElapsed(control.grantedAt).removePrefix("00:")
+    Column(
+        Modifier.fillMaxWidth().background(c.primaryContainer, RoundedCornerShape(20.dp)).padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(Icons.Rounded.TouchApp, null, tint = c.onPrimaryContainer)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "${control.peerName} 正在控制本机",
+                    Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    style = MaterialTheme.typography.labelLarge, color = c.onPrimaryContainer,
+                )
+                val ownApp = control.phase == ControlPhase.PAUSED && control.reason == com.benchan.wireless.screencasting.core.protocol.control.ControlReason.OWN_APP
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val paused = control.phase == ControlPhase.PAUSED
+                    // 暂停时副标题前加 warning 圆点（UX 走查 G14）
+                    if (paused) Box(Modifier.size(8.dp).background(WscTheme.extended.warning, androidx.compose.foundation.shape.CircleShape))
+                    Text(
+                        when {
+                            // D9：在本应用内时控制暂停，告诉用户原因与出路（用户决策）
+                            ownApp -> "对方暂时不能操作：你正在使用局域投屏"
+                            control.phase == ControlPhase.PAUSED && control.reason == com.benchan.wireless.screencasting.core.protocol.control.ControlReason.SENSITIVE_APP ->
+                                "对方暂时不能操作：此界面只能由你操作"
+                            paused -> "控制已暂停 · ${ControlCopy.pauseLabel(control.reason)}"
+                            else -> "已控制 $since · 锁屏会立即收回"
+                        },
+                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                        color = c.onPrimaryContainer,
+                    )
+                }
+            }
+        }
+        val context = androidx.compose.ui.platform.LocalContext.current
+        // C 期：本机开着屏幕朗读时的提示，带 info 图标、实时监听（UX G4 / G5）
+        if (com.benchan.wireless.screencasting.feature.control.ui.touchExploration()) {
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Info, null, Modifier.size(16.dp), tint = c.onPrimaryContainer)
+                Text(ControlCopy.TALKBACK_CARD, style = MaterialTheme.typography.bodySmall, color = c.onPrimaryContainer)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        val ownAppPaused = control.phase == ControlPhase.PAUSED && control.reason == com.benchan.wireless.screencasting.core.protocol.control.ControlReason.OWN_APP
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (ownAppPaused) {
+                // D9 暂停卡（交互稿 v1.0.3）：[回到桌面] Filled + [收回控制] Outlined
+                Button(onClick = { ControlCopy.goHome(context) }, modifier = Modifier.heightIn(min = 40.dp)) { Text("回到桌面") }
+                OutlinedButton(onClick = onRevoke, modifier = Modifier.heightIn(min = 40.dp)) {
+                    Icon(painterResource(com.benchan.wireless.screencasting.feature.control.R.drawable.ic_control_handback), null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("收回控制")
+                }
+            } else if (control.phase == ControlPhase.PAUSED && control.reason == com.benchan.wireless.screencasting.core.protocol.control.ControlReason.SENSITIVE_APP) {
+                // D-3 兜底：敏感界面暂停时本机可“继续控制”（例如权限弹窗需要对方继续）
+                Button(onClick = onContinueControl, modifier = Modifier.heightIn(min = 40.dp)) { Text("继续控制") }
+                OutlinedButton(onClick = onRevoke, modifier = Modifier.heightIn(min = 40.dp)) {
+                    Icon(painterResource(com.benchan.wireless.screencasting.feature.control.R.drawable.ic_control_handback), null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("收回控制")
+                }
+            } else {
+                Button(onClick = onRevoke, modifier = Modifier.heightIn(min = 40.dp)) {
+                    Icon(painterResource(com.benchan.wireless.screencasting.feature.control.R.drawable.ic_control_handback), null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("收回控制")
+                }
+            }
+        }
     }
 }
 

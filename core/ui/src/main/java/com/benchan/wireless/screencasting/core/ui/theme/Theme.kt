@@ -4,6 +4,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
@@ -142,17 +143,22 @@ fun WscAppTheme(
             typography = if (tv) TvTypography else PhoneTypography,
             shapes = WscShapes,
         ) {
-            if (tv) {
-                TvThemeBridge {
-                    // TV：M3 clickable 行改用明显的焦点样式（默认水波纹的焦点叠色对比度只有约 1.2:1）
-                    CompositionLocalProvider(
-                        LocalIsTv provides true,
-                        LocalIndication provides TvFocusIndication(colors.primary, colors.onSurface),
-                        content = content,
-                    )
+            // M3 的 LocalContentColor 默认是 Color.Black：根部不是 Surface/Scaffold 时，未指定 color 的 Text、
+            // 未指定 tint 的 Icon 会在深色底上画成黑色（约 1.1:1）。主题层统一兜底为 onSurface。
+            CompositionLocalProvider(LocalContentColor provides colors.onSurface) {
+                if (tv) {
+                    // TvThemeBridge 内同样为 androidx.tv.material3.LocalContentColor 兜底
+                    TvThemeBridge {
+                        // TV：M3 clickable 行改用明显的焦点样式（默认水波纹的焦点叠色对比度只有约 1.2:1）
+                        CompositionLocalProvider(
+                            LocalIsTv provides true,
+                            LocalIndication provides TvFocusIndication(colors.primary, colors.onSurface),
+                            content = content,
+                        )
+                    }
+                } else {
+                    content()
                 }
-            } else {
-                content()
             }
         }
     }

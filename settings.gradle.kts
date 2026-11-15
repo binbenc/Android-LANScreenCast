@@ -38,10 +38,12 @@ include(":core:net")
 include(":core:rtc")
 include(":core:data")
 include(":core:ui")
+include(":core:control")
 
 include(":feature:sender")
 include(":feature:receiver")
 include(":feature:settings")
+include(":feature:control")
 
 // 仓库根目录的 protocol/ 是与 TS 端共享的协议文档与测试向量（非 Gradle），
 // Gradle 路径 :protocol:* 映射到 protocol-impl/ 目录（技术方案第 5 节）。

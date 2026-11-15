@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 反向控制（交互稿图标 touch）：通知小图标 / 状态栏图标，被控制期间在任何界面都能看到（交互稿 R04） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.75"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M9.5,11.5V5.8a1.5,1.5 0,0 1,3 0v5.2" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.75"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12.5,10.5v-1a1.5,1.5 0,0 1,3 0v1.5M15.5,10.8a1.5,1.5 0,0 1,3 0V15a6,6 0,0 1,-6 6h-0.6a5,5 0,0 1,-4 -2l-3,-4a1.5,1.5 0,0 1,2.3 -1.9l1.8,1.9" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#8CFFFFFF"
+        android:strokeWidth="1.75"
+        android:strokeLineCap="round"
+        android:pathData="M6.2,6.2a4.8,4.8 0,0 1,9.6 0" />
+</vector>

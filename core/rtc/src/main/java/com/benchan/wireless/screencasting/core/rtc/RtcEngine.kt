@@ -55,6 +55,21 @@ class RtcEngine @Inject constructor(@ApplicationContext val context: Context) {
 }
 
 object RtcConfig {
+    /** 反向控制输入通道（PROTOCOL.md 4.2）：negotiated、有序、可靠，双方各自创建，不走 DCEP、不需要重新协商 SDP。 */
+    const val INPUT_CHANNEL_LABEL = "wsc-input"
+
+    /** 固定 SCTP 流 id：偶数，避开发送端（DTLS server）为 `wsc` 自动分配的奇数 id。 */
+    const val INPUT_CHANNEL_ID = 100
+
+    /** 接收端发送缓冲超过该值时丢弃中间的 MOVE（DOWN / UP / 按键从不丢）。 */
+    const val INPUT_BACKPRESSURE_BYTES = 16 * 1024L
+
+    fun inputChannelInit(): org.webrtc.DataChannel.Init = org.webrtc.DataChannel.Init().apply {
+        ordered = true
+        negotiated = true
+        id = INPUT_CHANNEL_ID
+    }
+
     /**
      * 零外联的 RTCConfiguration（PRD 8.3.1、技术方案 4.3）：不配置任何 STUN/TURN，只用 host 候选；
      * Android 原生 libwebrtc 默认不做 mDNS 候选混淆，局域网内直接用真实 IP。

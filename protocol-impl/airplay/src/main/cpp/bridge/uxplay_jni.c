@@ -22,6 +22,7 @@
 #include "raop.h"
 #include "stream.h"
 #include "wsc_bridge.h"
+#include "wsc_pin_guard.h"
 
 #define TAG "wsc-uxplay"
 #define CALLBACKS_CLASS "com/benchan/wireless/screencasting/protocol/airplay/UxPlayCallbacks"
@@ -153,6 +154,7 @@ static void cb_conn_destroy(void *cls) { (void) cls; CB_ENV(env); call_void(env,
 static void cb_conn_reset(void *cls, int reason) { (void) cls; CB_ENV(env); call_void(env, M.onConnectionReset, "onConnectionReset", (jint) reason); }
 static void cb_conn_feedback(void *cls) { (void) cls; }
 
+/* pin 为空串表示 PIN 已作废（配对成功 / 失败次数用尽），Kotlin 收起覆盖层（wsc_pin_guard.h） */
 static void cb_display_pin(void *cls, char *pin) {
     (void) cls;
     CB_ENV(env);
@@ -343,6 +345,7 @@ static void stop_locked(JNIEnv *env) {
     if (g_dnssd) { dnssd_unregister_raop(g_dnssd); dnssd_unregister_airplay(g_dnssd); }
     if (g_raop) { raop_stop_httpd(g_raop); raop_destroy(g_raop); g_raop = NULL; }
     if (g_dnssd) { dnssd_destroy(g_dnssd); g_dnssd = NULL; }
+    wsc_pin_reset();
     pthread_mutex_lock(&g_alac_lock);
     wsc_alac_destroy(g_alac);
     g_alac = NULL;
@@ -426,6 +429,10 @@ static jint native_start(JNIEnv *env, jclass clazz, jobject callbacks, jstring j
     raop_set_log_level(g_raop, LOGGER_INFO);
     /* nohold = 0：已有 Apple 设备连接时新的 Apple 设备会被 UxPlay 拒绝（409），不会被直接抢占 */
     if (raop_init2(g_raop, 0, device_id, keyfile) != 0) { free(g_raop); g_raop = NULL; rc = -3; goto out; }
+    wsc_pin_reset();
+    /* 与 uxplay -pin 一致：设置 "pin"（0 = 每次 PAIR-PIN-START 随机生成）。use_pin 为 true 时
+     * pair-verify 才接受刚完成 pair-setup-pin 的客户端，缺了它 PIN 输对也连不上。 */
+    if (require_pin) raop_set_plist(g_raop, "pin", 0);
     if (hls) {
         raop_set_plist(g_raop, "hls", 1);
         g_lang = strdup(lang && *lang ? lang : "en");

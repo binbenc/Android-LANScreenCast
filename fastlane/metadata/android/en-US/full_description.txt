@@ -1,0 +1,16 @@
+LAN Screen Cast is a free, open-source (GPL-3.0) screen casting tool for your local network: no internet access, no ads, no account, no data collection.
+
+One app works as both sender and receiver (phones/tablets send by default, TVs receive by default):
+• Screen mirroring with low-latency WebRTC; encryption is always on
+• Several ways to connect: auto discovery, QR code, 8-digit cast code, manual IP
+• DLNA receiver: pick this device from the "cast" button in video apps
+• Compatible with Apple devices (unofficial): iPhone and iPad can connect with Screen Mirroring (off by default)
+• Local cast reports and diagnostic logs that never leave the device
+• Share the installer to a TV over the local network
+
+Reverse control (optional): while casting, a TV, tablet or phone you approved can operate this phone — tap, swipe, scroll, back/home, remote D-pad, pinch zoom and, on Android 13 and later, text input.
+• Requires enabling this app's accessibility service in system settings. You confirm every cast; control ends when casting stops or the screen locks, and you can take it back at any time.
+• It only simulates input and does not read screen content. For safety it reads only the name of the current app and screen (not any text on the screen), for example to pause control in installers, permission dialogs, accessibility settings and similar screens (best effort).
+• Password fields refuse remote text input.
+
+The app never accesses the internet and does not depend on Google Play services. See docs/PRIVACY.md in the source repository for the privacy statement.

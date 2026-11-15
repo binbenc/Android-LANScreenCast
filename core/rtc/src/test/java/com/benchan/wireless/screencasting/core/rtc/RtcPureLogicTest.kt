@@ -80,11 +80,45 @@ class RtcPureLogicTest {
     @Test
     fun audioCapturePacingNeverBusyLoops() {
         val p = com.benchan.wireless.screencasting.core.rtc.sender.PlaybackAudioCapture
-        // 48kHz 立体声 10ms = 1920 字节 → 10ms
-        org.junit.Assert.assertEquals(10L, p.paceMillis(1920, 48_000, 2))
-        // 读失败（缺整个缓冲）或缺 0 字节时也至少睡 1ms，绝不空转
-        org.junit.Assert.assertEquals(1L, p.paceMillis(0, 48_000, 2))
-        org.junit.Assert.assertEquals(1L, p.paceMillis(-5, 48_000, 2))
-        org.junit.Assert.assertEquals(20L, p.paceMillis(1_000_000, 48_000, 2))
+        // 48kHz 立体声 10ms = 1920 字节 → 10ms；空 / 负数也至少 1ms，超大缓冲封顶 20ms
+        org.junit.Assert.assertEquals(10_000_000L, p.bufferDurationNs(1920, 48_000, 2))
+        org.junit.Assert.assertEquals(1_000_000L, p.bufferDurationNs(0, 48_000, 2))
+        org.junit.Assert.assertEquals(1_000_000L, p.bufferDurationNs(-5, 48_000, 2))
+        org.junit.Assert.assertEquals(20_000_000L, p.bufferDurationNs(1_000_000, 48_000, 2))
+    }
+
+    @Test
+    fun audioCaptureRealtimeStepLimitsToRealtime() {
+        val p = com.benchan.wireless.screencasting.core.rtc.sender.PlaybackAudioCapture
+        val d = 10_000_000L
+        // read 立即返回（回调几乎不耗时）：100 次回调必须累计睡够约 1 秒，而不是空转
+        var due = 0L
+        var now = 1_000_000_000L
+        var slept = 0L
+        repeat(100) {
+            val (nd, wait) = p.realtimeStep(due, now, d)
+            due = nd; slept += wait; now += wait
+        }
+        org.junit.Assert.assertEquals(100 * d, slept)
+        // 恰好按时到达：本缓冲仍需占满自己的 10ms
+        val (due2, wait2) = p.realtimeStep(due, due, d)
+        org.junit.Assert.assertEquals(d, wait2)
+        // read 本身已阻塞到下一交付时刻（正常路径）：不额外睡眠
+        org.junit.Assert.assertEquals(0L, p.realtimeStep(due2, due2 + d, d).second)
+        // 卡顿 1 秒后不追赶突发：从当前时刻重新计时
+        val (due3, wait3) = p.realtimeStep(due2, due2 + 1_000_000_000L, d)
+        org.junit.Assert.assertEquals(d, wait3)
+        org.junit.Assert.assertEquals(due2 + 1_000_000_000L + d, due3)
+    }
+
+    @Test
+    fun audioCaptureInitRetryBacksOff() {
+        val p = com.benchan.wireless.screencasting.core.rtc.sender.PlaybackAudioCapture
+        // 创建失败后不能每 10ms 重试（每次注册 AudioPolicy，曾导致进程因 Binder 过多被杀）
+        org.junit.Assert.assertEquals(500_000_000L, p.initRetryDelayNs(1))
+        org.junit.Assert.assertEquals(1_000_000_000L, p.initRetryDelayNs(2))
+        org.junit.Assert.assertEquals(8_000_000_000L, p.initRetryDelayNs(5))
+        org.junit.Assert.assertEquals(10_000_000_000L, p.initRetryDelayNs(6))
+        org.junit.Assert.assertEquals(10_000_000_000L, p.initRetryDelayNs(100))
     }
 }

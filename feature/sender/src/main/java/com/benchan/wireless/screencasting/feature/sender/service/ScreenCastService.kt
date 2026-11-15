@@ -18,11 +18,17 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.benchan.wireless.screencasting.core.common.WscLog
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
+import com.benchan.wireless.screencasting.core.protocol.control.ControlPhase
+import com.benchan.wireless.screencasting.core.protocol.control.ControlReason
+import com.benchan.wireless.screencasting.feature.control.ControlActionReceiver
+import com.benchan.wireless.screencasting.feature.control.ControlUi
+import com.benchan.wireless.screencasting.feature.control.SenderControlCoordinator
 import com.benchan.wireless.screencasting.feature.sender.R
 import com.benchan.wireless.screencasting.feature.sender.session.SenderController
 import com.benchan.wireless.screencasting.feature.sender.session.SenderState
 import com.benchan.wireless.screencasting.feature.sender.session.isTerminal
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -37,6 +43,9 @@ import javax.inject.Inject
 class ScreenCastService : LifecycleService() {
     @Inject
     lateinit var controller: SenderController
+
+    @Inject
+    lateinit var control: SenderControlCoordinator
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var started = false
@@ -67,7 +76,7 @@ class ScreenCastService : LifecycleService() {
                 ensureChannel(this)
                 // 先 startForeground(mediaProjection)，再交给会话创建 MediaProjection
                 ServiceCompat.startForeground(
-                    this, NOTIFICATION_ID, buildNotification(controller.state.value),
+                    this, NOTIFICATION_ID, buildNotification(controller.state.value, control.ui.value),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION,
                 )
                 started = true
@@ -82,10 +91,10 @@ class ScreenCastService : LifecycleService() {
 
     private fun observeState() {
         lifecycleScope.launch {
-            controller.state.collect { s ->
+            combine(controller.state, control.ui) { s, c -> s to c }.collect { (s, c) ->
                 when (s) {
                     is SenderState.Starting, is SenderState.Casting, is SenderState.Reconnecting -> {
-                        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification(s))
+                        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification(s, c))
                     }
                     // 首个值通常还是 ReadyToCapture（onProjectionGranted 异步切到 Starting），不能据此停服务
                     else -> if (s.isTerminal) {
@@ -97,8 +106,17 @@ class ScreenCastService : LifecycleService() {
         }
     }
 
-    private fun buildNotification(state: SenderState): Notification {
+    private fun buildNotification(state: SenderState, control: ControlUi): Notification {
+        // 反向控制中（交互稿 R04）：标题“××正在控制本机”，按钮“收回控制 / 停止投屏”，小图标换成反向控制图标（状态栏任何界面可见）
+        val controlled = control.controlled && (state is SenderState.Casting || state is SenderState.Reconnecting)
         val (title, text) = when (state) {
+            is SenderState.Casting if controlled && control.phase == ControlPhase.PAUSED && control.reason == ControlReason.SENSITIVE_APP ->
+                "${control.peerName} 正在控制本机" to "控制已暂停 · 此界面不可控制"
+            is SenderState.Casting if controlled -> "${control.peerName} 正在控制本机" to buildString {
+                append("投屏中 · ")
+                state.stats.latencyMs?.let { append(getString(R.string.sender_notif_latency, it)).append(" · ") }
+                append(state.profile.label)
+            }
             is SenderState.Casting -> getString(R.string.sender_notif_casting_to, state.target.name) to buildString {
                 state.stats.latencyMs?.let { append(getString(R.string.sender_notif_latency, it)).append(" · ") }
                 if (state.stats.bitrateKbps > 0) append(String.format(java.util.Locale.US, "%.1f Mbps", state.stats.bitrateKbps / 1000.0)).append(" · ")
@@ -114,7 +132,7 @@ class ScreenCastService : LifecycleService() {
             this, 1, Intent(this, ScreenCastService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE,
         )
         val b = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_cast)
+            .setSmallIcon(if (controlled) ControlActionReceiver.statusIcon else R.drawable.ic_stat_cast)
             .setContentTitle(title)
             .setContentText(text)
             .setOngoing(true)
@@ -123,7 +141,16 @@ class ScreenCastService : LifecycleService() {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(contentIntent)
-            .addAction(0, getString(R.string.sender_stop), stopIntent)
+        if (controlled) {
+            // 敏感界面暂停：[继续控制][收回控制][停止投屏]（交互稿 v1.0.4 通知示意）
+            if (control.phase == ControlPhase.PAUSED && control.reason == ControlReason.SENSITIVE_APP) {
+                b.addAction(0, "继续控制", ControlActionReceiver.continueIntent(this))
+            }
+            b.addAction(0, "收回控制", ControlActionReceiver.revokeIntent(this))
+            b.addAction(0, "停止投屏", stopIntent)
+            return b.build()
+        }
+        b.addAction(0, getString(R.string.sender_stop), stopIntent)
         if (state is SenderState.Casting && state.profile != QualityProfile.SMOOTH) {
             val smooth = PendingIntent.getService(
                 this, 2, Intent(this, ScreenCastService::class.java).setAction(ACTION_SMOOTH), PendingIntent.FLAG_IMMUTABLE,

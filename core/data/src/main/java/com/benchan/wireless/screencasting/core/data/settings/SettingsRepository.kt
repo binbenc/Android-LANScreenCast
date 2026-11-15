@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.benchan.wireless.screencasting.core.control.TvControlMode
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -37,6 +38,12 @@ class SettingsRepository @Inject constructor(
         val applePin = booleanPreferencesKey("apple_compat_pin")
         val boot = booleanPreferencesKey("boot_start")
         val skipIntro = booleanPreferencesKey("skip_capture_intro")
+        val remoteControl = booleanPreferencesKey("remote_control")
+        val tvControlMode = stringPreferencesKey("tv_control_mode")
+        val tvControlHint = booleanPreferencesKey("tv_control_hint_shown")
+        val remoteAutoDisable = booleanPreferencesKey("remote_control_auto_disable")
+        val remoteAutoDisabled = booleanPreferencesKey("remote_control_auto_disabled")
+        val pinchHint = booleanPreferencesKey("pinch_hint_shown")
     }
 
     /** 默认设备名 = 机型名（PRD 8.6）。 */
@@ -58,6 +65,12 @@ class SettingsRepository @Inject constructor(
             appleCompatPin = p[Keys.applePin] ?: true,
             bootStart = p[Keys.boot] ?: false,
             skipCaptureIntro = p[Keys.skipIntro] ?: false,
+            remoteControlEnabled = p[Keys.remoteControl] ?: false,
+            tvControlMode = p[Keys.tvControlMode]?.let { runCatching { TvControlMode.valueOf(it) }.getOrNull() } ?: TvControlMode.CURSOR,
+            tvControlHintShown = p[Keys.tvControlHint] ?: false,
+            remoteControlAutoDisable = p[Keys.remoteAutoDisable] ?: false,
+            remoteControlAutoDisabled = p[Keys.remoteAutoDisabled] ?: false,
+            pinchHintShown = p[Keys.pinchHint] ?: false,
         )
     }
 
@@ -78,6 +91,12 @@ class SettingsRepository @Inject constructor(
     }
     suspend fun setBootStart(enabled: Boolean) = edit { it[Keys.boot] = enabled }
     suspend fun setSkipCaptureIntro(skip: Boolean) = edit { it[Keys.skipIntro] = skip }
+    suspend fun setRemoteControlEnabled(enabled: Boolean) = edit { it[Keys.remoteControl] = enabled }
+    suspend fun setTvControlMode(mode: TvControlMode) = edit { it[Keys.tvControlMode] = mode.name }
+    suspend fun setTvControlHintShown() = edit { it[Keys.tvControlHint] = true }
+    suspend fun setRemoteControlAutoDisable(enabled: Boolean) = edit { it[Keys.remoteAutoDisable] = enabled }
+    suspend fun setRemoteControlAutoDisabled(disabled: Boolean) = edit { it[Keys.remoteAutoDisabled] = disabled }
+    suspend fun setPinchHintShown() = edit { it[Keys.pinchHint] = true }
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.settingsStore.edit { block(it) }

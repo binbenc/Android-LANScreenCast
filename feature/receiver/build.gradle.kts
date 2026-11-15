@@ -12,6 +12,8 @@ dependencies {
     implementation(projects.core.discovery)
     implementation(projects.core.net)
     implementation(projects.core.rtc)
+    // 反向控制（PRD F23）：坐标换算与输入合并
+    implementation(projects.core.control)
     implementation(projects.protocol.dlna)
     implementation(projects.protocol.airplayApi)
     implementation(libs.androidx.core.ktx)

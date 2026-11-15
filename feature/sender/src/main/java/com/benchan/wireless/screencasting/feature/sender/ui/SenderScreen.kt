@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import com.benchan.wireless.screencasting.core.protocol.control.ControlReason
+import com.benchan.wireless.screencasting.feature.control.ControlEvent
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
@@ -81,6 +83,7 @@ fun SenderScreen(
     val devices by viewModel.devices.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val lan by viewModel.lan.collectAsStateWithLifecycle()
+    val controlUi by viewModel.controlUi.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val snackbarScope = rememberCoroutineScope()
     var sub by rememberSaveable { mutableStateOf(SubRoute.NONE) }
@@ -146,9 +149,17 @@ fun SenderScreen(
             viewModel.onCaptureDenied()
         }
     }
+    // 开启反向控制时 Android 14+ 强制共享整个屏幕（用户决策 D1）：系统不提供可靠的“单应用共享”判定，
+    // 单应用共享下拿不到窗口位置，坐标无法换算，也可能盲操作其他应用
+    val forceWholeScreen = settings?.remoteControlEnabled == true && Build.VERSION.SDK_INT >= 34
     fun requestProjection() {
         val mpm = context.getSystemService(MediaProjectionManager::class.java)
-        projectionLauncher.launch(mpm.createScreenCaptureIntent())
+        val intent = if (forceWholeScreen) {
+            mpm.createScreenCaptureIntent(android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay())
+        } else {
+            mpm.createScreenCaptureIntent()
+        }
+        projectionLauncher.launch(intent)
     }
     fun continueAfterAudio() = requestProjection()
     // 声音偏好为开（默认）但还没有录音权限：录屏授权前先申请；拒绝不阻断，只投画面（A2）
@@ -199,6 +210,26 @@ fun SenderScreen(
                 }
                 SenderEvent.Recovered -> snackbar.showSnackbar("已恢复")
                 is SenderEvent.PinIncorrect -> Unit
+            }
+        }
+    }
+    // 反向控制结束（交互稿 R04 出口 / 12 章状态表“结束”）：本机收回 → “已收回控制，投屏继续”；其他原因 → “已收回控制”
+    LaunchedEffect(Unit) {
+        viewModel.controlEvents.collect { e ->
+            if (e is ControlEvent.Ended) {
+                // 结束原因分别提示（PM 走查 G5）；未授权过的锁屏 / 拒绝不提示（协调器只在真正被控制过时发事件）
+                when (e.reason) {
+                    ControlReason.REVOKED -> snackbar.showSnackbar("已收回控制，投屏继续")
+                    ControlReason.RECEIVER_END -> snackbar.showSnackbar("对方已退出控制")
+                    ControlReason.SERVICE_OFF -> {
+                        val r = snackbar.showSnackbar("无障碍服务已被系统关闭，控制已结束", actionLabel = "去开启", duration = SnackbarDuration.Long)
+                        if (r == SnackbarResult.ActionPerformed) {
+                            runCatching { context.startActivity(android.content.Intent(context, com.benchan.wireless.screencasting.feature.control.ui.AccessibilityGuideActivity::class.java)) }
+                        }
+                    }
+                    ControlReason.SESSION_END -> Unit
+                    else -> snackbar.showSnackbar("已收回控制")
+                }
             }
         }
     }
@@ -272,6 +303,9 @@ fun SenderScreen(
                     BackHandler(enabled = false) {}
                     CastingScreen(
                         s, viewModel::setQuality, viewModel::setAutoAdjust, viewModel::setAudioEnabled, viewModel::stop,
+                        control = controlUi,
+                        onRevokeControl = viewModel::revokeControl,
+                        onContinueControl = viewModel::continueControl,
                         onOpenAppSettings = { openAppDetailsSettings(context) },
                         showNotificationTip = !notificationGranted && !notificationTipDismissed,
                         notificationNeedsSettings = notificationPermanentlyDenied,
@@ -327,6 +361,7 @@ fun SenderScreen(
     if (ready != null && !introDismissed && !skipIntro) {
         CaptureIntroSheet(
             targetName = ready.target.name,
+            forceWholeScreen = forceWholeScreen,
             audioEnabled = settings?.audioEnabled ?: true,
             onAudioChange = { on ->
                 if (on && !hasPermission(Manifest.permission.RECORD_AUDIO)) {

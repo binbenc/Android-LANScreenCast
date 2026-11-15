@@ -16,8 +16,8 @@ window.ROLES = [
   ['primary','primary','主按钮、选中态、进度条、链接、品牌标识','#2F5A82','#A2C9F0','on-primary','主色'],
   ['on-primary','onPrimary','主按钮上的文字与图标','#FFFFFF','#0A3050','primary','主色'],
   ['primary-container','primaryContainer','设备头像底、选中卡片、强调区块','#D2E4FA','#234766','on-primary-container','主色'],
-  ['on-primary-container','onPrimaryContainer','primaryContainer 上的文字','#12344F','#D2E4FA','primary-container','主色'],
-  ['inverse-primary','inversePrimary','Snackbar 中的操作按钮','#A2C9F0','#2F5A82','inverse-surface','主色'],
+  ['on-primary-container','onPrimaryContainer','primaryContainer 上的文字（含 TV 步骤序号）','#12344F','#E9F1FD','primary-container','主色'],
+  ['inverse-primary','inversePrimary','Snackbar 中的操作按钮','#A2C9F0','#234766','inverse-surface','主色'],
   ['secondary','secondary','次要强调、筛选标签','#535F6E','#BBC7D8','on-secondary','辅助色'],
   ['on-secondary','onSecondary','secondary 上的文字','#FFFFFF','#25313E','secondary','辅助色'],
   ['secondary-container','secondaryContainer','分段按钮选中、Tonal 按钮','#D7E3F4','#3B4856','on-secondary-container','辅助色'],
@@ -31,9 +31,9 @@ window.ROLES = [
   ['error-container','errorContainer','停止投屏按钮、错误卡片','#FFDAD6','#93000A','on-error-container','错误'],
   ['on-error-container','onErrorContainer','errorContainer 上的文字','#93000A','#FFDAD6','error-container','错误'],
   ['surface','surface','页面底色','#F8F9FC','#111418','on-surface','表面'],
-  ['on-surface','onSurface','正文、标题；TV 焦点态底色（深色）','#191C20','#E1E2E8','surface','表面'],
+  ['on-surface','onSurface','正文、标题、需抄写的凭据（IP / 端口）；TV 焦点态底色（深色）','#191C20','#E6E8EE','surface','表面'],
   ['surface-variant','surfaceVariant','输入框底、进度轨道','#DEE3EB','#42474E','on-surface-variant','表面'],
-  ['on-surface-variant','onSurfaceVariant','次要文字、说明、图标','#42474E','#C2C7CF','surface-variant','表面'],
+  ['on-surface-variant','onSurfaceVariant','次要文字、说明、图标（不用于 *Container 底上，不叠加透明度）','#42474E','#D0D5DD','surface-variant','表面'],
   ['surface-dim','surfaceDim','最暗表面','#D8DAE0','#111418','on-surface','表面'],
   ['surface-bright','surfaceBright','最亮表面','#F8F9FC','#37393E','on-surface','表面'],
   ['surface-container-lowest','surfaceContainerLowest','键盘按键、最低层卡片','#FFFFFF','#0C0E12','on-surface','表面容器'],
@@ -41,13 +41,18 @@ window.ROLES = [
   ['surface-container','surfaceContainer','导航栏、键盘面板','#ECEEF2','#1D2024','on-surface','表面容器'],
   ['surface-container-high','surfaceContainerHigh','状态胶囊、头像底、骨架屏','#E6E8EC','#272A2F','on-surface','表面容器'],
   ['surface-container-highest','surfaceContainerHighest','对话框、TV 未聚焦按钮','#E1E2E7','#32353A','on-surface','表面容器'],
-  ['outline','outline','输入框边框、开关轨道（需 ≥3:1）','#72777F','#8C9199','surface','描边'],
+  ['outline','outline','输入框边框、开关轨道（需 ≥3:1）；不可用文字 / 图标（替代 onSurface@38%）','#72777F','#8C9199','surface','描边'],
   ['outline-variant','outlineVariant','分隔线（装饰性，不要求对比度）','#C2C7CF','#42474E','on-surface','描边'],
   ['inverse-surface','inverseSurface','Snackbar 底','#2E3135','#E1E2E8','inverse-on-surface','反相'],
   ['inverse-on-surface','inverseOnSurface','Snackbar 文字；TV 焦点态文字','#EFF0F5','#2E3135','inverse-surface','反相'],
   ['scrim','scrim','遮罩：仅变暗 32%（scrimAlpha.dim）；上面有文字时 ≥60%（scrimAlpha.text）','#000000','#000000','on-scrim','反相'],
   ['on-scrim','onScrim','叠在 scrim（≥60%）或视频 / 相机画面上的文字与图标，不再叠加透明度','#FFFFFF','#FFFFFF','scrim','反相']
 ];
+/* v1.0.1 深色模式文字对比度优化：被替换的旧深色值（变更记录表据此实时计算前后对比度） */
+window.TOKEN_HISTORY = {
+  version: 'v1.0.1', date: '2026-11-15',
+  dark: {'on-surface':'#E1E2E8','on-surface-variant':'#C2C7CF','on-primary-container':'#D2E4FA','inverse-primary':'#2F5A82'}
+};
 /* 遮罩透明度两档：dim = 只压暗背景（如重连时最后一帧）；text = 遮罩上有文字（文字对比 ≥ 4.5:1） */
 window.SCRIM_ALPHA = {dim: 0.32, text: 0.6};
 /* 扩展语义色（M3 Extended Colors，按 color / onColor / container / onContainer 四件套） */
@@ -60,6 +65,8 @@ window.EXT = [
   ['on-warning','onWarning','warning 上的文字','#FFFFFF','#402D00','warning','语义'],
   ['warning-container','warningContainer','警告卡片底','#FFDEA3','#5C4300','on-warning-container','语义'],
   ['on-warning-container','onWarningContainer','警告卡片文字','#5C4300','#FFDEA3','warning-container','语义'],
+  /* v1.0.2：反相警告色 = 另一套主题的 warning（与 inversePrimary 同理），只用于 inverseSurface 底上的状态点（R05 边缘胶囊暂停态） */
+  ['inverse-warning','inverseWarning','inverseSurface 上的警告圆点（边缘胶囊“控制已暂停”）','#EFC04A','#7A5900','inverse-surface','语义'],
   ['lat-1','latency.excellent','延迟 < 100 ms · 极佳','#2E6B3C','#9AD7A2','surface','延迟'],
   ['lat-2','latency.good','延迟 100–150 ms · 良好','#536500','#BBD06F','surface','延迟'],
   ['lat-3','latency.fair','延迟 150–250 ms · 一般','#7A5900','#EFC04A','surface','延迟'],
@@ -301,7 +308,7 @@ td.crv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;
 .li .t1{font-size:16px;line-height:24px;font-weight:500;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .li .t2{font-size:13px;line-height:20px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .li .tr{color:var(--on-surface-variant);display:flex;align-items:center}
-.li.dis .t1,.li.dis .av{opacity:.5}
+.li.dis .t1,.li.dis .av{color:var(--outline)} /* 不可用：用 outline 实色（≥3:1），不再整体半透明 */
 .sli{display:flex;align-items:center;gap:16px;padding:12px 16px;min-height:64px}
 .sli .tx{flex:1;min-width:0}
 .sli .t1{font-size:16px;line-height:24px}
@@ -406,13 +413,15 @@ td.crv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;
 .tbtn{height:48px;padding:0 24px;border-radius:24px;background:var(--surface-container-highest);color:var(--on-surface);display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:500;white-space:nowrap;transition:transform .15s cubic-bezier(.05,.7,.1,1)}
 .tbtn.icn{width:48px;padding:0;justify-content:center}
 .tbtn.pri{background:var(--primary-container);color:var(--on-primary-container)}
+/* v1.0.3：可聚焦的不可用（只用于“需要说明原因”的项，如对方系统版本不支持）：未聚焦 = 不可用配色；聚焦时仍按 .f 反相 + 外环 */
+.tbtn.na{background:var(--surface-container);color:var(--outline)}
 .f{background:var(--on-surface)!important;color:var(--inverse-on-surface)!important;transform:scale(1.08);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--primary),0 0 32px 6px rgba(162,201,240,.32);position:relative;z-index:2}
 .tvcard{background:var(--surface-container-low);border-radius:24px}
 .tvdlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:540px;background:var(--surface-container-high);border-radius:28px;padding:36px 40px 32px;box-shadow:0 30px 80px rgba(0,0,0,.55);z-index:4;text-align:center}
 .tvpin{display:flex;gap:14px;justify-content:center;margin:22px 0 14px}
 .tvpin span{width:68px;height:80px;border-radius:16px;background:var(--surface-container-lowest);display:grid;place-items:center;font-family:var(--mono);font-size:44px;font-weight:500;color:var(--on-surface);border:1px solid var(--outline-variant)}
 .scene{position:absolute;inset:0;width:100%;height:100%;display:block}
-.statpanel{position:absolute;top:27px;right:48px;width:320px;border-radius:24px;background:rgba(29,32,36,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:22px 24px 22px;z-index:3;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 24px 60px rgba(0,0,0,.5)}
+.statpanel{position:absolute;top:27px;right:48px;width:320px;border-radius:24px;background:rgba(39,42,47,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:22px 24px 22px;z-index:3;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 24px 60px rgba(0,0,0,.5)}
 .kv{display:flex;justify-content:space-between;gap:12px;font-size:15px;line-height:22px;padding:6px 0}
 .kv span:first-child{color:var(--on-surface-variant)}
 .kv span:last-child{font-variant-numeric:tabular-nums;text-align:right}
@@ -425,6 +434,48 @@ td.crv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;
 .fcard{width:180px;height:104px;border-radius:16px;background:var(--surface-container-high);padding:14px;display:flex;flex-direction:column;justify-content:space-between;font-size:15px}
 .fcard.ff{transform:scale(1.05);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--primary),0 0 32px 6px rgba(162,201,240,.32)}
 .pressed{transform:scale(1.02)!important;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--primary)!important}
+
+/* ---------- 反向控制（F23） ---------- */
+.mirror{position:absolute;background:#F3F1EC;overflow:hidden}
+.mirror .mh{height:11%;background:#3F5363}
+.mirror .mt{height:3.2%;margin:5% 6% 0;width:46%;border-radius:4px;background:#9AA6AF}
+.mirror .mg{display:grid;grid-template-columns:repeat(3,1fr);gap:4%;padding:5% 6%}
+.mirror .mg i{display:block;aspect-ratio:1;border-radius:10%;background:#C9B99A}
+.mirror .mg i:nth-child(2n){background:#8FA6B5}.mirror .mg i:nth-child(3n){background:#B7C4A3}
+.edgecap{position:absolute;right:0;z-index:6;display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 14px;border-radius:20px 0 0 20px;background:var(--inverse-surface);color:var(--inverse-on-surface);font-size:13px;font-weight:500;white-space:nowrap;box-shadow:var(--e3)}
+.edgecap .d{width:8px;height:8px;border-radius:50%;background:var(--inverse-primary);flex:none}
+.edgecap b{color:var(--inverse-primary);font-weight:600;height:32px;padding:0 10px;display:grid;place-items:center;border-radius:16px}
+.edgecap.pause .d{background:var(--inverse-warning)}
+/* v1.0.4：敏感界面暂停的兜底“继续”——中性色（inverseOnSurface），“收回”仍为 inversePrimary 且固定在最外侧 */
+.edgecap b.c{color:var(--inverse-on-surface);font-weight:500;min-width:48px}
+/* v1.0.4：双指缩放——按住时空心环跟手；松手后实心淡出（执行中） */
+.pinchring{position:absolute;z-index:4;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.pinchring.solid{background:rgba(255,255,255,.4)}
+.pinchring.fade{opacity:.35}
+.edgetab{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:4;width:24px;height:80px;border-radius:12px 0 0 12px;background:rgba(0,0,0,.6);color:var(--on-scrim);display:grid;place-items:center}
+/* v1.0.2 标注：把手触控区 48×80（视觉 24×80 向画面内扩展），同时登记为系统手势排除区 */
+.edgetab.hit::before{content:"";position:absolute;right:0;top:0;width:48px;height:80px;border-radius:12px 0 0 12px;outline:1.5px dashed var(--anno);outline-offset:0;pointer-events:none}
+.ctlrow{display:flex;align-items:center;gap:10px;font-size:12px;line-height:18px;color:var(--primary);margin-top:4px}
+.ripple{position:absolute;z-index:4;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid #fff;background:rgba(255,255,255,.22);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.ctlbar{position:absolute;left:12px;right:12px;bottom:14px;z-index:5;background:var(--surface-container-high);color:var(--on-surface);border-radius:24px;padding:14px;box-shadow:var(--e4)}
+.ctlbar .btn{height:48px}.ctlbar .btn.sm{height:40px}
+.ctlstate{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.ctlstate .d{width:8px;height:8px;border-radius:50%;flex:none}
+.tvcursor{position:absolute;z-index:5;width:30px;height:30px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.ctlbadge{position:absolute;z-index:5;display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:17px;background:rgba(0,0,0,.6);color:var(--on-scrim);font-size:15px;font-weight:500}
+.ctlbadge .d{width:8px;height:8px;border-radius:50%;background:var(--primary)}
+.tvbar{position:absolute;left:48px;right:48px;bottom:27px;z-index:5;background:var(--surface-container-high);border-radius:28px;padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 24px 60px rgba(0,0,0,.5)}
+.tvhint{position:absolute;z-index:6;background:var(--surface-container-high);border-radius:24px;padding:22px 26px;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 24px 60px rgba(0,0,0,.55)}
+.keyrow{display:grid;grid-template-columns:132px 1fr;gap:6px 16px;font-size:16px;line-height:24px}
+.keyrow .k{color:var(--on-surface-variant)}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:24px;padding:0 6px;border-radius:6px;border:1px solid var(--outline);font-family:var(--mono);font-size:12px;color:var(--on-surface)}
+.toastl{border-radius:14px;background:var(--surface-container-high);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:19px}
+.toastl .ic{margin-top:1px}
+.toastl small{display:block;font-size:12px;color:var(--on-surface-variant)}
+/* v1.0.3：输入文字对话框的 Outlined 文本框示意 */
+.tf{position:relative;border:2px solid var(--primary);border-radius:4px;padding:12px 14px;min-height:72px;font-size:16px;line-height:24px;color:var(--on-surface)}
+.tf .ph{color:var(--on-surface-variant)}
+.tf .caret{display:inline-block;width:2px;height:20px;background:var(--primary);vertical-align:-4px;margin-left:1px}
 
 .qs{margin-top:8px}
 .qs li{margin:10px 0;padding-left:4px}
@@ -485,6 +536,14 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7.5" y="2.5" width="9" height="19" rx="4.5"/><circle cx="12" cy="8.5" r="2"/><path d="M12 14.5h.01M12 17.5h.01" stroke-width="2.4"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6.5v11M15 6.5v11"/></symbol>
   <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 3.5h10M7 20.5h10M8 3.5v3.2a4 4 0 0 0 1.6 3.2L12 12l2.4-2.1A4 4 0 0 0 16 6.7V3.5M8 20.5v-3.2a4 4 0 0 1 1.6-3.2L12 12l2.4 2.1a4 4 0 0 1 1.6 3.2v3.2"/></symbol>
+  <symbol id="i-touch" viewBox="0 0 24 24"><path d="M9.5 11.5V5.8a1.5 1.5 0 0 1 3 0v5.2"/><path d="M12.5 10.5v-1a1.5 1.5 0 0 1 3 0v1.5M15.5 10.8a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.6a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-1.9l1.8 1.9"/><path d="M6.2 6.2a4.8 4.8 0 0 1 9.6 0" opacity=".55"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5.5 3.5 18.5 12l-6 1.4-2.8 5.6z"/></symbol>
+  <symbol id="i-dpad" viewBox="0 0 24 24"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/><path d="M12 6.2v.01M12 17.8v.01M6.2 12h.01M17.8 12h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.2"/><path d="M6 9.5h.01M9 9.5h.01M12 9.5h.01M15 9.5h.01M18 9.5h.01M6 12.5h.01M18 12.5h.01" stroke-width="2.2"/><path d="M8.5 15h7M9 12.5h6"/></symbol>
+  <symbol id="i-mouse" viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="5.5"/><path d="M12 3v6M12 6.2v1.6" /></symbol>
+  <symbol id="i-a11y" viewBox="0 0 24 24"><circle cx="12" cy="4.8" r="1.8"/><path d="M4.5 8.5c2.4.8 4.9 1.2 7.5 1.2s5.1-.4 7.5-1.2M12 9.7v4.3M12 14l-3 6.5M12 14l3 6.5"/></symbol>
+  <symbol id="i-handback" viewBox="0 0 24 24"><path d="M9 14 4.5 9.5 9 5"/><path d="M4.5 9.5H14a5.5 5.5 0 0 1 0 11h-3"/></symbol>
+  <symbol id="i-pinch" viewBox="0 0 24 24"><path d="M4 20l6-6M20 4l-6 6M4 15v5h5M20 9V4h-5"/></symbol>
   <symbol id="scene" viewBox="0 0 960 432" preserveAspectRatio="xMidYMid slice">
     <rect width="960" height="432" fill="url(#sky)"/>
     <circle cx="690" cy="150" r="46" fill="#E4D6B5" opacity=".75"/>
@@ -500,7 +559,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   <div class="wrap">
     <div class="brand"><span class="tile"><svg class="ic s20"><use href="#i-mark"/></svg></span><span>交互稿与色卡 <span class="muted" style="font-weight:400">v1.0</span></span></div>
     <nav class="toc" aria-label="目录">
-      <a href="#principle">设计推导</a><a href="#color">色卡</a><a href="#semantic">语义色</a><a href="#contrast">对比度</a><a href="#type">字体</a><a href="#shape">圆角间距</a><a href="#focus">TV 焦点</a><a href="#icons">图标</a><a href="#flow">主流程</a><a href="#sender">发送端</a><a href="#receiver">接收端</a><a href="#questions">待确认</a>
+      <a href="#principle">设计推导</a><a href="#color">色卡</a><a href="#semantic">语义色</a><a href="#contrast">对比度</a><a href="#type">字体</a><a href="#shape">圆角间距</a><a href="#focus">TV 焦点</a><a href="#icons">图标</a><a href="#flow">主流程</a><a href="#sender">发送端</a><a href="#receiver">接收端</a><a href="#remote">反向控制</a><a href="#questions">待确认</a><a href="#changelog">变更记录</a>
     </nav>
     <div class="themesw" role="group" aria-label="主题">
       <button type="button" data-t="auto" title="跟随系统" aria-label="跟随系统"><svg class="ic s18"><use href="#i-auto"/></svg></button>
@@ -521,6 +580,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     <span class="chip">Compose for TV</span>
     <span class="chip">手机 360 dp / TV 960×540 dp，1 CSS px = 1 dp</span>
     <span class="chip">产品名 “局域投屏” 为占位（PRD Q6）</span>
+    <span class="chip"><a href="#changelog" style="color:inherit;text-decoration:none">v1.0.4 · 2026-11-15 · 反向控制 C 期走查修订</a></span>
   </div>
 </div>
 
@@ -613,12 +673,41 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
 
 <!-- ==================== 04 对比度 ==================== -->
 <section class="sec" id="contrast"><div class="wrap">
-  <div class="sec-h"><span class="no">04</span><h2>对比度校验</h2><p>按 WCAG 2.x 相对亮度公式在页面加载时逐对计算（非估算）。阈值：正文 ≥4.5:1（AA）、≥7:1（AAA）；大字（≥18.66 px 粗体 / 24 px）与图形边界 ≥3:1。分隔线属装饰性元素，不在要求之列。</p></div>
+  <div class="sec-h"><span class="no">04</span><h2>对比度校验</h2><p>按 WCAG 2.x 相对亮度公式在页面加载时逐对计算（非估算）。阈值：正文 ≥4.5:1（AA），本产品目标 ≥7:1（AAA，考虑 TV 3 m 观看与手机户外）；大字（≥18.66 px 粗体 / 24 px）与图形边界 ≥3:1；不可用文字 ≥3:1。分隔线属装饰性元素，不在要求之列。每格下方附 APCA |Lc|（WCAG 3 草案的感知对比度，仅作参考）：WCAG 2 对“深底浅字”系统性高估，深色主题以 APCA 复核，正文目标 Lc ≥75。</p></div>
   <div class="tbl-wrap"><table id="crtable">
     <thead><tr><th>前景 / 背景</th><th>用途</th><th>类型</th><th>浅色示例</th><th>浅色</th><th>深色示例</th><th>深色</th></tr></thead>
     <tbody></tbody>
   </table></div>
   <p class="muted mt12" style="font-size:13px">评级：<span class="cr-badge cr-aaa">AAA</span> ≥7　<span class="cr-badge cr-aa">AA</span> ≥4.5　<span class="cr-badge cr-lg">大字/图形</span> ≥3　<span class="cr-badge cr-no">不达标</span> &lt;3（或正文 &lt;4.5）。TV 焦点规范要求“焦点态 vs 非焦点态底色”≥3:1，对应 WCAG 2.2 · 2.4.13 Focus Appearance（AAA）。</p>
+
+  <h3 class="sub mt32" id="dark-rules">深色模式文字规则 <small>v1.0.1 · 深色模式文字对比度优化</small></h3>
+  <div class="grid2">
+    <div class="panel">
+      <h4>为什么改（token 原本已过 7:1）</h4>
+      <ul>
+        <li><b>感知</b>：WCAG 2 的 0.05 眩光常数让深底浅字的比值偏高。按 APCA 复核，旧 onSurfaceVariant 在 surface 上只有 Lc 72，在 TV 凭据卡（surfaceContainerHigh）上只有 Lc 69，低于正文下限 Lc 75。</li>
+        <li><b>距离</b>：TV 上同样的 dp 看起来只有手机的 0.79 倍（见 05），小号次要文字最先“消失”。</li>
+        <li><b>语义</b>：IP / 端口是要抄写的凭据，被当成次要文字用 14 sp + onSurfaceVariant。</li>
+        <li><b>实现</b>：不在 Surface / Scaffold 内的 M3 <code>Text</code> / <code>Icon</code> 没写颜色时会落到 <code>LocalContentColor</code> 默认值<b>黑色</b>（深底上约 1.1:1）。主题须提供 <code>LocalContentColor = onSurface</code>。</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>规则（深 / 浅色通用）</h4>
+      <ul>
+        <li><b>文字不叠加透明度</b>。层级用 token 区分：主要 onSurface → 次要 onSurfaceVariant → 不可用 outline。</li>
+        <li><code>onSurface.copy(alpha = 0.38f)</code>（不可用）→ <b>outline</b>；整卡 / 整按钮 <code>alpha</code> → 容器 surfaceContainer + 文字 outline。</li>
+        <li><code>Color.White.copy(alpha=…)</code> / 半透明白字叠在画面上 → <b>onScrim</b> + 背后 scrim ≥60%（ScrimAlpha.Text）。</li>
+        <li>任何 <b>*Container 底</b>上只用对应 <b>on*Container</b>，不用 onSurfaceVariant / primary（例：发送端说明卡选中项）。</li>
+        <li>半透明浮层底（如 TV 统计浮层 surfaceContainerHigh @90%）不得低于 90%：叠在纯白画面上 onSurfaceVariant 仍有 7.1:1。</li>
+        <li>TV：需要读或抄写的信息用 onSurface 且 ≥16 sp；onSurfaceVariant 只用于可忽略信息（标语、标签）。</li>
+      </ul>
+    </div>
+  </div>
+  <h3 class="sub mt32">v1.0.1 深色 token 变更前后 <small>旧值见 TOKEN_HISTORY，实时计算</small></h3>
+  <div class="tbl-wrap"><table id="crdelta">
+    <thead><tr><th>前景 / 背景</th><th>用途</th><th>旧值 → 新值</th><th>WCAG 旧</th><th>WCAG 新</th><th>APCA 旧 → 新</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
 </div></section>
 
 <!-- ==================== 05 字体 ==================== -->
@@ -696,7 +785,9 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     <div><span class="tbtn">默认</span><div class="cap">默认<br>surfaceContainerHighest</div></div>
     <div><span class="tbtn f">聚焦</span><div class="cap">聚焦 · scale 1.08<br>onSurface 底 + 2 dp 环</div></div>
     <div><span class="tbtn f pressed">按下</span><div class="cap">按下 · scale 1.02<br>去光晕，保留外环</div></div>
-    <div><span class="tbtn" style="opacity:.38">不可用</span><div class="cap">不可用 · 38%<br>不可获得焦点</div></div>
+    <div><span class="tbtn" style="background:var(--surface-container);color:var(--outline)">不可用</span><div class="cap">不可用 · surfaceContainer 底<br>+ outline 字（≥3:1）· 不可获得焦点</div></div>
+    <div><span class="tbtn na">方向键（对方不支持）</span><div class="cap">可聚焦的不可用（v1.0.3）<br>未聚焦同“不可用”，聚焦时反相 + 外环</div></div>
+    <div><span class="tbtn pri"><svg class="ic s20"><use href="#i-check"/></svg>光标</span><div class="cap">已选中（v1.0.3）<br>primaryContainer + 勾</div></div>
     <div><div class="fcard"><svg class="ic s28"><use href="#i-tv"/></svg><span>客厅电视</span></div><div class="cap">卡片默认</div></div>
     <div><div class="fcard ff"><svg class="ic s28"><use href="#i-tv"/></svg><span>客厅电视</span></div><div class="cap">卡片聚焦 · scale 1.05<br>大面积元素缩放更小</div></div>
   </div>
@@ -704,7 +795,10 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     <thead><tr><th>参数</th><th>按钮 / Chip</th><th>卡片 / 大图块</th><th>理由</th></tr></thead>
     <tbody>
       <tr><td>缩放</td><td>1.08</td><td>1.05</td><td>人眼感知的是边缘的绝对位移：小元素需要更大比例；相邻间距须 ≥ (scale−1) × 尺寸，避免放大后重叠</td></tr>
-      <tr><td>填充</td><td colspan="2">onSurface <code>#E1E2E8</code> 底 + inverseOnSurface <code>#2E3135</code> 字</td><td>深底上亮度反转是最强的前注意特征；焦点 / 非焦点底色对比约 12:1</td></tr>
+      <tr><td>填充</td><td colspan="2">onSurface <code>#E6E8EE</code> 底 + inverseOnSurface <code>#2E3135</code> 字</td><td>深底上亮度反转是最强的前注意特征；焦点 / 非焦点底色对比约 9.9:1，焦点态文字约 10.7:1</td></tr>
+      <tr><td>不可用</td><td colspan="2">surfaceContainer 底 + outline <code>#8C9199</code> 字（5.2:1），不再整体 38% 透明</td><td>整体透明会让文字 &lt;3:1（实测 2.7:1）；实色 outline 既“看起来不可用”又能读</td></tr>
+      <tr><td>可聚焦的不可用<br><small>v1.0.3</small></td><td colspan="2">未聚焦：同“不可用”（surfaceContainer 底 + outline 字）；<b>可以获得焦点</b>，聚焦时按普通焦点态反相 + 外环 + 光晕；聚焦即在所在面板的说明位置写出原因，按下每次都给出原因提示（不去重）。文字本身须写明不可用（如“方向键（对方不支持）”），不靠颜色</td><td>“不可用”默认不可聚焦，是因为用户无事可做；但“对方系统版本不支持”这类项用户需要知道原因——不可聚焦就永远读不到说明。只用于“需要说明原因”的项；冷却等“稍后自然可用”的项仍用不可聚焦的“不可用”</td></tr>
+      <tr><td>已选中<br><small>v1.0.3</small></td><td colspan="2">primaryContainer 底 + onPrimaryContainer 字 + 前置勾图标；语义 <code>selected = true</code>（读作“已选中”）</td><td>选中是“状态”，主操作（primary 实心）是“动作”：两者同色会让“当前模式”与“主按钮”无法区分；勾 + 读屏状态保证不只靠颜色（WCAG 1.4.1）</td></tr>
       <tr><td>外环</td><td colspan="2">3 dp surface 间隙 + 2 dp primary <code>#A2C9F0</code> 环</td><td>当元素本身是浅色（如二维码卡）时，反相失效，靠外环兜底</td></tr>
       <tr><td>光晕</td><td colspan="2">0 0 32 dp 6 dp，primary @ 32%</td><td>增大焦点的视觉面积，余光可捕捉；按下时移除光晕作为“已确认”反馈</td></tr>
       <tr><td>动效</td><td colspan="2">150 ms，cubic-bezier(.05,.7,.1,1)（M3 emphasized-decelerate）</td><td>&lt;200 ms 感知为即时；减速曲线让焦点“落定”，系统“减少动画”开启时直接切换</td></tr>
@@ -965,7 +1059,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
           <div class="t-tl">开始镜像前，还有一步</div>
           <div class="t-bm mv mt4">系统会询问是否允许录屏，请选择：</div>
           <div class="mt12" style="border:1px solid var(--outline-variant);border-radius:16px;padding:6px">
-            <div class="opt on"><span class="radio"></span><div><div class="t-ll">共享整个屏幕 <span class="tag pr" style="background:var(--primary);color:var(--on-primary);margin-left:4px">推荐</span></div><div class="t-bs" style="opacity:.85">切换 App 时电视画面不中断</div></div></div>
+            <div class="opt on"><span class="radio"></span><div><div class="t-ll">共享整个屏幕 <span class="tag pr" style="background:var(--primary);color:var(--on-primary);margin-left:4px">推荐</span></div><div class="t-bs">切换 App 时电视画面不中断</div></div></div>
             <div class="opt"><span class="radio"></span><div><div class="t-ll">共享单个应用</div><div class="t-bs mv">离开该应用后，电视会显示占位画面</div></div></div>
           </div>
           <div class="row gap12 mt16"><svg class="ic s20" style="color:var(--tertiary)"><use href="#i-lock"/></svg><div class="t-bm">画面加密传输，只发送到 <b style="font-weight:500">客厅电视</b></div></div>
@@ -976,8 +1070,36 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
         </div>
       </div></div></div>
       <div class="note"><div class="refs"><span class="tagref">S-01</span><span class="tagref">S-02</span><span class="tagref">S-03</span><span class="tagref">PRD 6.1 授权录屏</span></div><dl>
-        <dt>规则</dt><dd><ul><li>用“预演”降低系统弹窗的陌生感：卡片里的选项措辞与系统弹窗一致，用户到系统弹窗时只需“认出来”而不是“读懂”（再认 &lt; 回忆）。</li><li>声音开关首次打开时才申请 RECORD_AUDIO，申请前文案已说明用途。</li><li>Android 14+ 每次会话都需授权，故提供“下次不再提示”。</li></ul></dd>
+        <dt>规则</dt><dd><ul><li>用“预演”降低系统弹窗的陌生感：卡片里的选项措辞与系统弹窗一致，用户到系统弹窗时只需“认出来”而不是“读懂”（再认 &lt; 回忆）。</li><li>声音开关首次打开时才申请 RECORD_AUDIO，申请前文案已说明用途。</li><li>Android 14+ 每次会话都需授权，故提供“下次不再提示”。</li><li>v1.0.2：本机开启了反向控制时，Android 14+ 改用 06R（只共享整个屏幕），见右侧画板与决策 D1。</li></ul></dd>
         <dt>出口</dt><dd>继续 → 系统授权 → 07；系统拒绝 → “需要允许录屏才能镜像”[重试]；取消 → 03。</dd>
+      </dl></div>
+    </article>
+
+    <!-- 06R 授权说明卡 · 已开启反向控制（v1.0.2，决策 D1） -->
+    <article class="board">
+      <div class="bh"><span class="id">06R</span><b>录屏授权前说明卡 · 已开启反向控制</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="已开启反向控制时的录屏授权说明卡"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="t pl">投屏</span><span class="ib"><svg class="ic"><use href="#i-tune"/></svg></span></div>
+        <div class="bd"><div class="lbl">最近使用</div><div class="li"><span class="av p"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">客厅平板</div><div class="t2">WSC 镜像</div></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="t-tl">开始镜像前，还有一步</div>
+          <div class="t-bm mv mt4">系统会询问是否允许录屏，请选择允许：</div>
+          <div class="mt12" style="border:1px solid var(--outline-variant);border-radius:16px;padding:6px">
+            <div class="opt on"><span class="radio"></span><div><div class="t-ll">共享整个屏幕</div><div class="t-bs">切换 App 时画面不中断，对方也能操作你切到的 App</div></div></div>
+          </div>
+          <div class="row gap12 mt12" style="align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--surface-container)"><svg class="ic s20 mv" style="margin-top:1px"><use href="#i-touch"/></svg><div style="flex:1"><div class="t-bm">已开启反向控制，将共享整个屏幕；只想共享单个应用可在设置中关闭反向控制</div><span class="btn txt sm" style="padding:0;height:36px">反向控制设置</span></div></div>
+          <div class="row gap12 mt12"><svg class="ic s20" style="color:var(--tertiary)"><use href="#i-lock"/></svg><div class="t-bm">画面加密传输，只发送到 <b style="font-weight:500">客厅平板</b></div></div>
+          <div class="row gap8 mt16" style="justify-content:flex-end"><span class="btn txt">取消</span><span class="btn fill">继续</span></div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23</span><span class="tagref">决策 D1</span><span class="tagref">Android 14+</span></div><dl>
+        <dt>何时出现</dt><dd>Android 14+ 且 R01 总开关为开（无论无障碍服务是否已开启）。录屏改用 <code>createConfigForDefaultDisplay()</code>，系统弹窗不再提供“单个应用”，所以本卡也只“预演”整屏一项（再认原则：卡片与系统弹窗一一对应）。Android 13 及以下没有单应用共享，仍用 06。</dd>
+        <dt>规则</dt><dd><ul><li>说明块用 surfaceContainer 底 + onSurface 正文 + 手势图标：这是“为什么少了一个选项”的解释，不是警告，不用 warning 色。</li><li>“反向控制设置”→ R01；从 R01 返回后回到本卡，并按新的开关状态切换为 06 / 06R。</li><li>声音开关与“下次不再提示”同 06（画板省略）；选了“下次不再提示”后本卡也不再出现，但仍强制整屏。</li><li>无法强制整屏时（检测路径）：允许用户选单个应用；能检测到是单应用共享，则本次会话禁用控制，接收端请求时提示“对方只共享了单个应用，本次无法控制”（R08）。</li></ul></dd>
+        <dt>出口</dt><dd>同 06。</dd>
       </dl></div>
     </article>
 
@@ -1026,7 +1148,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
           </div>
           <div class="card mt16" style="padding:16px 18px">
             <div class="row gap12"><span class="iconTile" style="width:40px;height:40px;border-radius:12px;background:var(--surface-container-high);color:var(--on-surface-variant)"><svg class="ic s20"><use href="#i-tv"/></svg></span><div style="flex:1"><div class="t-ll">客厅电视</div><div class="t-bs mv">电视正保留最后一帧画面</div></div></div>
-            <div class="capsule mt12" style="opacity:.7"><span><i class="d" style="background:var(--outline)"></i>— ms</span><span>已暂停</span></div>
+            <div class="capsule mt12" style="color:var(--on-surface-variant)"><span><i class="d" style="background:var(--outline)"></i>— ms</span><span>已暂停</span></div>
           </div>
           <div class="t-bs mv mt16 row gap8"><svg class="ic s16"><use href="#i-info"/></svg>下一次尝试：<span class="num">2</span> 秒后</div>
         </div>
@@ -1083,6 +1205,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
         <div class="sli"><div class="tx"><div class="t1">声音</div><div class="t2">只捕获手机播放的声音</div></div><span class="sw on"></span></div>
         <div class="sli"><div class="tx"><div class="t1">连接策略</div><div class="t2">已信任的设备免确认</div></div><span class="val">信任免确认</span></div>
         <div class="sli"><div class="tx"><div class="t1">可信设备</div><div class="t2">3 台 · 可逐个移除</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="sli"><div class="tx"><div class="t1">反向控制</div><div class="t2">允许电视、平板或手机在投屏时操作本机</div></div><span class="val">关闭</span><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
         <div class="hr"></div>
         <div class="gl2">接收（本机作为屏幕时）</div>
         <div class="sli"><div class="tx"><div class="t1">DLNA 接收</div><div class="t2">视频 App 的“投屏”按钮可以选择本机</div></div><span class="sw on"></span></div>
@@ -1103,8 +1226,8 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
         <div class="gb"></div>
       </div></div></div>
       <div class="note"><div class="refs"><span class="tagref">PRD 8.6</span><span class="tagref">F15 / R-08</span><span class="tagref">F25</span><span class="tagref">决策 #14 / #15</span></div><dl>
-        <dt>规则</dt><dd><ul><li>按“发送 → 接收 → 诊断 → 关于”的任务频率排序；接收相关项在 TV 端置顶。</li><li>每个开关都有一句“开了会怎样”的副标题，不写“启用 xx 功能”这类同义反复。</li><li>非官方声明<b>常驻显示</b>在开关下方，而不只在开启时弹一次。</li><li>加密不提供开关，只在“隐私”中陈述（决策 #15）。</li></ul></dd>
-        <dt>出口</dt><dd>打开 Apple 兼容 → 09B；投屏报告 → 10；画质 / 连接策略 → 单选对话框。</dd>
+        <dt>规则</dt><dd><ul><li>按“发送 → 接收 → 诊断 → 关于”的任务频率排序；接收相关项在 TV 端置顶。</li><li>每个开关都有一句“开了会怎样”的副标题，不写“启用 xx 功能”这类同义反复。</li><li>非官方声明<b>常驻显示</b>在开关下方，而不只在开启时弹一次。</li><li>加密不提供开关，只在“隐私”中陈述（决策 #15）。</li><li>v1.0.2“反向控制”改为导航行（状态值 + chevron），不再放行内开关：开启前必须看说明并走无障碍引导，行内开关会造成“拨了却跳页”的心智错配。状态值：<b>关闭</b> / <b>已开启</b> / <b>需开启无障碍服务</b>（warning 色）/ <b>不可用</b>（outline 色，高级保护模式）；读屏读作“反向控制，已开启，允许电视、平板或手机在投屏时操作本机”。说明文案 A 期为“允许平板或手机在投屏时操作本机”；<b>v1.0.3 · B 期起统一为“允许电视、平板或手机在投屏时操作本机”</b>（PM 决策：手机也可作接收端，三者都写，与 R01 主说明一致）。</li></ul></dd>
+        <dt>出口</dt><dd>打开 Apple 兼容 → 09B；投屏报告 → 10；反向控制 → R01；画质 / 连接策略 → 单选对话框。</dd>
       </dl></div>
     </article>
 
@@ -1166,6 +1289,31 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
       </dl></div>
     </article>
 
+    <!-- 10R 投屏报告 · 最近投屏（含反向控制时长，v1.0.2，决策 D8） -->
+    <article class="board">
+      <div class="bh"><span class="id">10R</span><b>投屏报告（下滑）· 最近投屏与控制时长</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="投屏报告下半部分：最近投屏列表"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:52</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏报告</span><span class="ib"><svg class="ic"><use href="#i-export"/></svg></span></div>
+        <div class="bd">
+          <div class="lbl" style="padding-top:4px">常用设备</div>
+          <div class="row gap12" style="padding:6px 0"><svg class="ic s20 mv"><use href="#i-tv"/></svg><span class="t-bm" style="flex:1">客厅电视</span><span class="t-bs mv num">22 次 · 64 ms</span></div>
+          <div class="row gap12" style="padding:6px 0"><svg class="ic s20 mv"><use href="#i-tablet"/></svg><span class="t-bm" style="flex:1">客厅平板</span><span class="t-bs mv num">6 次 · 71 ms</span></div>
+          <div class="lbl" style="padding-top:14px">最近投屏</div>
+          <div class="row gap12" style="padding:8px 0;align-items:flex-start"><svg class="ic s20 mv" style="margin-top:2px"><use href="#i-tablet"/></svg><div style="flex:1;min-width:0"><div class="row"><span class="t-bm" style="flex:1">客厅平板</span><span class="t-bs mv num">42:10</span></div><div class="t-bs mv num">今天 20:06 · 平均 68 ms · 均衡</div><div class="ctlrow num"><svg class="ic s16"><use href="#i-touch"/></svg>本次被 客厅平板 控制 03:12</div></div></div>
+          <div class="row gap12" style="padding:8px 0;align-items:flex-start;border-top:1px solid var(--outline-variant)"><svg class="ic s20 mv" style="margin-top:2px"><use href="#i-tv"/></svg><div style="flex:1;min-width:0"><div class="row"><span class="t-bm" style="flex:1">客厅电视</span><span class="t-bs mv num">1:05:40</span></div><div class="t-bs mv num">昨天 21:30 · 平均 61 ms · 高清</div></div></div>
+          <div class="row gap12" style="padding:8px 0;align-items:flex-start;border-top:1px solid var(--outline-variant)"><svg class="ic s20 mv" style="margin-top:2px"><use href="#i-tv"/></svg><div style="flex:1;min-width:0"><div class="row"><span class="t-bm" style="flex:1">书房盒子</span><span class="t-bs mv num">—</span></div><div class="t-bs num" style="color:var(--error)">11 月 13 日 · 未出画面</div></div></div>
+        </div>
+        <div class="ft" style="padding-top:6px"><div class="row gap8 t-bs mv"><svg class="ic s16" style="color:var(--tertiary)"><use href="#i-lock"/></svg><span style="flex:1">数据只保存在本机，不会上传</span><span class="btn txt sm" style="padding:0 8px">清除记录</span></div></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23</span><span class="tagref">F25</span><span class="tagref">决策 D8</span></div><dl>
+        <dt>布局</dt><dd>“常用设备”之后新增“最近投屏”（最近 20 次，随“最近 30 天 / 全部”筛选）。每行：设备图标 + 设备名（bodyMedium）+ 右侧时长（bodySmall 等宽）；第二行时间 · 平均延迟 · 档位（bodySmall onSurfaceVariant）；失败的会话第二行用 error 色写原因。</dd>
+        <dt>控制时长</dt><dd><ul><li>本次会话被控制过才出现第三行：16 dp 手势图标 + “本次被 ×× 控制 mm:ss”，primary 色（与 R04 胶囊“被控制中”同一语义色），等宽数字。</li><li>同一会话多次授权（含 30 s 内重连续上）累计为一个时长；≥1 小时写 h:mm:ss；暂停时间不计入。</li><li>“××”保留对方设备名：行可能被单独读出（读屏逐行、导出日志），不依赖上下文也能看懂。</li><li>只记录时长与对方设备名，不记录任何操作内容（与“只注入、不读取”一致）。</li></ul></dd>
+        <dt>读屏</dt><dd>每行合并为一个焦点：“客厅平板，今天 20:06，时长 42 分 10 秒，平均延迟 68 毫秒，本次被客厅平板控制 3 分 12 秒”。</dd>
+      </dl></div>
+    </article>
+
   </div>
 </div></section>
 
@@ -1186,8 +1334,8 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
               <div style="font-size:48px;line-height:58px;font-weight:600;margin-top:8px">客厅电视</div>
               <div style="font-size:18px;color:var(--on-surface-variant);margin-top:16px">手机与电视连接同一个路由器后：</div>
               <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;font-size:18px">
-                <div class="row gap12"><span style="width:28px;height:28px;border-radius:50%;background:var(--surface-container-high);display:grid;place-items:center;font-size:14px;flex:none">1</span>手机打开本应用，选择「客厅电视」</div>
-                <div class="row gap12"><span style="width:28px;height:28px;border-radius:50%;background:var(--surface-container-high);display:grid;place-items:center;font-size:14px;flex:none">2</span>搜不到时，扫描右侧二维码或输入投屏码</div>
+                <div class="row gap12"><span style="width:28px;height:28px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-size:16px;font-weight:600;flex:none">1</span>手机打开本应用，选择「客厅电视」</div>
+                <div class="row gap12"><span style="width:28px;height:28px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-size:16px;font-weight:600;flex:none">2</span>搜不到时，扫描右侧二维码或输入投屏码</div>
               </div>
               <div class="row gap16" style="margin-top:28px;padding:16px 18px 16px 20px;border-radius:20px;background:var(--surface-container)">
                 <svg class="ic s32" style="color:var(--secondary)"><use href="#i-devices"/></svg>
@@ -1197,11 +1345,11 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
             </div>
             <div class="tvcard" style="padding:22px 24px;text-align:center">
               <div style="width:184px;height:184px;margin:0 auto;background:#fff;border-radius:14px;padding:8px"><svg class="qr" data-seed="7" viewBox="0 0 29 29" width="168" height="168" shape-rendering="crispEdges"></svg></div>
-              <div style="font-size:14px;color:var(--on-surface-variant);margin-top:10px">扫码连接 · 免输入 PIN</div>
+              <div style="font-size:16px;line-height:24px;color:var(--on-surface-variant);margin-top:10px">扫码连接 · 免输入 PIN</div>
               <div style="height:1px;background:var(--outline-variant);margin:16px 0 12px"></div>
               <div style="font-size:14px;color:var(--on-surface-variant)">投屏码</div>
               <div class="mono" style="font-size:40px;line-height:48px;font-weight:500;letter-spacing:.08em">128 43709</div>
-              <div class="mono" style="font-size:14px;color:var(--on-surface-variant);margin-top:2px">192.168.1.128 : 8443</div>
+              <div class="mono" style="font-size:16px;line-height:24px;color:var(--on-surface);margin-top:2px">192.168.1.128 : 8443</div>
             </div>
           </div>
         </div>
@@ -1209,6 +1357,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
       </div></div></div></div>
       <div class="note"><div class="refs"><span class="tagref">R-01</span><span class="tagref">F04</span><span class="tagref">F08</span><span class="tagref">PRD 10 AirPlay 未开启</span></div><dl>
         <dt>布局</dt><dd>左侧 = 身份与步骤（读），右侧 = 连接凭据（扫 / 抄）。二维码固定白底深码，不随主题反相，保证识别率。</dd>
+        <dt>对比度</dt><dd><ul><li>步骤序号：primaryContainer 底 + onPrimaryContainer 16 sp / 600（8.5:1）。</li><li>IP : 端口是要抄写的凭据，不是次要信息：onSurface + bodyMedium 16 sp 等宽（11.8:1）；“扫码连接”说明 16 sp（v1.0.1）。</li><li>凭据卡内最小字号 16 sp；14 sp 只留给标语等可忽略信息。</li></ul></dd>
         <dt>焦点</dt><dd><ul><li>页面只有 2 个可聚焦元素（去开启、设置），默认焦点在“去开启”（仅 Apple 兼容关闭时显示该卡；开启后卡片消失，默认焦点移到设置）。</li><li>投屏码 3+5 分组、0.08em 字距，3 m 外可抄写。</li></ul></dd>
         <dt>防烧屏</dt><dd>10 分钟无操作进入屏保：仅保留设备名 + 投屏码，每 60 s 移动位置（见问题 Q10）。</dd>
         <dt>出口</dt><dd>收到请求 → 12；可信设备直连 → 13；去开启 → TV 设置（同 09B 对话框）。</dd>
@@ -1248,7 +1397,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
         <svg class="scene" viewBox="0 0 960 432" style="top:54px;height:432px"><use href="#scene" width="960" height="432"/></svg>
         <div style="position:absolute;left:48px;top:476px;font-size:12px;color:rgba(255,255,255,.4)">发送端横屏 20:9 → 等比显示，上下留黑边（R-03）</div>
         <div class="statpanel">
-          <div class="row"><span style="font-size:20px;font-weight:600">投屏统计</span><span class="sp"></span><span class="row gap6" style="font-size:13px;color:var(--on-surface-variant)"><svg class="ic s16"><use href="#i-menu"/></svg>菜单键收起</span></div>
+          <div class="row"><span style="font-size:20px;font-weight:600">投屏统计</span><span class="sp"></span><span class="row gap6" style="font-size:13px;color:var(--on-surface-variant)"><svg class="ic s16"><use href="#i-back"/></svg>返回键收起</span></div>
           <div style="margin-top:12px">
             <div class="kv"><span>来源</span><span>小张的 Pixel 8</span></div>
             <div class="kv"><span>协议</span><span class="row gap6" style="justify-content:flex-end"><svg class="ic s16" style="color:var(--tertiary)"><use href="#i-lock"/></svg>WSC · 已加密</span></div>
@@ -1264,9 +1413,15 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
         </div>
       </div></div></div></div>
       <div class="note"><div class="refs"><span class="tagref">F01</span><span class="tagref">R-03</span><span class="tagref">PRD 10 投屏中</span><span class="tagref">PRD 6.2 退出</span></div><dl>
-        <dt>默认</dt><dd>全屏画面、零 UI。首帧出现时右下角淡出提示 3 s：“按菜单键查看连接信息 · 连按两次返回断开”。</dd>
-        <dt>浮层</dt><dd><ul><li>菜单键开关；靠右上安全区，最多遮挡 1/3 画面，背景 90% 不透明 + 模糊，保证文字对比度不受画面影响。</li><li>默认焦点“关闭”（安全），“断开投屏”需主动移动焦点。</li><li>8 s 无操作自动收起。</li></ul></dd>
-        <dt>退出</dt><dd>返回键 1 次 → 底部 Toast“再按一次返回键断开投屏”（2 s 窗口）；2 次 → 断开回 11。</dd>
+        <dt>默认</dt><dd>全屏画面、零 UI。首帧出现时右下角淡出提示（v1.0.3：TV 显示 <b>5 s</b>，按状态三选一；3 m 外读完约 20 字需 4–5 s）：<ul>
+          <li>发送端支持反向控制、当前未控制：“菜单键或长按返回 遥控手机 · 连按两次返回 断开投屏”</li>
+          <li>控制中（如 30 s 内重连自动续上控制后再次出首帧）：“菜单键打开控制条 · 返回键 = 对方返回”</li>
+          <li>发送端不支持反向控制（无控制入口，菜单键仍直接开关本浮层）：原文案“按菜单键查看连接信息 · 连按两次返回断开”</li>
+        </ul>不要把“确定键查看连接信息”写进首帧提示（次要信息，控制条里有“连接信息”；三条指令超出 5 s 的阅读量）。</dd>
+        <dt>浮层</dt><dd><ul><li>A 期菜单键开关，B 期起由控制条“连接信息”打开；浮层标题右侧写“返回键收起”（v1.0.3，两期通用：返回键在浮层上始终是收起）；靠右上安全区，最多遮挡 1/3 画面，背景 90% 不透明 + 模糊，保证文字对比度不受画面影响。</li><li>默认焦点“关闭”（安全），“断开投屏”需主动移动焦点。</li><li>8 s 无操作自动收起。</li></ul></dd>
+        <dt>退出</dt><dd>返回键 1 次 → 底部 Toast“再按一次返回键断开投屏”（2 s 窗口）；2 次 → 断开回 11。<b>反向控制中</b>返回键 = 对方手机的“返回”，断开改为从控制条操作（见 12 · R09 / R10）。</dd>
+        <dt>菜单键</dt><dd>反向控制 B 期起（A 期 TV 菜单键行为不变，仍直接开关本浮层），菜单键<b>或长按返回 ≥600 ms</b>（任何状态均可，v1.0.3）先打开底部控制条（R09），本统计浮层由控制条的“连接信息”打开；发送端未开启反向控制时，控制条照常出现，“请求控制”按下后给出原因（R08）。</dd>
+        <dt>按键归属</dt><dd>v1.0.3：本浮层（以及 15 受保护卡、R10 首次提示卡、控制条）可见期间，<b>方向键 / 确定 / 返回一律归浮层</b>，不发给对方手机、不移动光标——即使正在控制。浮层上返回 = 收起浮层（与浮层标题“按返回键收起”一致），收起后回到控制态。</dd>
       </dl></div>
     </article>
 
@@ -1275,11 +1430,11 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
       <div><div class="bh"><span class="id">14</span><b>重连中 · 保留最后一帧</b></div>
       <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 重连中"><div class="scr" style="background:#000">
         <svg class="scene" viewBox="0 0 960 432" style="top:54px;height:432px;filter:grayscale(.55) brightness(.5)"><use href="#scene" width="960" height="432"/></svg>
-        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:18px;padding:20px 32px 20px 26px;border-radius:999px;background:rgba(39,42,47,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 0 0 1px rgba(255,255,255,.07)">
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:18px;padding:20px 32px 20px 26px;border-radius:999px;background:rgba(39,42,47,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 0 0 1px rgba(255,255,255,.07)">
           <span class="spin l" style="color:var(--warning);width:28px;height:28px"></span>
           <div><div style="font-size:22px;font-weight:600">正在重连…</div><div style="font-size:15px;color:var(--on-surface-variant)">小张的 Pixel 8 · 第 2 次 · 最长等待 30 秒</div></div>
         </div>
-        <div style="position:absolute;left:48px;bottom:27px;font-size:14px;color:rgba(225,226,232,.55)" class="row gap8"><svg class="ic s16"><use href="#i-pause"/></svg>画面为断开前的最后一帧</div>
+        <div style="position:absolute;left:48px;bottom:27px;font-size:14px;color:var(--on-surface-variant);background:rgba(0,0,0,.6);padding:4px 10px;border-radius:8px" class="row gap8"><svg class="ic s16"><use href="#i-pause"/></svg>画面为断开前的最后一帧</div>
       </div></div></div></div>
       <div class="note"><div class="refs"><span class="tagref">F07</span><span class="tagref">PRD 6.2 播放中</span><span class="tagref">PRD 10 断线重连</span></div><dl>
         <dt>规则</dt><dd><ul><li>保留最后一帧并降饱和 / 降亮度到 50%：既传达“暂停”，又保留上下文，避免黑屏让人以为电视坏了。</li><li>状态胶囊居中，22 sp 标题，3 m 可读。</li><li>无可聚焦元素；返回键 ×2 仍可断开。</li></ul></dd>
@@ -1311,9 +1466,513 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   </div>
 </div></section>
 
-<!-- ==================== 12 待确认 ==================== -->
+<!-- ==================== 12 反向控制 ==================== -->
+<section class="sec" id="remote"><div class="wrap">
+  <div class="sec-h"><span class="no">12</span><h2>反向控制（F23 · A 触控 + 安全闭环 · B TV 遥控器 / 鼠标键盘 / 文字输入 · C 多指 / 加固）</h2><p>本质：<b>把“操作我手机的权力”临时、可见、可收回地借给对面那块屏幕</b>。所以三条公理贯穿所有画面：① 每次投屏都要发送端本人确认（可信设备也不跳过）；② 被控制期间发送端在任何界面都能看到“正在被控制”并一步收回；③ 权限只活在本次投屏里，投屏结束 / 锁屏即失效。发送端通过无障碍服务<b>只注入</b>点击、手势、全局动作与文字，不读取屏幕内容；C 期起另外<b>识别当前打开的是哪个应用、哪个页面</b>（不含页面上的文字），只用于在一些界面自动暂停控制（v1.0.4，见下方“敏感界面”）。F23 作为正式功能发布，界面不加“实验性”标签（v1.0.4 用户决策）。</p>
+  <p><b>分期（以 PRD 为准，v1.0.3）</b>：<b>A 期</b> = 单指触控（点击 / 长按 / 滑动）+ 返回 / 主页 / 最近任务 + 安全闭环（确认、可见、收回、锁屏失效、暂停）——R01–R08；<b>B 期</b> = TV 遥控器光标 / 方向键模式 + 外接鼠标键盘的点按、滚动与导航 + <b>文字输入</b>（“输入文字”对话框 R07T、外接键盘直接键入拉丁字符，对方 Android 13+）+ 播放 / 暂停键（对方 Android 16+）——R09–R11、R07T；<b>C 期</b>（v1.0.4）= 双指缩放（手机 / 平板双指捏合、外接鼠标 Ctrl + 滚轮；<b>松手后一次性执行，不实时跟手</b>，见 R07P）+ 加固（敏感界面自动暂停、投屏结束后自动关闭无障碍服务、本机读屏提示）。界面只展示<b>当前构建已实现</b>的能力：未实现的入口不显示、不置灰、不预告（D2 / D3）；已实现但对方或本机系统版本不满足的，显示为不可用并说明原因。</p>
+  <p><b>D9（v1.0.3 用户决策）</b>：本应用自己的任何界面在发送端前台时，控制自动暂停（防止对方远程改设置、点“允许”、停止投屏等）。为避免“允许了却不能控制”，R03 从本应用内打开时，“允许本次”后自动回到桌面；之后用户再回到本应用，R04 控制卡给出“回到桌面”一键恢复。</p>
+  <p><b>敏感界面（v1.0.4 · C 期，用户决策）</b>：发送端前台是下列界面时控制自动暂停（SENSITIVE_APP）：系统 / 各品牌<b>安装器</b>、<b>权限控制器</b>（运行时权限弹窗）、设置中<b>页面类名含 Accessibility</b> 的无障碍页、独立的无障碍设置应用，以及系统界面（systemui）中按页面类名识别的<b>录屏授权、USB 调试授权、无线调试配对</b>。只依据无障碍“前台窗口切换”事件里的应用 / 页面名称判断，<b>不读取页面上的文字</b>；通知栏、音量条等系统浮层与本应用窗口不改变判断。识别做不到百分之百（ROM 自定义页面可能漏判，弹窗关闭后可能没有切换事件），所以<b>所有对外文案只写“例如 / 尽量”，不作保证</b>；暂停没有自动解除时，由发送端本人点“继续控制”兜底（R04 / R05），接收端 10 s 后提示（R08）。</p>
+  <p><b>暂停原因的显示优先级（v1.0.4）</b>：多个暂停条件同时成立时，发送端胶囊 / 控制卡 / 通知与接收端角标 / 提示<b>只显示优先级最高的一个</b>：<b>OWN_APP（本应用在前台） &gt; SENSITIVE_APP（敏感界面） &gt; PROTECTED（画面受保护） &gt; WINDOWED（分屏 / 小窗） &gt; APP_HIDDEN（离开共享的应用） &gt; RECONNECTING（正在重连）</b>。依据：先显示“本机用户此刻所在界面、且有一步出路”的原因（例如在本应用内 → [回到桌面]），而不是先出现的原因；不按出现顺序。两端用同一张优先级表。</p></div>
+
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:13%">状态</th><th style="width:31%">发送端（被控制的手机）</th><th style="width:31%">接收端（手机 / 平板 / TV）</th><th>进入 → 退出</th></tr></thead>
+    <tbody>
+      <tr><td><b>关闭</b>（默认）</td><td>设置“反向控制”关；无障碍服务未使用</td><td>控制条“请求控制”可点；对方未开启 / 旧版本 / 高级保护模式时点了给出原因（R08）</td><td>设置开关打开 + 无障碍服务开启 → 可被请求（没有通知权限也可开启，见 R01）</td></tr>
+      <tr><td><b>不可用（本次）</b><br><small>v1.0.2 · D1</small></td><td>能检测到本次是单应用共享：本次会话不弹 R03，直接回复不可用</td><td>“请求控制”仍可点，点后提示“对方只共享了单个应用，本次无法控制”（R08）</td><td>新会话共享整个屏幕 → 回到关闭 / 可请求（开启反向控制时 Android 14+ 强制整屏，见 06R）</td></tr>
+      <tr><td><b>请求中</b> ≤30 s</td><td>高优先级通知 + 全屏确认页 R03（只有“允许本次 / 拒绝”）；<b>打开 R03 时撤下请求通知</b>；对方手机锁屏时不弹，直接回复已锁屏。R03 从本应用内打开时底部写“允许后将回到桌面，对方即可操作”，允许后自动回到桌面（D9）</td><td>控制条显示“等待对方确认… 26”+ 取消请求</td><td>允许 → 控制中；拒绝 / 30 s 无响应（视为拒绝）/ 接收端取消 → 关闭。冷却：接收端 10 s 内不能再次请求；<b>同一会话第 2 次起被拒（含超时）冷却 60 s</b>（D7）</td></tr>
+      <tr><td><b>控制中</b></td><td>通知“××正在控制本机 [收回控制] [停止投屏]”，小图标换成反向控制图标；屏幕边缘胶囊“控制中 · 收回”；投屏页胶囊“被控制中”</td><td>角标“控制中”（B 期 TV：“控制中 · 光标”/“控制中 · 方向键”）；手机端触点涟漪；TV 绘制光标（B 期）。获得控制时控制条自动收起：TV 首次出 R10 提示卡，之后出一次提示“已获得控制 · 菜单键打开控制条”</td><td>收回 / 退出控制 / 断开 / 投屏结束 / 锁屏或熄屏 / 无障碍服务被系统关闭 → 结束</td></tr>
+      <tr><td><b>暂停</b></td><td>边缘胶囊变琥珀点（inverseWarning）“控制已暂停 · 原因 · 收回”；不注入任何事件。<b>本应用在前台（D9）</b>：胶囊“控制已暂停 · 本应用内不可控制”；R04 控制卡“对方暂时不能操作：你正在使用局域投屏”+ [回到桌面]。<b>敏感界面（v1.0.4）</b>：胶囊“控制已暂停 · 此界面不可控制”+ [继续][收回]；通知与 R04 兜底卡提供“继续控制”（只有本机能点：胶囊与通知栏不接受远程注入）</td><td>角标“控制已暂停 · 原因”；输入被丢弃并提示一次。D9：“控制已暂停 · 对方在投屏应用内”，提示副文案“对方离开投屏应用后自动恢复”。<b>敏感界面（v1.0.4）</b>：角标“控制已暂停 · 需对方本人操作”；提示“控制已暂停 · 这里需要对方本人操作”；同一次暂停持续 &gt;10 s 再提示一次“控制仍在暂停 / 请让对方点一下手机上的「继续控制」，或切换一次应用”</td><td>网络重连中 / 画面受保护 / 被共享应用退到后台 / 分屏 / <b>发送端本应用在前台</b>（v1.0.3）/ <b>发送端在敏感界面</b>（v1.0.4）→ 条件消失后自动恢复；敏感界面另可由发送端本人点“继续控制”解除（到下一次前台切换为止）。<br><b>多个原因同时成立时只显示一个</b>（v1.0.4）：OWN_APP &gt; SENSITIVE_APP &gt; PROTECTED &gt; WINDOWED &gt; APP_HIDDEN &gt; RECONNECTING</td></tr>
+      <tr><td><b>结束</b></td><td>通知恢复为普通投屏通知；按原因给出结束提示（见 R04“结束提示”）</td><td>提示“对方已收回控制”或具体原因；回到观看态。<b>对方主动收回后，接收端同样 10 s 内不能再次请求</b>（v1.0.2 正式规则）</td><td>同一会话 30 s 内断线重连 → 自动续上控制，不再确认；新会话 → 必须重新请求</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub mt32">发送端（手机）</h3>
+  <div class="boards">
+
+    <!-- R01 设置 -->
+    <article class="board">
+      <div class="bh"><span class="id">R01</span><b>设置 · 反向控制（刚打开开关）</b></div>
+      <div class="fit"><div class="phone tall" role="img" aria-label="反向控制设置页（整页）"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">反向控制</span></div>
+        <div class="sli"><div class="tx"><div class="t1">允许对方操作本机</div><div class="t2">投屏时，电视、平板或手机可以请求点击、滑动等操作。每次都需要你在手机上确认</div></div><span class="sw on"></span></div>
+        <div style="margin:4px 16px 8px;padding:14px 16px;border-radius:16px;background:var(--warning-container);color:var(--on-warning-container)">
+          <div class="row gap8 t-ll"><svg class="ic s20"><use href="#i-a11y"/></svg>还差一步：开启无障碍服务</div>
+          <div class="t-bs mt4">系统只允许通过无障碍服务模拟点击和输入。本应用不读取屏幕内容，只识别当前打开的是哪个应用、哪个页面，用于在一些界面（例如安装应用、授予权限）自动暂停控制。</div>
+          <div class="row mt12"><span class="btn fill sm">去开启</span></div>
+        </div>
+        <div style="margin:0 16px 8px;padding:10px 12px;border-radius:12px;background:var(--surface-container);display:flex;gap:10px;align-items:flex-start"><svg class="ic s16 mv" style="margin-top:2px"><use href="#i-info"/></svg><div style="flex:1"><div class="t-bs" style="color:var(--on-surface)">没有通知权限：被控制时只能从屏幕边缘胶囊收回</div><span class="btn txt sm" style="padding:0;height:36px">允许通知</span></div></div>
+        <div class="gl2">本机支持的操作</div>
+        <div class="sli" style="min-height:52px;padding-top:6px;padding-bottom:6px"><span class="lead" style="color:var(--success)"><svg class="ic s20"><use href="#i-check"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">点击、长按、滑动、滚动</div></div></div>
+        <div class="sli" style="min-height:52px;padding-top:6px;padding-bottom:6px"><span class="lead" style="color:var(--success)"><svg class="ic s20"><use href="#i-check"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">返回、主页、最近任务</div></div></div>
+        <div class="sli" style="min-height:52px;padding-top:6px;padding-bottom:6px"><span class="lead" style="color:var(--success)"><svg class="ic s20"><use href="#i-check"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">双指缩放</div></div></div>
+        <div class="sli" style="min-height:52px;padding-top:6px;padding-bottom:6px"><span class="lead" style="color:var(--success)"><svg class="ic s20"><use href="#i-check"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">文字输入、遥控器方向键</div></div></div>
+        <div class="sli" style="min-height:52px;padding-top:6px;padding-bottom:6px"><span class="lead" style="color:var(--outline)"><svg class="ic s20"><use href="#i-info"/></svg></span><div class="tx"><div class="t1" style="font-size:15px;color:var(--outline)">播放 / 暂停键</div><div class="t2" style="color:var(--outline)">需要 Android 16 及以上</div></div></div>
+        <div class="hr"></div>
+        <div class="gl2">安全</div>
+        <div class="sli"><span class="lead" style="color:var(--tertiary)"><svg class="ic"><use href="#i-shield"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">每次投屏都要你确认</div><div class="t2">已信任的设备也不例外；投屏结束、锁屏或熄屏后立即失效</div></div></div>
+        <div class="sli"><span class="lead" style="color:var(--tertiary)"><svg class="ic"><use href="#i-lock"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">安装应用、授予权限等界面只能由你本人操作</div><div class="t2">控制会在这些界面自动暂停</div></div></div>
+        <div class="sli"><span class="lead" style="color:var(--tertiary)"><svg class="ic"><use href="#i-mark"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">本应用不能被远程操作</div><div class="t2">你在本应用内时控制会自动暂停</div></div></div>
+        <div class="sli"><span class="lead"><svg class="ic"><use href="#i-power"/></svg></span><div class="tx"><div class="t1" style="font-size:15px">投屏结束后自动关闭无障碍服务</div><div class="t2">不投屏时不保留操作本机的权限。每次被控制前需重新到系统设置开启</div></div><span class="sw"></span></div>
+        <div class="gb" style="margin-top:auto"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 A / B / C</span><span class="tagref">PRD 8.5</span><span class="tagref">D2 / D6</span><span class="tagref">v1.0.4</span></div><dl>
+        <dt>主说明</dt><dd>v1.0.3：“投屏时，电视、平板或手机可以请求点击、滑动等操作。每次都需要你在手机上确认”（与 09A 一致）。</dd>
+        <dt>入口</dt><dd>设置 09A“投屏”组新增“反向控制”行（默认关）→ 本页。首次打开开关且服务未开启 → 直接进入 R02。</dd>
+        <dt>规则</dt><dd><ul><li>服务已开启：警告卡换成一行 success“无障碍服务已开启”。</li><li>关闭总开关时同时让服务自行停用（<code>disableSelf()</code>），不留空挂的无障碍服务。</li><li><b>能力行 = 当前构建已实现 × 本机系统版本可用</b>（v1.0.2 · D2）。A 期两行（点击、长按、滑动 / 返回、主页、最近任务）。<b>B 期四行（v1.0.3，图示）</b>：“点击、长按、滑动、滚动”（滚动 = 鼠标滚轮 / 遥控器边缘滚动在本机上的效果，从被控制方的角度写，不写“鼠标滚轮”）；“返回、主页、最近任务”；“文字输入、遥控器方向键”（Android 13+）；“播放 / 暂停键”（Android 16+）。<b>C 期（v1.0.4，图示）加第 3 行“双指缩放”</b>：所有支持的系统版本都可用，所以排在需要版本的两行之前，不写副文案。</li><li><b>警告卡说明（v1.0.4 · 用户决策：精确披露）</b>：“系统只允许通过无障碍服务模拟点击和输入。本应用不读取屏幕内容，只识别当前打开的是哪个应用、哪个页面，用于在一些界面（例如安装应用、授予权限）自动暂停控制。”——不用“包名 / 前台应用 / 安全拦截”等术语；说清“识别什么、不读什么、为什么”；“例如”不作穷举与保证。服务已开启时警告卡不出现，这段说明在 R02 正文与系统服务说明中同样存在。</li><li>支持的行只写名称，<b>不写</b>“需要 Android xx 及以上 · 本机支持”这类副文案（无信息量）。</li><li>“不支持的项不隐藏”<b>只适用于本应用已实现、但本机系统版本不满足</b>的能力：outline 色 + 中性图标 + “需要 Android 13 及以上”/“需要 Android 16 及以上”（图示为 Android 15 手机上的“播放 / 暂停键”）；读屏追加状态“本机不支持”。<b>本应用尚未实现的能力一律不显示</b>，不写“后续版本支持”。</li><li>没有通知权限（D6）：总开关为开时显示信息卡“没有通知权限：被控制时只能从屏幕边缘胶囊收回”+[允许通知]（Android 13+ 先请求运行时权限，被永久拒绝则打开系统通知设置）。用 surfaceContainer 中性底：不阻止开启，只说明后果。授权后卡片消失。</li></ul></dd>
+        <dt>安全组</dt><dd>v1.0.4（图示，整页）：四行，<b>所有行都有 24 dp 前置图标，标题统一从 56 dp 起</b>（同组同一条左边线，格式塔“对齐即分组”）。顺序 = 三条承诺（不可交互）在前，唯一可操作的开关在最后：<ul><li>“每次投屏都要你确认 / 已信任的设备也不例外；投屏结束、锁屏或熄屏后立即失效”（shield，tertiary）。</li><li>“安装应用、授予权限等界面只能由你本人操作 / 控制会在这些界面自动暂停”（lock，tertiary；对应 C 期敏感界面，范围见本章开头“敏感界面”）。</li><li>“本应用不能被远程操作 / 你在本应用内时控制会自动暂停”（品牌标，tertiary；D9，B 期已实现，本版补进图示）。</li><li><b>开关</b>“投屏结束后自动关闭无障碍服务 / 不投屏时不保留操作本机的权限。每次被控制前需重新到系统设置开启”（power，onSurfaceVariant；默认关）。整行 ≥56 dp 为一个 Switch 触控目标（<code>toggleable</code>，读作“开关，已关闭”）。投屏会话结束时若开启则让服务自行停用（<code>disableSelf()</code>）。</li></ul></dd>
+        <dt>开关禁用</dt><dd>总开关为关或高级保护模式时，“自动关闭”开关不可用：<b>标题与副标题都用 outline</b>（不保留 onSurfaceVariant，也不用 38% 透明度），前置图标 outline；Switch 轨道 surfaceContainer、滑块与边框 outline，<b>“已开 + 禁用”同样设边框 outline</b>（否则轨道与 surface 几乎同色，看不出开关状态）。读屏状态“已停用”。示意见下方。</dd>
+        <dt>自动关闭后</dt><dd>“自动关闭”为开且服务已按设置停用时，<b>不再显示琥珀色“还差一步”警告卡</b>（这是用户自己选的状态，不是异常），换成 surfaceContainer 中性卡：power 图标（onSurfaceVariant）+“无障碍服务已按你的设置关闭”（labelLarge）/“下次被控制前再开启”（bodySmall）+ [去开启]（Text 按钮 → R02）。示意见下方。接收端此时请求控制仍得到“请在对方手机上开启无障碍服务”（R08）。</dd>
+        <dt>不可用</dt><dd>Android 17 高级保护模式下：总开关不可用（outline 色），说明改为“本机开启了高级保护模式，系统不允许本应用使用无障碍服务，反向控制不可用。投屏不受影响。”</dd>
+        <dt>出口</dt><dd>去开启 → R02；返回 → 09A。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">v1.0.4 · 自动关闭后的中性卡（替代“还差一步”警告卡）</div>
+      <div class="mt8" style="max-width:328px;padding:12px 14px;border-radius:16px;background:var(--surface-container);display:flex;gap:10px;align-items:flex-start" aria-label="无障碍服务已按设置关闭的提示卡示意"><svg class="ic s20 mv" style="margin-top:1px"><use href="#i-power"/></svg><div style="flex:1"><div class="t-ll" style="color:var(--on-surface)">无障碍服务已按你的设置关闭</div><div class="t-bs mv">下次被控制前再开启</div><span class="btn txt sm" style="padding:0;height:36px">去开启</span></div></div>
+      <div class="t-ls mv" style="margin-top:16px">v1.0.4 · “自动关闭”开关不可用（总开关为关）</div>
+      <div class="sli mt8" style="max-width:360px;padding-left:0;padding-right:0" aria-label="自动关闭开关不可用示意"><span class="lead" style="color:var(--outline)"><svg class="ic"><use href="#i-power"/></svg></span><div class="tx"><div class="t1" style="font-size:15px;color:var(--outline)">投屏结束后自动关闭无障碍服务</div><div class="t2" style="color:var(--outline)">不投屏时不保留操作本机的权限。每次被控制前需重新到系统设置开启</div></div><span class="sw" style="background:var(--surface-container);border-color:var(--outline)"></span></div>
+      </div>
+    </article>
+
+    <!-- R02 无障碍引导 -->
+    <article class="board">
+      <div class="bh"><span class="id">R02</span><b>引导 · 开启无障碍服务</b></div>
+      <div class="fit"><div class="phone tall" role="img" aria-label="开启无障碍服务引导页（整页）"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:31</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-close"/></svg></span><span class="t"></span></div>
+        <div class="bd">
+          <div class="iconTile"><svg class="ic s28"><use href="#i-a11y"/></svg></div>
+          <div class="t-hs mt16">开启无障碍服务</div>
+          <div class="t-bm mv mt4">反向控制需要它来模拟点击和输入。</div>
+          <div class="mt12" style="padding:12px 14px;border-radius:16px;background:var(--surface-container);display:flex;gap:12px;align-items:flex-start">
+            <svg class="ic s20" style="color:var(--tertiary);margin-top:1px;flex:none"><use href="#i-shield"/></svg>
+            <div><div class="t-ll" style="color:var(--on-surface)">本应用不读取屏幕内容</div><div class="t-bs mt4" style="color:var(--on-surface)">只识别当前打开的是哪个应用、哪个页面（不含页面上的文字），用于在一些界面（例如安装应用、授予权限）自动暂停控制。不收集任何数据。</div></div>
+          </div>
+          <div class="mt16" style="display:flex;flex-direction:column;gap:10px">
+            <div class="row gap12" style="align-items:flex-start"><span style="width:24px;height:24px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-size:13px;font-weight:600;flex:none">1</span><div class="t-bm">点「去系统设置」，进入「无障碍」</div></div>
+            <div class="row gap12" style="align-items:flex-start"><span style="width:24px;height:24px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-size:13px;font-weight:600;flex:none">2</span><div class="t-bm">在「已下载的应用」中找到「局域投屏 · 反向控制」，打开开关</div></div>
+            <div class="row gap12" style="align-items:flex-start"><span style="width:24px;height:24px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;font-size:13px;font-weight:600;flex:none">3</span><div><div class="t-bm">系统提示时选「允许」，再返回本应用</div><div class="t-bs mv mt4">系统提示里的「查看和控制屏幕」是通用说明，本应用没有申请读取屏幕内容的权限</div></div></div>
+          </div>
+          <div class="card mt16" style="padding:12px 14px">
+            <div class="t-ll">开关是灰色的，打不开？</div>
+            <div class="t-bs mv mt4">Android 13 起，系统会限制非应用商店安装的应用。打开「应用信息」，点右上角 ⋮ →「允许受限制的设置」，再回到第 2 步。</div>
+            <span class="btn txt sm" style="padding:0;margin-top:4px">打开应用信息</span>
+          </div>
+          <div class="card mt8" style="padding:12px 14px">
+            <div class="t-ll">控制经常自己失效？</div>
+            <div class="t-bs mv mt4">部分手机会在后台关闭无障碍服务。请在系统设置里允许本应用「自启动」和「后台运行」（各品牌名称不同）。</div>
+          </div>
+        </div>
+        <div class="ft"><span class="btn fill blk">去系统设置</span><div class="ctr mt4"><span class="btn txt sm">暂不开启</span></div></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23</span><span class="tagref">Android 13 受限制的设置</span></div><dl>
+        <dt>规则</dt><dd><ul><li>步骤与系统界面用语一致（「无障碍」「已下载的应用」），用户在系统设置里能对上字。第 2 步写无障碍服务在系统列表里的实际名称「局域投屏 · 反向控制」（v1.0.3，与服务 label 一致；改名时两处同步）。</li><li>“开关是灰色的”卡只在 Android 13+ 且非商店安装时显示；“经常失效”卡默认显示（无法可靠识别 ROM）。</li><li>回到本页时自动检测：已开启 → 关闭本页，返回 R01 并 Snackbar“已开启，投屏时对方可以请求控制”；未开启 → 停留，不打扰。</li><li>不使用“必须 / 否则”类施压文案；暂不开启 = 总开关回到关。</li></ul></dd>
+        <dt>披露</dt><dd>v1.0.4（用户决策：精确披露，醒目位置）：原页底一行小字“只模拟操作，不读取屏幕内容，不收集任何数据”<b>移入正文、放在步骤之前</b>，做成 surfaceContainer 披露卡（shield 图标 tertiary + 标题 labelLarge“本应用不读取屏幕内容”+ 正文 bodySmall onSurface）。放在步骤之前：用户先知道“开了之后它能做什么、不做什么”，再去系统里点“允许”（知情在前、动作在后）。正文：“只识别当前打开的是哪个应用、哪个页面（不含页面上的文字），用于在一些界面（例如安装应用、授予权限）自动暂停控制。不收集任何数据。”不用“包名”。<br>第 3 步下加 bodySmall onSurfaceVariant 说明：“系统提示里的「查看和控制屏幕」是通用说明，本应用没有申请读取屏幕内容的权限”——系统确认框对所有无障碍服务都写同一套权限描述，用户在那一刻最容易犹豫，这句话要在他看到之前出现。读屏：披露卡合并为一个节点（标题 + 正文）。<br>系统设置里显示的<b>服务说明</b>同一口径：把“前台应用包名”写成“当前应用和页面的名称（不含页面上的文字）”，并保留“例如安装器、无障碍设置中暂停控制”的“例如”。</dd>
+        <dt>出口</dt><dd>去系统设置 → <code>ACTION_ACCESSIBILITY_SETTINGS</code>；打开应用信息 → <code>ACTION_APPLICATION_DETAILS_SETTINGS</code>。</dd>
+      </dl></div>
+    </article>
+
+    <!-- R03 确认页 -->
+    <article class="board">
+      <div class="bh"><span class="id">R03</span><b>控制请求确认（每次投屏）· 图示：从本应用内打开</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="控制请求确认页"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:35</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="bd" style="align-items:center">
+          <div class="iconTile mt32"><svg class="ic s28"><use href="#i-touch"/></svg></div>
+          <div class="t-hs ctr mt16">客厅电视 请求操作本机</div>
+          <div class="row gap4 t-bs mv mt4"><svg class="ic" style="width:14px;height:14px;color:var(--tertiary)"><use href="#i-lock"/></svg>来自当前投屏 · 已加密</div>
+          <div class="card mt20" style="width:100%;display:flex;flex-direction:column;gap:12px">
+            <div class="row gap12" style="align-items:flex-start"><svg class="ic s20 mv"><use href="#i-mirror"/></svg><div class="t-bm">对方能看到并操作你的屏幕，例如点击、滑动和输入文字</div></div>
+            <div class="row gap12" style="align-items:flex-start"><svg class="ic s20 mv"><use href="#i-history"/></svg><div class="t-bm">只在本次投屏有效，投屏结束后自动失效</div></div>
+            <div class="row gap12" style="align-items:flex-start"><svg class="ic s20 mv"><use href="#i-handback"/></svg><div class="t-bm">随时可以在通知栏或屏幕边缘「收回」</div></div>
+            <div class="row gap12" style="align-items:flex-start"><svg class="ic s20" style="color:var(--warning)"><use href="#i-alert"/></svg><div class="t-bm">不要让对方代你输入密码、验证码或进行支付</div></div>
+          </div>
+        </div>
+        <div class="ft">
+          <div class="t-bs ctr" style="color:var(--on-surface);margin-bottom:10px">允许后将回到桌面，对方即可操作</div>
+          <div class="row gap12"><span class="btn ton" style="flex:1">拒绝</span><span class="btn fill" style="flex:1">允许本次</span></div>
+          <div class="t-bs mv ctr mt8 num">28 秒后自动拒绝</div>
+        </div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23</span><span class="tagref">R-09</span><span class="tagref">L13</span><span class="tagref">D9</span></div><dl>
+        <dt>触发</dt><dd>接收端发起请求 → 高优先级通知（全屏意图）；手机正在使用时以悬浮通知出现，点开进入本页；锁屏时不弹（锁屏 = 不可控制，直接回复，接收端提示“对方手机已锁屏 / 请对方解锁后再请求”）。<b>本页一打开就撤下请求通知</b>（v1.0.2 真机：悬浮通知会盖住标题）；本页在前台期间不再显示通知，倒计时只在本页；未作答就离开本页（如按主页键）时重新发出请求通知（静默、不再悬浮），便于回到本页或直接拒绝。没有通知权限（D6）时直接拉起本页。本次为单应用共享（D1）时不弹本页。</dd>
+        <dt>规则</dt><dd><ul><li>只有“允许本次 / 拒绝”，没有“始终允许”；可信设备也走本页。</li><li>四条说明顺序 = 风险 → 时效 → 退路 → 禁忌，最后一条用 warning 图标，正文仍为 onSurface（不靠颜色传达）。</li><li>第一条用“例如点击和滑动”（v1.0.2 · D2）：只举当前构建已有的能力。<b>v1.0.3（PM 决策）</b>：本机支持文字输入（Android 13+）时改为“例如点击、滑动和输入文字”（图示）——替人打字、发消息是性质不同的权力，须在同意前写明；本机低于 13 时仍为“例如点击和滑动”。</li><li><b>D9 · 从本应用内打开时（图示，v1.0.3）</b>：本页由本应用自己的界面拉起或回到本页前本应用在前台（例如正停在投屏页 07）时，按钮上方加一行“允许后将回到桌面，对方即可操作”（bodySmall，onSurface，居中；不用 warning 色——这是预告，不是风险）。点“允许本次”后自动回到桌面（<code>Intent.CATEGORY_HOME</code>），对方立即可操作；从其他应用（悬浮通知）进入时不显示这一行，允许后回到原应用。</li><li>倒计时文字不设 liveRegion（读屏每秒播报会打断四条说明）；剩 10 s 时单独播报一次“还剩 10 秒”。标题设为 heading。</li><li>通知<b>只提供“拒绝”</b>操作，“允许”必须进入本页完成（强制看到说明）。</li><li>30 s 无响应 = 拒绝；返回键 = 拒绝；本页出现时屏蔽来自接收端的任何注入（防止对方自己点“允许”）。</li><li>两个按钮等宽：允许是本页唯一主操作，但拒绝不弱化为文字按钮。</li><li>D9 那一行必须在<b>按钮上方</b>（图示）：后果预告要先于动作被看到 / 读到。</li></ul></dd>
+        <dt>读屏提示</dt><dd>v1.0.4 · C 期：本机开着触摸浏览（TalkBack、各品牌“屏幕朗读”等）时，在四条说明卡<b>之外</b>、卡片下方 12 dp 加一条中性信息条（示意见下方）：surfaceContainer 底、圆角 12 dp、16 dp info 图标 onSurfaceVariant、bodySmall onSurface：“本机开着屏幕朗读（如 TalkBack），对方的点击和滑动可能无法正常生效”。<ul><li><b>不进卡片、不用 warning</b>：卡片是“风险 → 时效 → 退路 → 禁忌”的固定结构，禁忌要留在最后；这一条讲的是“操作可能不生效”，属于说明而非风险，用 warning 会稀释“不要代输密码”。</li><li>写“无法正常生效”而不是“不准”：“不准”会被理解为点偏，实际更可能是单击只移动朗读焦点（待真机确认）。</li><li>不建议“先关闭读屏”：读屏用户关掉后无法操作手机、也无法收回控制。</li><li>状态随系统实时变化（监听触摸浏览开关），不是打开页面时取一次。读屏顺序：标题 → 四条 → 本条 → D9 行 → 按钮。</li></ul></dd>
+        <dt>出口</dt><dd>允许 → 回到确认前的界面；<b>确认前是本应用 → 回到桌面</b>（D9，v1.0.3），控制卡见 R04；拒绝 / 超时 → 回到原界面，通知收起。</dd>
+      </dl>
+      <div class="notif mt16" aria-label="控制请求通知示意"><div class="h"><i><svg class="ic" style="width:12px;height:12px"><use href="#i-mark"/></svg></i>局域投屏 · 现在</div><div class="t-ll mt8" style="color:var(--on-surface)">客厅电视 请求操作本机</div><div class="t-bs mv num">点按查看并确认 · 28 秒后自动拒绝</div><div class="acts"><span>拒绝</span></div></div>
+      <div class="t-ls mv" style="margin-top:16px">v1.0.4 · 本机开着屏幕朗读时（卡片下方 12 dp，卡片之外）</div>
+      <div class="mt8" style="max-width:312px;padding:10px 12px;border-radius:12px;background:var(--surface-container);display:flex;gap:10px;align-items:flex-start" aria-label="读屏提示信息条示意"><svg class="ic s16 mv" style="margin-top:2px;flex:none"><use href="#i-info"/></svg><div class="t-bs" style="color:var(--on-surface)">本机开着屏幕朗读（如 TalkBack），对方的点击和滑动可能无法正常生效</div></div>
+      </div>
+    </article>
+
+    <!-- R04 投屏页 · 被控制中 -->
+    <article class="board">
+      <div class="bh"><span class="id">R04</span><b>投屏页 07 · 被控制中</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="被控制中的投屏页"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:36</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-touch"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏中</span></div>
+        <div class="bd">
+          <div class="card" style="border-radius:24px;padding:20px">
+            <div class="row gap12"><span class="iconTile" style="width:48px;height:48px;border-radius:14px"><svg class="ic"><use href="#i-tv"/></svg></span><div style="flex:1;min-width:0"><div class="t-tm">客厅电视</div><div class="row gap4 t-bs mv"><svg class="ic" style="width:14px;height:14px;color:var(--tertiary)"><use href="#i-lock"/></svg>已加密 · <span class="proto">WSC</span></div></div><span class="row gap6 t-ls" style="color:var(--success)"><span class="breath" style="width:8px;height:8px"></span>投屏中</span></div>
+            <div class="num mt16" style="font-size:40px;line-height:48px;font-weight:500;letter-spacing:.01em">00:18:02</div>
+            <div class="capsule mt12"><span><i class="d" style="background:var(--lat-1)"></i>72 ms<b style="color:var(--lat-1);font-weight:500">极佳</b></span><span style="color:var(--primary)"><svg class="ic s16"><use href="#i-touch"/></svg>被控制中</span></div>
+          </div>
+          <div class="mt12" style="border-radius:20px;padding:14px 16px;background:var(--primary-container);color:var(--on-primary-container)">
+            <div class="row gap12"><svg class="ic"><use href="#i-touch"/></svg><div style="flex:1"><div class="t-ll">客厅电视 正在控制本机</div><div class="t-bs num">已控制 03:12 · 锁屏会立即收回</div></div></div>
+            <div class="row mt12"><span class="btn fill sm"><svg class="ic s18"><use href="#i-handback"/></svg>收回控制</span></div>
+          </div>
+          <div class="lbl" style="padding-top:18px">画质</div>
+          <div class="seg"><span>流畅</span><span class="on"><svg class="ic s16"><use href="#i-check"/></svg>均衡</span><span>高清</span><span><svg class="ic s16"><use href="#i-game"/></svg>游戏</span></div>
+        </div>
+        <div class="ft"><span class="btn stop blk"><svg class="ic s20"><use href="#i-stop"/></svg>停止投屏</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23</span><span class="tagref">07</span></div><dl>
+        <dt>规则</dt><dd><ul><li>胶囊追加一段“被控制中”（primary 色 + 手势图标），与延迟段并列，不挤掉延迟数值；<b>被控制时胶囊只保留“延迟段 + 被控制中”</b>，码率 / 分辨率段让位（360 dp 与大字号下不溢出）。</li><li>控制卡用 primaryContainer：表达“正在发生的授权”而非警告；收回是卡内唯一按钮。卡片出现时读屏播报一次标题；暂停时副标题为“控制已暂停 · 原因”，前加 warning 圆点。</li><li><b>状态栏图标（v1.0.2 改为替换）</b>：一条通知只能有一个小图标，被控制期间投屏通知的小图标由“镜像”<b>替换</b>为反向控制图标（手势），结束后换回；“正在投屏”仍由系统录屏指示与通知标题表达。不另发第二条常驻通知（会被折叠、且多一处噪音）。</li><li>“停止投屏”仍在拇指热区，停止 = 同时收回控制。</li><li><b>D9 · 本应用在前台（v1.0.3，下方示意）</b>：发送端回到本应用任何界面时控制自动暂停（接收端输入被丢弃）。控制卡副标题换成 warning 圆点 +“对方暂时不能操作：你正在使用局域投屏”，卡内按钮变为 [回到桌面]（Filled，本状态下用户最可能要做的事）+ [收回控制]（Outlined，仍在卡内、不被挤掉）。“回到桌面”= 启动桌面（<code>CATEGORY_HOME</code>），离开本应用后自动恢复，不需要对方重新请求。只说“现在为什么不行 + 一步恢复”，不解释安全原理（R03 已在同意前说明）。360 dp / 大字号下两个按钮放不下时换行，“回到桌面”在前。</li><li><b>暂停原因优先级（v1.0.4）</b>：副标题只显示优先级最高的一个原因（OWN_APP &gt; SENSITIVE_APP &gt; PROTECTED &gt; WINDOWED &gt; APP_HIDDEN &gt; RECONNECTING，见本章开头）。所以用户在本应用内<b>总是看到 D9 卡</b>，即使之前停在安装器、敏感暂停还没解除；点 [回到桌面] 产生前台切换，残留的敏感暂停随之解除。</li><li><b>敏感界面兜底卡（v1.0.4，下方示意）</b>：SENSITIVE_APP 是最高优先级原因时，副标题 warning 圆点 +“对方暂时不能操作：此界面只能由你操作”，按钮 [继续控制]（Filled）+ [收回控制]（Outlined）。“继续控制”= 解除本次敏感暂停，直到下一次前台切换（若又进入敏感界面则重新暂停）；它是“弹窗关闭后没有切换事件、暂停没解除”时的兜底。说明：本卡在本应用内显示，按优先级通常被 D9 卡覆盖；同一兜底同时放在<b>边缘胶囊 [继续]</b>（R05）与<b>投屏通知动作“继续控制”</b>（敏感暂停时出现，与“收回控制 / 停止投屏”并列，共 3 个）——两处都不接受远程注入，只有本机能点。</li><li><b>读屏提示（v1.0.4，下方示意）</b>：本机开着触摸浏览时，副标题下 6 dp 加一行：16 dp info 图标 + bodySmall“开着屏幕朗读时，对方的点击和滑动可能无法正常生效”，onPrimaryContainer；与 R03 同一措辞（卡片标题已说明是本机，省主语）。实时随系统开关变化。</li></ul></dd>
+        <dt>出口</dt><dd>收回 → 卡片消失 + Snackbar“已收回控制，投屏继续”，胶囊段移除，投屏继续。</dd>
+        <dt>结束提示</dt><dd>发送端按结束原因给出一次提示（App 在前台 = Snackbar；在后台 = 静默通知，60 s 后自动消失）：<ul><li>本机收回（REVOKED）→“已收回控制，投屏继续”</li><li>接收端退出（RECEIVER_END）→“对方已退出控制”</li><li>无障碍服务被系统关闭（SERVICE_OFF）→“无障碍服务已被系统关闭，控制已结束”（附 [重新开启] → R02）</li><li>锁屏 / 熄屏（LOCKED）→ 通知“已收回控制：手机已锁屏”</li><li>停止投屏 / 会话结束（SESSION_END）→ 不另提示（结束页已说明）</li><li>其他原因 →“已收回控制”</li></ul></dd>
+      </dl>
+      <div class="notif mt16" aria-label="控制中通知示意"><div class="h"><i><svg class="ic" style="width:12px;height:12px"><use href="#i-touch"/></svg></i>局域投屏 · 正在进行</div><div class="t-ll mt8" style="color:var(--on-surface)">客厅电视 正在控制本机</div><div class="t-bs mv num">投屏中 · 延迟 72 ms · 均衡</div><div class="acts"><span>收回控制</span><span>停止投屏</span></div></div>
+      <div class="snack mt12"><span style="flex:1">已收回控制，投屏继续</span></div>
+      <div class="t-ls mv" style="margin-top:16px">D9 · 本应用在前台时的控制卡（v1.0.3）</div>
+      <div class="mt8" style="border-radius:20px;padding:14px 16px;background:var(--primary-container);color:var(--on-primary-container);max-width:328px" aria-label="本应用在前台时控制暂停的控制卡示意">
+        <div class="row gap12"><svg class="ic"><use href="#i-touch"/></svg><div style="flex:1"><div class="t-ll">客厅电视 正在控制本机</div><div class="row gap6 t-bs"><i style="width:8px;height:8px;border-radius:50%;background:var(--warning);flex:none"></i>对方暂时不能操作：你正在使用局域投屏</div></div></div>
+        <div class="row gap8 mt12"><span class="btn fill sm">回到桌面</span><span class="btn out sm"><svg class="ic s18"><use href="#i-handback"/></svg>收回控制</span></div>
+      </div>
+      <div class="t-ls mv" style="margin-top:16px">v1.0.4 · 敏感界面兜底卡（SENSITIVE_APP 为最高优先级原因时）</div>
+      <div class="mt8" style="border-radius:20px;padding:14px 16px;background:var(--primary-container);color:var(--on-primary-container);max-width:328px" aria-label="敏感界面暂停的控制卡示意">
+        <div class="row gap12"><svg class="ic"><use href="#i-touch"/></svg><div style="flex:1"><div class="t-ll">客厅电视 正在控制本机</div><div class="row gap6 t-bs"><i style="width:8px;height:8px;border-radius:50%;background:var(--warning);flex:none"></i>对方暂时不能操作：此界面只能由你操作</div></div></div>
+        <div class="row gap8 mt12"><span class="btn fill sm">继续控制</span><span class="btn out sm"><svg class="ic s18"><use href="#i-handback"/></svg>收回控制</span></div>
+      </div>
+      <div class="t-ls mv" style="margin-top:16px">v1.0.4 · 本机开着屏幕朗读时的控制卡</div>
+      <div class="mt8" style="border-radius:20px;padding:14px 16px;background:var(--primary-container);color:var(--on-primary-container);max-width:328px" aria-label="读屏开启时的控制卡示意">
+        <div class="row gap12" style="align-items:flex-start"><svg class="ic"><use href="#i-touch"/></svg><div style="flex:1"><div class="t-ll">客厅电视 正在控制本机</div><div class="t-bs num">已控制 03:12 · 锁屏会立即收回</div><div class="row gap6 t-bs" style="margin-top:6px;align-items:flex-start"><svg class="ic s16" style="flex:none;margin-top:2px"><use href="#i-info"/></svg>开着屏幕朗读时，对方的点击和滑动可能无法正常生效</div></div></div>
+        <div class="row mt12"><span class="btn fill sm"><svg class="ic s18"><use href="#i-handback"/></svg>收回控制</span></div>
+      </div>
+      <div class="notif mt12" aria-label="敏感界面暂停时的通知示意"><div class="h"><i><svg class="ic" style="width:12px;height:12px"><use href="#i-touch"/></svg></i>局域投屏 · 正在进行</div><div class="t-ll mt8" style="color:var(--on-surface)">客厅电视 正在控制本机</div><div class="t-bs mv num">控制已暂停 · 此界面不可控制</div><div class="acts"><span>继续控制</span><span>收回控制</span><span>停止投屏</span></div></div>
+      </div>
+    </article>
+
+    <!-- R05 屏幕边缘胶囊 -->
+    <article class="board">
+      <div class="bh"><span class="id">R05</span><b>屏幕边缘胶囊 · 控制中 / 暂停</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="其他应用上方的控制中胶囊"><span class="cam"></span><div class="scr" style="background:#F3F1EC">
+        <div class="sb" style="background:#33465A;color:#fff"><span>20:37</span><span class="r"><svg class="ic s16"><use href="#i-touch"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="mirror" style="left:0;right:0;top:32px;bottom:0"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="edgecap" style="top:280px"><span class="d"></span>控制中<b>收回</b></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:22px;display:grid;place-items:center;z-index:2"><span style="width:108px;height:4px;border-radius:2px;background:#333;opacity:.5"></span></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 A</span><span class="tagref">PRD 8.5 不申请悬浮窗</span></div><dl>
+        <dt>实现</dt><dd>由无障碍服务添加 <code>TYPE_ACCESSIBILITY_OVERLAY</code> 窗口，<b>不申请悬浮窗权限</b>。贴右边缘，高 40 dp（触控区 48 dp），可上下拖动、松手吸边；不可拖离边缘、不可关闭（唯一操作是“收回”）。</dd>
+        <dt>配色</dt><dd>inverseSurface 底 + inverseOnSurface 字 + inversePrimary “收回”（7.5:1）：在任意 App 的浅 / 深界面上都保持反差，与 Snackbar 同一语言。暂停态圆点用 <b>inverseWarning</b>（v1.0.2：浅色主题 = warningDark #EFC04A，深色主题 = warningLight #7A5900，在 inverseSurface 上约 7.6:1 / 5:1）；原 warning 在反相底上只有约 2:1 / 1.5:1，低于图形 3:1。</dd>
+        <dt>防误触</dt><dd>来自接收端的注入<b>不能从状态栏下拉通知栏、不能点中控制胶囊与确认页</b>（v1.0.2 收窄承诺：起点在状态栏区域的手势、落在胶囊矩形内的坐标、R03 显示期间的全部注入直接丢弃，接收端提示“这里不能远程操作 / 状态栏和屏幕边缘的控制提示只能在对方手机上操作”，v1.0.3 同步实现文案，见 R08）。通知栏若已被本机其他方式拉下，本应用不读取窗口内容，无法识别，故不作承诺。</dd>
+        <dt>大字号</dt><dd>原因文案单行、末尾省略，最大宽度为屏宽 60%（含“继续”时为 60% 减去“继续”宽度）；“收回”（以及敏感暂停时的“继续”）固定宽度、优先布局，任何字号下都不被挤掉。窗口避开刘海 / 挖孔与横屏导航栏。<b>v1.0.4</b>：字号 ≥130% 时暂停态前缀由“控制已暂停”缩为“已暂停”（如“已暂停 · 此界面不可控制”），保证原因能露出来——原因是胶囊的核心信息，前缀可以由琥珀圆点代偿。所有原因文案 ≤9 字。</dd>
+        <dt>读屏</dt><dd>内容描述只写状态（“控制中”/“控制已暂停，正在重连”），点击操作标签为“收回控制”，读作“控制中，双击即可收回控制”。<b>v1.0.4 敏感暂停</b>：内容描述“控制已暂停，此界面不可远程控制”；默认点击动作仍为“收回控制”，另加自定义操作“继续控制”（TalkBack 操作菜单中可选），避免读屏用户误触“继续”。</dd>
+        <dt>继续</dt><dd>v1.0.4 · 只在<b>敏感界面暂停</b>（SENSITIVE_APP 为当前显示原因）时出现，暂停一开始就显示。<ul><li>顺序：原因文字 → [继续] → [收回]；“收回”位置不变、始终在最外侧（肌肉记忆与安全出口不动），“继续”用 inverseOnSurface 中性色（不与“收回”的 inversePrimary 抢强调），两者视觉 32 dp 高，触控各 ≥48×48 dp，中间 4 dp 间隔。</li><li>点“继续”= 解除本次敏感暂停，直到下一次前台切换；若又进入敏感界面则重新暂停。不另弹确认：只有本机能点（胶囊矩形内的远程注入一律丢弃），且影响范围只到当前界面。</li><li>用途：弹窗（如权限弹窗）关闭后系统可能不发前台切换事件，暂停不会自己解除；本机用户看到胶囊仍是暂停态，可一步恢复。</li></ul></dd>
+        <dt>暂停</dt><dd><div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;margin-top:4px">
+          <span class="edgecap pause" style="position:static;border-radius:20px"><span class="d"></span>控制已暂停 · 正在重连<b>收回</b></span>
+          <span class="edgecap pause" style="position:static;border-radius:20px"><span class="d"></span>控制已暂停 · 画面受保护<b>收回</b></span>
+          <span class="edgecap pause" style="position:static;border-radius:20px"><span class="d"></span>控制已暂停 · 已离开共享的应用<b>收回</b></span>
+          <span class="edgecap pause" style="position:static;border-radius:20px"><span class="d"></span>控制已暂停 · 分屏时不可控制<b>收回</b></span>
+          <span class="edgecap pause" style="position:static;border-radius:20px"><span class="d"></span>控制已暂停 · 本应用内不可控制<b>收回</b></span>
+          <span class="edgecap pause" style="position:static;border-radius:20px"><span class="d"></span>控制已暂停 · 此界面不可控制<b class="c">继续</b><b>收回</b></span>
+          <span class="edgecap pause" style="position:static;border-radius:20px;font-size:17px"><span class="d"></span>已暂停 · 此界面不可控制<b class="c">继续</b><b>收回</b></span>
+        </div>
+        <div class="mt8">v1.0.4 · 敏感界面（安装应用、授予权限等，范围见本章开头）显示倒数第二种；最后一种为 ≥130% 字号时的写法。“此界面”直指用户眼前的页面：规则（不可控制）+ 出路（离开或点继续）一眼可得；不用“敏感”（让本机用户紧张、也说不清指什么）。多个原因同时成立时按优先级只显示一个（OWN_APP &gt; SENSITIVE_APP &gt; PROTECTED &gt; WINDOWED &gt; APP_HIDDEN &gt; RECONNECTING）。</div>
+        <div class="mt8">v1.0.3 · D9：本应用任何界面在前台时显示“本应用内不可控制”。原因写成规则（“本应用内不可控制”），而不是现象（“正在使用投屏应用”）：用户看到就知道离开本应用即可恢复；恢复入口在 R04 控制卡的 [回到桌面]。</div></dd>
+        <dt>终止</dt><dd>锁屏 / 熄屏：胶囊立即移除，控制结束；通知“已收回控制：手机已锁屏”。解锁后<b>不</b>自动恢复，需接收端重新请求。</dd>
+      </dl></div>
+    </article>
+
+  </div>
+
+  <h3 class="sub mt32">接收端 · 手机 / 平板</h3>
+  <div class="boards">
+
+    <!-- R06 入口 + 控制条 -->
+    <article class="board">
+      <div class="bh"><span class="id">R06</span><b>播放页 · 边缘按钮与控制条</b></div>
+      <div class="fit"><div class="phone theme-dark" role="img" aria-label="接收端播放页控制条"><span class="cam"></span><div class="scr" style="background:#000">
+        <div class="mirror" style="left:12px;right:12px;top:28px;bottom:28px;border-radius:10px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="edgetab hit"><svg class="ic s16"><use href="#i-touch"/></svg></div>
+        <div class="ctlbar">
+          <div class="row"><span class="ctlstate"><i class="d" style="background:var(--outline)"></i>小张的 Pixel 8 · 未控制</span><span class="sp"></span><svg class="ic s20 mv"><use href="#i-close"/></svg></div>
+          <div class="row gap8 mt12"><span class="btn fill" style="flex:1"><svg class="ic s18"><use href="#i-touch"/></svg>请求控制</span><span class="btn ton">断开投屏</span></div>
+          <div class="t-bs mv mt8">对方会在手机上确认，只在本次投屏有效</div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23</span><span class="tagref">R-03</span></div><dl>
+        <dt>入口</dt><dd>右边缘小把手：<b>视觉 24×80 dp</b>（scrim 60% + onScrim 图标），<b>触控区 48×80 dp</b>（向画面内扩 24 dp，图中虚线；v1.0.2）。点按或从把手左滑打开控制条；控制条 5 s 无操作自动收起，把手常驻但不遮挡画面主体。</dd>
+        <dt>手势冲突</dt><dd>把手贴在系统“返回”手势区内：触控区必须登记为<b>系统手势排除区</b>（<code>systemGestureExclusion</code>，右边缘限额 200 dp 内），否则左滑会被当作“返回”——未控制时触发“再按一次返回键断开投屏”，控制中给对方发“返回”。把手同时避开刘海 / 挖孔 insets。</dd>
+        <dt>无障碍</dt><dd>读屏（TalkBack）或开关控制开启时，控制条<b>不自动收起</b>（WCAG 2.2.1），只能由 × / 返回键 / 操作收起；把手内容描述“打开控制条”，× 为“收起控制条”。</dd>
+        <dt>规则</dt><dd><ul><li>未控制时：单击画面 = 切换浮层（原行为）。</li><li>“请求控制”是控制条主操作；对方未开启 / 旧版本 / 单应用共享时按钮仍可点，点后给出原因（R08），而不是置灰让人猜。唯一的不可用是冷却期（surfaceContainer 底 + outline 字，下方写“N 秒后可以再次请求”）。</li><li>控制条用 surfaceContainerHigh 实色底，不叠加在画面上半透明。</li><li>播放页（含控制条、把手、角标）固定使用深色方案，与 TV 一致：视频上下文里亮色浮层会刺眼。</li></ul></dd>
+        <dt>出口</dt><dd>请求控制 → R08 等待；断开投屏 → 待机页。</dd>
+      </dl></div>
+    </article>
+
+    <!-- R07 控制中 -->
+    <article class="board">
+      <div class="bh"><span class="id">R07</span><b>控制中 · 触点涟漪 + 控制条（B 期）</b></div>
+      <div class="fit"><div class="phone theme-dark" role="img" aria-label="接收端控制中"><span class="cam"></span><div class="scr" style="background:#000">
+        <div class="mirror" style="left:12px;right:12px;top:28px;bottom:28px;border-radius:10px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="ripple" style="left:186px;top:196px"></div>
+        <span class="ctlbadge" style="left:22px;top:40px;font-size:13px;height:30px"><i class="d"></i>控制中</span>
+        <div class="edgetab" style="color:var(--primary)"><svg class="ic s16"><use href="#i-touch"/></svg></div>
+        <div class="ctlbar">
+          <div class="row"><span class="ctlstate"><i class="d" style="background:var(--primary)"></i>正在控制 小张的 Pixel 8</span><span class="sp"></span><svg class="ic s20 mv"><use href="#i-close"/></svg></div>
+          <div class="row gap8 mt12"><span class="btn ton" style="flex:1;padding:0 12px">输入文字</span><span class="btn ton" style="flex:1;padding:0 12px">退出控制</span><span class="btn ton" style="flex:1;padding:0 12px">连接信息</span></div>
+          <div class="row gap8 mt8"><span class="btn txt sm" style="padding:0 8px">返回</span><span class="btn txt sm" style="padding:0 8px">主页</span><span class="btn txt sm" style="padding:0 8px">最近任务</span><span class="sp"></span><span class="btn txt sm" style="color:var(--error);padding:0 8px">断开投屏</span></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 A / B</span><span class="tagref">D3</span></div><dl>
+        <dt>布局（B 期，图示）</dt><dd>第 1 行状态 + ×；第 2 行 [输入文字][退出控制][连接信息] 三个 Tonal 等宽，<b>水平内边距 12 dp</b>（默认 24 dp 时 360 dp 宽下每格约 97 dp，放不下 4 字 + 内边距）；第 3 行文字按钮 返回 / 主页 / 最近任务 …… 断开投屏（error）。字号 ≥130% 或宽度不足时第 2 行改为流式换行（FlowRow），顺序不变，不截字、不折成两行字。</dd>
+        <dt>布局（A 期）</dt><dd>第 2 行 [退出控制]（占满）+ [连接信息]；A 期不显示“输入文字”（D3）。</dd>
+        <dt>连接信息</dt><dd>v1.0.2 新增：控制中单击画面已交给对方，统计浮层（13）只能从这里打开；打开浮层时控制条收起，浮层“关闭”后回到控制态。未控制时（R06）单击画面即可打开浮层，不重复放此按钮。</dd>
+        <dt>手势</dt><dd><ul><li>控制中：单击 = 对方点击，<b>不再</b>切换浮层；浮层从控制条“连接信息”打开。</li><li>触点在本地画 44 dp 白环涟漪（白环 2 dp + 外侧 1 dp 黑描边 35%，任何画面上可见），抵消约 70 ms 延迟带来的“点了没”焦虑。<b>时长 450 ms</b>：半径 0.85→1.0、透明度 1→0（v1.0.2）。<b>系统关闭动画</b>（动画缩放 = 0 / 减少动态效果）时改为静态环，显示 300 ms 后直接消失——涟漪是操作反馈，不能因关闭动画而消失。</li><li>A 期：单指长按、滑动原样转发；坐标按画面内容区（去掉黑边）换算，落在黑边上的按下丢弃。</li><li><b>C 期 · 双指（v1.0.4）</b>：第二根手指按下时，已开始的单指手势立即取消（对方不产生点击 / 长按，同 D5），转入双指缩放（R07P）。</li></ul></dd>
+        <dt>禁用</dt><dd>暂停时“返回 / 主页 / 最近任务 / 输入文字”不可用：outline 字（不用 38% 透明度，所有禁用态都要显式设 <code>disabledContentColor = outline</code>）。</dd>
+        <dt>文字（B 期，v1.0.3）</dt><dd>“输入文字”→ R07T 对话框，整段送出（不逐字发送，避免输入法组合态错乱）。对方低于 Android 13：按钮仍可点，surfaceContainer 底 + outline 字，读屏状态“对方系统版本不支持”；点按<b>每次</b>都给出原因提示“对方系统版本不支持文字输入”（主动询问不去重）。</dd>
+        <dt>外设（B 期）</dt><dd>鼠标：左键点击 / 左键拖动 = 滑动 / 右键返回 / 中键主页 / 滚轮滚动；键盘：Esc = 返回、Meta = 主页、Alt+Tab = 最近任务、方向键 = 对方焦点导航、Enter / Backspace 编辑；直接键入只支持拉丁字母、数字与符号（对方 Android 13+），中文请用“输入文字”。完整见输入映射表。</dd>
+      </dl></div>
+    </article>
+
+    <!-- R07P 双指缩放（v1.0.4，C 期） -->
+    <article class="board">
+      <div class="bh"><span class="id">R07P</span><b>控制中 · 双指缩放（C 期）</b></div>
+      <div class="fit"><div class="phone theme-dark" role="img" aria-label="接收端双指捏合中，两指位置画空心环"><span class="cam"></span><div class="scr" style="background:#000">
+        <div class="mirror" style="left:12px;right:12px;top:28px;bottom:28px;border-radius:10px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <span class="ctlbadge" style="left:22px;top:40px;font-size:13px;height:30px"><i class="d"></i>控制中</span>
+        <div class="pinchring" style="left:128px;top:330px"></div>
+        <div class="pinchring" style="left:236px;top:446px"></div>
+        <div class="edgetab" style="color:var(--primary)"><svg class="ic s16"><use href="#i-touch"/></svg></div>
+        <div style="position:absolute;left:24px;right:24px;bottom:40px;z-index:5"><div class="toastl"><svg class="ic s18 mv"><use href="#i-pinch"/></svg><div>双指缩放会在松手后执行<small>对方手机会按两指的变化缩放一次</small></div></div></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 C</span><span class="tagref">PINCH 宏</span><span class="tagref">R07</span></div><dl>
+        <dt>本质</dt><dd>双指缩放是“松手后对方一次性执行”，不是实时跟手（对方手机按起止间距合成一次两指手势）。从按下到画面变化要等：捏合本身 + 回放时长（100–800 ms）+ 链路约 70 ms + 一帧。这段时间画面完全不动，用户会以为没识别到，越捏越用力或重复捏，结果缩放两次。所以本地反馈只回答一件事：<b>“两根手指被识别了 / 已经发出去了”</b>，不预告结果。</dd>
+        <dt>状态</dt><dd><div style="display:grid;grid-template-columns:56px 1fr;gap:10px 12px;align-items:center;margin-top:6px">
+          <div style="position:relative;height:48px;background:#1b1f24;border-radius:10px"><div class="pinchring" style="left:28px;top:24px"></div></div><div><b>按住</b>：两指各一个 44 dp <b>空心</b>环跟手（白环 2 dp + 外侧 1 dp 黑描边 35%，无填充；与单击涟漪同一套笔触，但不扩散、不填充，表示“正按着”）。不画两指连线。</div>
+          <div style="position:relative;height:48px;background:#1b1f24;border-radius:10px"><div class="pinchring solid" style="left:28px;top:24px"></div></div><div><b>松手（已发送）</b>：任一手指抬起即发送；两环停在最后位置、变为<b>实心</b>（白 40%），在本次回放时长 dur（100–800 ms）内线性淡出——淡出结束≈对方动画结束，把等待“填满”。</div>
+          <div style="position:relative;height:48px;background:#1b1f24;border-radius:10px"><div class="pinchring fade" style="left:28px;top:24px"></div></div><div><b>变化 &lt;5%</b>（双指轻点 / 双指平移）：不发送，空心环 150 ms 快速淡出，不做实心态——“识别到了，但不构成缩放”。不另提示。</div>
+          <div style="position:relative;height:48px;background:#1b1f24;border-radius:10px"><div class="pinchring" style="left:28px;top:24px"></div></div><div><b>关闭动画</b>（动画缩放 = 0 / 减少动态效果）：按住时静态空心环跟手（位置跟随不是动画）；松手后实心静态环显示 300 ms 后直接消失；&lt;5% 时直接消失。</div>
+        </div></dd>
+        <dt>提示</dt><dd><ul><li><b>首次</b>：本机第一次发出双指缩放后，出 R08 中性提示“双指缩放会在松手后执行 / 对方手机会按两指的变化缩放一次”（图示；每次安装只出一次）——纠正“实时跟手”的预期。</li><li><b>落在黑边上</b>：任一手指按在画面外的黑边上时不开始缩放（已开始的单指手势仍取消），提示“双指需在画面内 / 两根手指都要放在对方画面上”，每次控制一次（被动触发去重）。</li><li><b>对方版本不支持</b>：不画实心态，提示见 R08 C 期组，每次控制一次。</li><li>暂停中：双指同单指，整个手势被吃掉并按暂停原因提示一次。</li></ul></dd>
+        <dt>不做预览</dt><dd><b>不在本地缩放画面</b>：① 对方应用怎样响应缩放无法预测（不可缩放、按对数缩放、触发系统放大），预览与结果常不一致；② 预览要在松手时撤回，而真实缩放 100–900 ms 后才到，会出现“放大 → 弹回 → 再放大”的二次运动，比没有反馈更糟；③ 镜像画面代表对方整块屏幕（含状态栏），整体放大会破坏“画面 = 对方屏幕”的心智模型，也与坐标换算冲突。</dd>
+        <dt>鼠标</dt><dd>外接鼠标 Ctrl + 滚轮 = 捏合（向上放大，每格 ×1.25，50 ms 内合并），以指针为中心；合并后发出时在指针处显示一次实心静态环 300 ms。</dd>
+        <dt>读屏</dt><dd>环与提示为纯视觉反馈，不进无障碍树；提示条按 R08 规则播报。</dd>
+      </dl></div>
+    </article>
+
+    <!-- R07T 输入文字对话框（v1.0.3，B 期） -->
+    <article class="board">
+      <div class="bh"><span class="id">R07T</span><b>控制中 · 输入文字（B 期）</b></div>
+      <div class="fit"><div class="phone theme-dark" role="img" aria-label="接收端输入文字对话框"><span class="cam"></span><div class="scr" style="background:#000">
+        <div class="mirror" style="left:12px;right:12px;top:28px;bottom:28px;border-radius:10px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="scrim"></div>
+        <div class="dlg" style="top:34%">
+          <div class="t-hs" style="font-size:22px;line-height:30px">输入到 小张的 Pixel 8</div>
+          <div class="t-bm mv mt8">将输入到对方手机当前选中的输入框。密码、验证码请让对方自己输入。</div>
+          <div class="tf mt16">明天下午三点见<span class="caret"></span></div>
+          <div class="t-bs mv num" style="text-align:right;margin-top:4px">7 / 1000</div>
+          <div class="row gap8 mt12" style="justify-content:flex-end"><span class="btn txt">取消</span><span class="btn txt" style="font-weight:600">输入</span></div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:232px;background:var(--surface-container);z-index:5;display:grid;place-items:center;color:var(--on-surface-variant);font-size:13px">本机键盘（动作键 = 输入）</div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 B</span><span class="tagref">对方 Android 13+</span></div><dl>
+        <dt>入口</dt><dd>手机 / 平板：R07 控制条“输入文字”；TV：R11 控制条“输入文字”（打开后控制条收起）。</dd>
+        <dt>结构</dt><dd><ul><li>标题“输入到 ××”（×× = 对方设备名，heading）：说清文字去哪。</li><li>说明（bodyMedium，onSurfaceVariant）：“将输入到对方手机当前选中的输入框。密码、验证码请让对方自己输入。”</li><li>Outlined 多行文本框（2–5 行，超出滚动），占位“要输入的文字”，打开即聚焦并拉起本机键盘（TV：电视输入法）；键盘动作键为“输入”（IME_ACTION_SEND 语义，标签按系统）。</li><li>计数“n / 1000”（bodySmall，等宽数字，右对齐）；到 1000 后不再接受输入，计数变 error 色并读屏播报一次“已达到 1000 字上限”。</li><li>按钮：[取消][输入]；内容为空时“输入”不可用（outline 字）。</li></ul></dd>
+        <dt>结果</dt><dd><ul><li>点“输入”后对话框关闭，文字整段送出；成功不另提示（对方画面里能看到结果）。</li><li><b>失败保留草稿</b>：对方回复“密码框”“没有选中的输入框”或连接中断时，给出 R08 提示，下次打开本对话框预填上次未送出的文字（光标在末尾）；成功送出后清空草稿。草稿只存在内存里，本次投屏结束即丢弃。</li></ul></dd>
+        <dt>TV</dt><dd>同一结构；按钮用 TvButton（07 焦点规范，默认焦点在文本框，输入法收起后默认焦点“输入”），说明与计数用 TV 字号（≥16 sp / 计数 14 sp）。</dd>
+        <dt>读屏</dt><dd>标题为 heading；文本框标签“要输入的文字”；计数不设 liveRegion（逐字播报干扰输入）。</dd>
+      </dl></div>
+    </article>
+
+    <!-- R08 等待 + 错误 -->
+    <article class="board">
+      <div class="bh"><span class="id">R08</span><b>等待对方确认 · 提示与错误</b></div>
+      <div class="fit"><div class="phone theme-dark" role="img" aria-label="等待对方确认"><span class="cam"></span><div class="scr" style="background:#000">
+        <div class="mirror" style="left:12px;right:12px;top:28px;bottom:28px;border-radius:10px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="edgetab"><svg class="ic s16"><use href="#i-touch"/></svg></div>
+        <div class="ctlbar">
+          <div class="row gap12"><span class="spin" style="color:var(--primary)"></span><div style="flex:1"><div class="t-ll">等待 小张的 Pixel 8 确认…</div><div class="t-bs mv num">请在对方手机上点「允许本次」 · 26 秒</div></div></div>
+          <div class="row mt12"><span class="btn ton blk">取消请求</span></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23</span></div><dl>
+        <dt>规则</dt><dd><ul><li>等待时告诉用户“去哪里、点什么”，倒计时与发送端同步；倒计时文字不设 liveRegion，剩 10 s 时播报一次。</li><li>错误提示一律“发生了什么 + 怎么办”，以底部提示出现 4 s；需要对方操作的写明“在对方手机上”。每种提示有自己的图标与图标色（见下表），正文统一 onSurface，不靠颜色传达。</li><li>冷却：被拒 / 超时 / 取消 / 对方主动收回后 10 s 内“请求控制”不可用并显示剩余秒数；<b>同一会话第 2 次起被拒（含超时）为 60 s</b>（D7），提示副文案随之写“60 秒后可以再次请求”。避免反复骚扰对方。</li><li>输入被丢弃类提示（状态栏 / 胶囊、对方本机触摸）同一原因 10 s 内只提示一次。</li><li><b>去重只用于被动触发</b>（v1.0.3）：按键 / 鼠标映射到对方不支持的能力时，每次控制每种提示一次；用户<b>主动点</b>不可用按钮（“方向键（对方不支持）”“输入文字”不可用态）时<b>每次</b>都提示——按了没反应是最差的反馈。</li><li>B 期能力类提示（对方版本不支持、对方手机不支持这个操作、看不到焦点、长按请切换光标模式）是说明而非警告：图标用 onSurfaceVariant 中性色；只有“密码框”用 warning（涉及敏感信息）。</li><li>“对方手机不支持这个操作”：兜底文案，用于对方回复不支持、但无法归到具体能力的按键 / 动作。</li><li>“看不到焦点？”触发（v1.0.3）：方向键模式下 5 s 内按方向键 ≥6 次且一次确定都没按（在“找焦点”的行为信号），每次投屏最多一次；不再按“首次按方向键后 5 s”触发。</li><li>提示用本页组件（surfaceContainerHigh，深色固定），不用系统 Toast。</li><li><b>C 期（v1.0.4）</b>：暂停提示只按<b>优先级最高</b>的原因出（OWN_APP &gt; SENSITIVE_APP &gt; PROTECTED &gt; WINDOWED &gt; APP_HIDDEN &gt; RECONNECTING），角标同。敏感界面暂停<b>持续 &gt;10 s</b> 时再出一次中性提示“控制仍在暂停 / 请让对方点一下手机上的「继续控制」，或切换一次应用”（每次暂停最多一次；其他原因能可靠自动恢复，不出此提示）。“对方版本不支持双指缩放”副文案较长，显示 6 s（其余 4 s）。双指缩放首次提示每次安装一次；“双指需在画面内”每次控制一次。</li></ul></dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:14px">请求结果</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div class="toastl"><svg class="ic s18" style="color:var(--error)"><use href="#i-close"/></svg><div>对方拒绝了控制请求<small>10 秒后可以再次请求（同一次投屏再次被拒：60 秒后可以再次请求）</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-hourglass"/></svg><div>对方 30 秒内没有回应<small>已视为拒绝</small></div></div>
+        <div class="toastl"><svg class="ic s18" style="color:var(--warning)"><use href="#i-a11y"/></svg><div>请在对方手机上开启无障碍服务<small>对方手机已显示开启步骤</small></div></div>
+        <div class="toastl"><svg class="ic s18" style="color:var(--warning)"><use href="#i-info"/></svg><div>对方未开启反向控制<small>在对方手机「设置 → 反向控制」中开启</small></div></div>
+        <div class="toastl"><svg class="ic s18" style="color:var(--warning)"><use href="#i-refresh"/></svg><div>对方的局域投屏版本不支持反向控制<small>请在对方手机上更新到最新版本</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-lock"/></svg><div>对方手机已锁屏<small>请对方解锁后再请求</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-mirror"/></svg><div>对方只共享了单个应用，本次无法控制<small>请对方停止投屏后重新投屏（将共享整个屏幕）</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-lock"/></svg><div>对方手机开启了高级保护模式，无法被控制<small>投屏不受影响</small></div></div>
+      </div>
+      <div class="t-ls mv" style="margin-top:14px">控制中</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div class="toastl"><svg class="ic s18" style="color:var(--warning)"><use href="#i-pause"/></svg><div>控制已暂停：对方画面受保护<small>同类：正在重连 / 对方离开了共享的应用 / 对方处于分屏</small></div></div>
+        <div class="toastl"><svg class="ic s18" style="color:var(--warning)"><use href="#i-pause"/></svg><div>控制已暂停 · 对方在投屏应用内<small>对方离开投屏应用后自动恢复</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-info"/></svg><div>这里不能远程操作<small>状态栏和屏幕边缘的控制提示只能在对方手机上操作</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-phone"/></svg><div>对方正在操作手机<small>已让对方优先，对方停手后可以继续操作</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-handback"/></svg><div>对方已收回控制<small>或：对方手机已锁屏，控制已结束</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-check"/></svg><div>已获得控制<small>菜单键打开控制条（TV 非首次；首次显示 R10 提示卡）</small></div></div>
+      </div>
+      <div class="t-ls mv" style="margin-top:14px">B 期 · 能力与文字（v1.0.3）</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-keyboard"/></svg><div>对方系统版本不支持文字输入<small>需要 Android 13 及以上；点击、滑动仍可使用</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-dpad"/></svg><div>对方系统版本不支持方向键模式<small>需要 Android 13 及以上；光标模式仍可使用</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-pause"/></svg><div>对方系统版本不支持播放 / 暂停键<small>需要 Android 16 及以上；可以用光标点画面上的播放按钮</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-info"/></svg><div>对方手机不支持这个操作<small>其他操作仍可使用</small></div></div>
+        <div class="toastl"><svg class="ic s18" style="color:var(--warning)"><use href="#i-lock"/></svg><div>对方手机上是密码框，不能远程输入<small>密码、验证码请让对方自己输入</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-keyboard"/></svg><div>对方手机上没有选中的输入框<small>先点一下要输入的位置，再输入</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-dpad"/></svg><div>长按请切换光标模式<small>方向键模式下确定键只能点击</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-cursor"/></svg><div>看不到焦点？<small>按菜单键打开控制条，换成光标模式</small></div></div>
+      </div>
+      <div class="t-ls mv" style="margin-top:14px">C 期 · 多指与加固（v1.0.4）</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div class="toastl"><svg class="ic s18" style="color:var(--warning)"><use href="#i-pause"/></svg><div>控制已暂停 · 这里需要对方本人操作<small>例如安装应用、授予权限、无障碍设置，只能由对方确认，离开后自动恢复</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-hourglass"/></svg><div>控制仍在暂停<small>请让对方点一下手机上的「继续控制」，或切换一次应用</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-refresh"/></svg><div>对方的局域投屏版本不支持双指缩放<small>请对方更新到最新版本；可在本机「设置 → 把接收端安装到电视」分享安装包给对方</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-pinch"/></svg><div>双指缩放会在松手后执行<small>对方手机会按两指的变化缩放一次</small></div></div>
+        <div class="toastl"><svg class="ic s18 mv"><use href="#i-pinch"/></svg><div>双指需在画面内<small>两根手指都要放在对方画面上</small></div></div>
+      </div>
+      <div class="t-bs mv" style="margin-top:10px">角标 / 控制条状态行（敏感界面）：“控制已暂停 · 需对方本人操作”。暂停提示用 warning 图标（与其他暂停一致）；其余为说明类，中性色。“分享安装包”入口写系统里实际的设置项名称“把接收端安装到电视”（F26，该页也提供给手机 / 平板用的二维码），改名时同步。</div>
+      </div>
+    </article>
+
+  </div>
+
+  <h3 class="sub mt32">接收端 · TV <small>B 期；焦点规范沿用 07；深色固定；虚线外为过扫描区。A 期 TV 不显示把手 / 控制条，菜单键仍直接打开 13 统计浮层</small></h3>
+  <div class="boards">
+
+    <!-- R09 TV 控制条 -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">R09</span><b>控制条（菜单键 / 长按返回）· 未控制</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 控制条"><div class="scr" style="background:#000">
+        <div class="mirror" style="left:358px;width:243px;top:0;height:540px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="tvbar">
+          <div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:600">小张的 Pixel 8</div><div class="row gap8" style="font-size:15px;color:var(--on-surface-variant)"><i style="width:8px;height:8px;border-radius:50%;background:var(--outline)"></i>未控制 · 对方确认后可用遥控器操作手机</div></div>
+          <span class="tbtn f"><svg class="ic s20"><use href="#i-touch"/></svg>请求控制</span>
+          <span class="tbtn">连接信息</span>
+          <span class="tbtn">断开投屏</span>
+          <span class="tbtn icn"><svg class="ic"><use href="#i-close"/></svg></span>
+        </div>
+        <div style="position:absolute;inset:27px 48px;border:1px dashed rgba(180,84,127,.55);pointer-events:none;border-radius:4px"></div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 B</span><span class="tagref">13</span><span class="tagref">07 焦点</span><span class="tagref">v1.0.3</span></div><dl>
+        <dt>打开</dt><dd>菜单键，或长按返回 ≥600 ms（遥控器无菜单键时的兜底）。<b>未控制 / 等待 / 控制中都适用</b>（v1.0.3：没有菜单键的遥控器只能靠长按返回发起请求）；长按触发后，松手那次返回不再生效（不关闭刚打开的控制条、未控制时不计入“连按两次断开”）。控制条贴底部安全区（48 / 27 dp），不遮挡画面中央。</dd>
+        <dt>焦点</dt><dd><ul><li>未控制：默认焦点“请求控制”（可撤销、且需对方确认）；<b>冷却中</b>“请求控制”不可用（不可聚焦，状态行写“N 秒后可以再次请求”），默认焦点退到“连接信息”。冷却结束时<b>不抢焦点</b>：焦点留在用户所在按钮，“请求控制”恢复可用即可。</li><li>等待对方确认：默认焦点“取消请求”（R11）。</li><li>控制中：默认焦点“关闭”（误开控制条时一按确定即回到控制）。</li><li>默认焦点只在控制条打开、或状态切换（未控制 ⇄ 等待 ⇄ 控制中）时设置一次。</li><li>控制条是一个焦点组：左右键在行内移动，行尾回绕到行首；上下键在行间移动，不离开控制条；返回键 = 关闭控制条。</li></ul></dd>
+        <dt>关闭</dt><dd>三种状态都有“关闭”按钮（未控制 / 控制中为行尾 ×；等待态为“取消请求”旁的 ×）：读屏用户和“等待 30 s 一直遮挡底部”的场景都需要一个不靠返回键的出口。× 读作“收起控制条”，<b>不加强调色</b>（它不是主操作）。</dd>
+        <dt>收起</dt><dd><b>8 s 无操作自动收起</b>，与 13 统计浮层一致（手机 R06 为 5 s，TV 距离远、遥控器移动焦点慢，故更长）；<b>任何按键（含方向键移动焦点）都算操作</b>并重新计时；等待对方确认期间不收起；读屏开启时按系统推荐时长（通常不收起）。获得控制（等待 → 控制中）时控制条自动收起，见 R10。</dd>
+        <dt>规则</dt><dd>“连接信息”打开 13 统计浮层（控制条同时收起）；浮层、控制条可见时按键归浮层（见 13“按键归属”）。对方不支持 / 未开启时“请求控制”仍可聚焦，按下后提示原因（R08）。</dd>
+      </dl></div>
+    </article>
+
+    <!-- R10 光标模式 -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">R10</span><b>控制中 · 光标模式（默认）+ 首次操作提示</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 光标模式"><div class="scr" style="background:#000">
+        <div class="mirror" style="left:358px;width:243px;top:0;height:540px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <svg class="tvcursor" viewBox="0 0 24 24" style="left:452px;top:168px"><path d="M5 2.5 19.5 12l-6.6 1.5-3.1 6.3z" fill="#fff" stroke="#111418" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        <span class="ctlbadge" style="left:48px;top:27px"><i class="d"></i>控制中 · 光标</span>
+        <div class="tvhint" style="right:48px;top:96px;width:330px">
+          <div style="font-size:20px;font-weight:600">用遥控器操作手机</div>
+          <div class="keyrow mt12" style="grid-template-columns:128px 1fr;font-size:15px;line-height:22px">
+            <span class="k">方向键</span><span>移动光标，按住加速</span>
+            <span class="k">确定</span><span>点击</span>
+            <span class="k">长按确定</span><span>长按</span>
+            <span class="k">顶 / 底边继续按</span><span>滚动页面</span>
+            <span class="k">返回</span><span>对方手机的“返回”</span>
+            <span class="k">菜单 / 长按返回</span><span>控制条：退出、断开</span>
+          </div>
+          <div style="margin-top:18px"><span class="tbtn f" style="height:44px;font-size:15px">知道了</span></div>
+        </div>
+        <div style="position:absolute;inset:27px 48px;border:1px dashed rgba(180,84,127,.55);pointer-events:none;border-radius:4px"></div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 B</span></div><dl>
+        <dt>光标</dt><dd><ul><li>TV 本地绘制（不进视频流，零延迟）：32 dp 白色箭头（图标 i-cursor 路径）+ 1.75 dp 深色描边 #111418 + 阴影（y 1 dp、模糊 2 dp、黑 60%，单位 dp），任何画面上可见；限制在画面内容区内。</li><li><b>速度按时间定义（v1.0.3，取代“dp/帧”）</b>：按下立即移动 8 dp；按住期间 0–300 ms 以 120 dp/s 低速移动（不停顿，速度连续）；300 ms 后在 600 ms 内线性加速到最高速；最高速 = <b>内容区较长边 / 1.0 s</b>（竖屏手机内容区约 540 dp → 540 dp/s；横屏 960 dp → 960 dp/s）。松开立即停。按时间计算，与屏幕刷新率（50 / 60 / 120 Hz）无关。</li><li>确定 = 点击（光标处显示 1 次涟漪，同 R07：44 dp、450 ms；关闭动画时静态环 300 ms）；长按确定 ≥500 ms = 长按。</li><li><b>边缘滚动（v1.0.3 PM 决策：按住连续滚）</b>：光标在顶 / 底边时按上 / 下 = 立即滚动 1/3 屏；<b>按住</b>（含从画面中间一路按到边缘后不松手）在边缘停留满 300 ms 后，每 500 ms 再滚 1/3 屏，松开即停。提示卡保留“顶 / 底边继续按”。左右边缘不滚动。</li><li>3 s 不动光标<b>在 300 ms 内渐隐</b>至 40%，任意键立即恢复 100%；系统关闭动画时直接切换。</li><li>按住确定再按方向键 = 拖动（隐藏能力：很多遥控器确定键与方向环是同一物理键，无法同时按，故不写进提示卡）。</li></ul></dd>
+        <dt>返回键</dt><dd>控制中返回键 = 对方“返回”；13 的“连按两次返回断开”在控制中停用，断开只能从控制条。<b>例外</b>：本卡、13 统计浮层、15 受保护卡、控制条可见时，返回键 = 关闭它们，不发给对方（v1.0.3）。</dd>
+        <dt>提示</dt><dd><ul><li>获得控制时控制条自动收起；首次进入控制显示本卡（默认焦点“知道了”，返回键也可关闭），之后只出 R08 提示“已获得控制 · 菜单键打开控制条”。</li><li>位置：<b>右上安全区</b>（right 48 / top 96 dp），宽 ≤360 dp，不放屏幕正中——竖屏手机画面在中间，挡住就看不到光标与画面的对应关系。</li><li>本卡描述的是光标模式；若已记住的模式是方向键，首次提示卡相应换为方向键说明（方向键 = 对方焦点移动，确定 = 点击，长按请切换光标模式）。</li><li>角标 scrim 60% + onScrim，常驻左上安全区（TV：left 48 / top 27 dp，高 34 dp，15 sp）：“控制中 · 光标”/“控制中 · 方向键”/“控制已暂停 · 原因”；文字变化时 polite 播报一次。</li></ul></dd>
+      </dl></div>
+    </article>
+
+    <!-- R11 方向键模式 + 控制条（控制中） -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">R11</span><b>控制中 · 方向键模式 · 控制条与提示</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 方向键模式"><div class="scr" style="background:#000">
+        <div class="mirror" style="left:358px;width:243px;top:0;height:540px"><div class="mh"></div><div class="mt"></div><div class="mg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div style="position:absolute;left:432px;top:136px;width:58px;height:58px;border:3px solid #1A73E8;border-radius:6px;z-index:4"></div>
+        <span class="ctlbadge" style="left:48px;top:27px"><i class="d"></i>控制中 · 方向键</span>
+        <div class="toastl" style="position:absolute;left:50%;top:27px;transform:translateX(-50%);z-index:6;font-size:16px;line-height:24px;padding:12px 18px"><svg class="ic s20 mv"><use href="#i-dpad"/></svg><div>长按请切换光标模式<small style="font-size:14px">方向键模式下确定键只能点击</small></div></div>
+        <div class="tvbar" style="flex-direction:column;align-items:stretch;gap:12px">
+          <div class="row gap8"><i style="width:10px;height:10px;border-radius:50%;background:var(--primary);flex:none"></i><div style="flex:1;min-width:0;font-size:18px;font-weight:600">正在控制 小张的 Pixel 8</div><div style="font-size:15px;color:var(--on-surface-variant)">返回键 = 对方返回</div></div>
+          <div class="row" style="gap:14px">
+            <span class="tbtn"><svg class="ic s20"><use href="#i-cursor"/></svg>光标</span>
+            <span class="tbtn pri"><svg class="ic s20"><use href="#i-check"/></svg>方向键</span>
+            <span style="width:1px;height:28px;background:var(--outline-variant);margin:0 6px"></span>
+            <span class="tbtn">主页</span>
+            <span class="tbtn">最近任务</span>
+            <span class="tbtn"><svg class="ic s20"><use href="#i-keyboard"/></svg>输入文字</span>
+          </div>
+          <div class="row" style="gap:14px">
+            <span class="tbtn">退出控制</span>
+            <span class="tbtn">连接信息</span>
+            <span class="tbtn">断开投屏</span>
+            <span class="sp" style="flex:1"></span>
+            <span class="tbtn icn f" aria-label="收起控制条"><svg class="ic"><use href="#i-close"/></svg></span>
+          </div>
+        </div>
+        <div style="position:absolute;inset:27px 48px;border:1px dashed rgba(180,84,127,.55);pointer-events:none;border-radius:4px"></div>
+      </div></div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">F23 B</span><span class="tagref">07 可聚焦的不可用 / 已选中</span><span class="tagref">v1.0.3</span></div><dl>
+        <dt>模式</dt><dd><ul><li>方向键模式：遥控器方向键 / 确定直接作为对方手机的焦点导航（对方 Android 13+）；蓝框为<b>对方手机自身</b>的焦点，出现在视频里。</li><li><b>方向键模式不支持长按</b>（系统只能对焦点做“点击”）：确定键只在按下时发送一次，按住不重复；按住 ≥500 ms 时提示“长按请切换光标模式”（图示顶部，每次控制提示一次）。</li><li>对方低于 13：按钮文字为“方向键（对方不支持）”，用 07 的<b>可聚焦的不可用</b>样式（见下方示意）；聚焦时状态行副文案“返回键 = 对方返回”换成“对方需要 Android 13 及以上才能用方向键模式”；按下每次都出 R08 提示“对方系统版本不支持方向键模式”。</li><li>“看不到焦点？”提示：触发条件见 R08（5 s 内方向键 ≥6 次且没按确定），中性色，文案“看不到焦点？/ 按菜单键打开控制条，换成光标模式”。</li></ul></dd>
+        <dt>控制条（v1.0.3，图示）</dt><dd><ul><li>三行：① 状态圆点 + “正在控制 ××” + 右侧“返回键 = 对方返回”；② [光标][方向键] │ [主页][最近任务][输入文字]（模式与对方系统键分组，中间 1 dp outlineVariant 分隔）；③ [退出控制][连接信息][断开投屏] …… [×]。</li><li>当前模式 = 07 <b>已选中</b>样式（primaryContainer + 勾，语义 selected）；未选中模式为普通按钮。主操作强调色（primary 实心）不在本条使用，× 也不加强调——避免“当前模式”与“主按钮”同色。</li><li>“输入文字”：对方 13+ 时为普通按钮 → R07T；对方低于 13 时同“方向键”，显示为可聚焦的不可用，按下提示原因（与手机 R07 一致，不隐藏）。</li><li>暂停时：状态行“控制已暂停 · 原因”（warning 圆点），主页 / 最近任务 / 输入文字为不可用（不可聚焦）；模式切换、退出、连接信息、断开、× 仍可用。</li><li>切换模式即时生效并记住到下次。</li></ul>
+          <div class="theme-dark" style="margin-top:8px;padding:14px;border-radius:16px;background:var(--surface-container-high);display:flex;gap:14px;flex-wrap:wrap;align-items:center"><span class="tbtn pri"><svg class="ic s20"><use href="#i-check"/></svg>光标</span><span class="tbtn na">方向键（对方不支持）</span><span class="tbtn na f">输入文字（对方不支持）</span></div>
+          <div class="t-bs mv mt4">示意：对方 Android 12。未聚焦的不可用项 = surfaceContainer + outline；聚焦（右）照常反相 + 外环。</div></dd>
+        <dt>等待</dt><dd>请求后控制条变为“等待 小张的 Pixel 8 确认… 26”+ 副文案“请在对方手机上点「允许本次」”+ [取消请求]（默认焦点）+ [×]，提示文案同 R08，TV 字号 ≥16 sp；倒计时不设 liveRegion，剩 10 s 时播报一次“还剩 10 秒”（同手机）。对方允许 → 控制条自动收起，进入 R10。</dd>
+        <dt>按键归属</dt><dd>控制条可见时，所有按键归控制条（方向键移动焦点、确定按按钮、返回关闭），不移动光标、不发给对方；同理适用于 13 浮层、15 卡片、R10 提示卡、R07T 对话框。</dd>
+      </dl></div>
+    </article>
+
+  </div>
+
+  <h3 class="sub mt32">输入映射 <small>同一意图在三种设备上的唯一对应；外接鼠标 / 键盘在手机、平板、TV 接收端一致，唯一例外：TV 上键盘方向键跟随当前模式（v1.0.3）</small></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>对方手机上的动作</th><th>手机 / 平板接收端</th><th>TV · 光标模式（B）</th><th>TV · 方向键模式（B，对方 13+）</th><th>外接鼠标 / 键盘（B）</th></tr></thead>
+    <tbody>
+      <tr><td>点击 <small>A</small></td><td>单击</td><td>确定</td><td>确定（点击当前焦点）</td><td>左键</td></tr>
+      <tr><td>长按 <small>A</small></td><td>长按 ≥500 ms</td><td>长按确定 ≥500 ms</td><td><b>不支持</b>：确定只发一次；按住 ≥500 ms 提示“长按请切换光标模式”</td><td>左键按住</td></tr>
+      <tr><td>滑动 <small>A</small></td><td>拖动</td><td>（按住确定 + 方向键拖动，隐藏能力）</td><td>—</td><td>左键拖动</td></tr>
+      <tr><td>滚动 <small>A / B</small></td><td>拖动；外接鼠标滚轮</td><td>光标到顶 / 底边继续按：立即滚 1/3 屏，按住满 300 ms 后每 500 ms 再滚 1/3 屏</td><td>方向键移动焦点（列表自行滚动）</td><td>滚轮</td></tr>
+      <tr><td>焦点导航（对方 13+）<small>B</small></td><td>外接键盘方向键</td><td>—（方向键移动光标）</td><td>方向键</td><td>键盘方向键：手机 / 平板 = 焦点导航；<b>TV = 跟随当前模式</b>（同遥控器方向键）</td></tr>
+      <tr><td>双指缩放 <small>C</small></td><td>双指捏合（<b>松手后一次性执行，不实时跟手</b>；两指需在画面内；双指平移、三指及以上不支持；见 R07P）</td><td>不支持</td><td>不支持</td><td>Ctrl + 滚轮（向上放大，每格 ×1.25，50 ms 合并，以指针为中心；B 期忽略）</td></tr>
+      <tr><td>返回 <small>A</small></td><td>控制条“返回”；返回键 / 手势返回</td><td>返回键</td><td>返回键</td><td>右键 / Esc</td></tr>
+      <tr><td>主页 <small>A</small></td><td>控制条按钮</td><td>控制条（不占用遥控器键）</td><td>同左</td><td>中键 / Meta（Win / ⌘）</td></tr>
+      <tr><td>最近任务 <small>A</small></td><td>控制条按钮</td><td>控制条</td><td>同左</td><td>Alt + Tab</td></tr>
+      <tr><td>播放 / 暂停（对方 16+）<small>B</small></td><td>外接键盘媒体键</td><td>遥控器播放 / 暂停键</td><td>同左</td><td>媒体键</td></tr>
+      <tr><td>输入文字（对方 13+）<small>B</small></td><td>控制条“输入文字” → R07T（本机键盘）→ 输入</td><td>控制条“输入文字” → R07T（TV 输入法）</td><td>同左</td><td>直接键入：<b>只支持拉丁字母、数字与符号</b>；中文等需要输入法组字的文字请用“输入文字”</td></tr>
+      <tr><td>回车 / 删除（对方 13+）<small>B</small></td><td>外接键盘 Enter / Backspace</td><td colspan="2">外接键盘 Enter / Backspace（按键盘语义，不受模式影响）</td><td>Enter（单行框执行“搜索 / 发送”等动作，多行框换行）/ Backspace</td></tr>
+      <tr><td>断开投屏</td><td>控制条</td><td>控制条（控制中连按返回不断开）</td><td>控制条</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <div class="panel mt20"><h4>TV 上的按键分类（v1.0.3 · PM 决策）</h4><ul>
+    <li><b>按键码分类，不按设备分类</b>：TV 上不再区分“遥控器 / 全键盘”（带全键盘的遥控器会被误判）。</li>
+    <li><code>DPAD_UP / DOWN / LEFT / RIGHT / CENTER</code>：无论来自遥控器还是外接键盘，一律<b>跟随当前模式</b>——光标模式移动光标 / 点击，方向键模式 = 对方焦点导航 / 点击。</li>
+    <li>可打印字符、<code>Esc</code>、<code>Meta</code>、<code>Alt + Tab</code>、<code>Backspace</code>、<code>Enter</code>：一律按<b>键盘语义</b>（字符 → 直接键入，Esc → 返回，Meta → 主页，Alt + Tab → 最近任务，Backspace / Enter → 编辑键）。</li>
+    <li>返回键、菜单键：见 R09 / R10（短按返回 = 对方返回，长按 ≥600 ms / 菜单 = 控制条）。</li>
+    <li>手机 / 平板接收端不变：外接键盘方向键 = 对方焦点导航（没有本地光标）。</li>
+    <li>直接键入只发送拉丁字母、数字与符号；处于输入法组字状态的按键不发送。对方低于 Android 13 时字符 / Enter / Backspace 给出一次“对方系统版本不支持文字输入”。</li>
+    <li><b>待真机确认</b>：少数遥控器的确定键发送 <code>KEYCODE_ENTER</code> 而不是 <code>DPAD_CENTER</code>；按本规则会变成“回车”而不是点击。真机发现此类机型时再评估（例如：没有字母键的输入设备上的 Enter 视同确定）。</li>
+  </ul></div>
+</div></section>
+
+<!-- ==================== 13 待确认 ==================== -->
 <section class="sec" id="questions"><div class="wrap">
-  <div class="sec-h"><span class="no">12</span><h2>需要产品确认的问题</h2><p>以下为本稿基于假设给出方案、但需要产品负责人拍板的点。每条附带本稿的默认做法。</p></div>
+  <div class="sec-h"><span class="no">13</span><h2>需要产品确认的问题</h2><p>以下为本稿基于假设给出方案、但需要产品负责人拍板的点。每条附带本稿的默认做法。</p></div>
   <div class="grid2">
     <div class="panel"><ol class="qs">
       <li><b>Q1 悬浮状态胶囊与“不申请悬浮窗”冲突。</b>PRD 6.1 要求悬浮胶囊，8.5 明确不申请悬浮窗。本稿：胶囊放在 App 内 + 通知副标题实时显示延迟 / 码率，快捷图块副标题显示“投屏中”。</li>
@@ -1334,6 +1993,63 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     </ol></div>
   </div>
 </div></section>
+
+<!-- ==================== 14 变更记录 ==================== -->
+<section class="sec" id="changelog"><div class="wrap">
+  <div class="sec-h"><span class="no">14</span><h2>变更记录</h2><p>文件名保持 v1.0；版本号以本表为准。Token 变更后须重新生成 <code>core/ui/.../theme/Color.kt</code>。</p></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:12%">版本</th><th style="width:14%">日期</th><th>变更</th></tr></thead>
+    <tbody>
+      <tr><td>v1.0.4</td><td>2026-11-15</td><td><b>反向控制 C 期走查修订</b>（设计走查 + 用户 / PM 决策：精确披露、敏感界面沿用现有范围且文案不作保证、F23 作为正式功能发布不加“实验性”标签）：
+        <ul>
+          <li><b>第 12 章开头</b>：补“C 期起识别当前应用和页面名称（不含页面上的文字）”；C 期分期改为双指缩放（松手后执行）+ 加固；新增“敏感界面”段（安装器、权限控制器、类名含 Accessibility 的设置页、独立无障碍设置应用、systemui 中按类名识别的录屏授权 / USB 调试授权 / 无线调试配对；文案只写“例如 / 尽量”）与“暂停原因显示优先级”段。</li>
+          <li><b>状态表</b>：暂停行补敏感界面（两端文案、继续控制兜底、&gt;10 s 提示）与优先级 OWN_APP &gt; SENSITIVE_APP &gt; PROTECTED &gt; WINDOWED &gt; APP_HIDDEN &gt; RECONNECTING。</li>
+          <li><b>R01</b>：改为整页图示；能力行加“双指缩放”（第 3 行）；警告卡隐私说明改为精确披露（不用“包名”）；安全组四行统一前置图标与 56 dp 对齐——新增“安装应用、授予权限等界面只能由你本人操作 / 控制会在这些界面自动暂停”、补画“本应用不能被远程操作”、开关“投屏结束后自动关闭无障碍服务 / 不投屏时不保留操作本机的权限。每次被控制前需重新到系统设置开启”；开关禁用态（两行 outline、已开 + 禁用设边框）；自动关闭后改为中性卡“无障碍服务已按你的设置关闭 / 下次被控制前再开启”+[去开启]。</li>
+          <li><b>R02</b>：页底隐私小字移入正文、放在步骤前，做成披露卡“本应用不读取屏幕内容”；第 3 步下加“系统提示里的「查看和控制屏幕」是通用说明，本应用没有申请读取屏幕内容的权限”；服务说明同口径。</li>
+          <li><b>R03</b>：读屏提示做成卡片之外的中性信息条“本机开着屏幕朗读（如 TalkBack），对方的点击和滑动可能无法正常生效”（不进风险卡、不用 warning、实时更新）；重申 D9 行在按钮上方。</li>
+          <li><b>R04</b>：暂停原因按优先级显示（本应用内总是 D9 卡）；新增敏感界面兜底卡“对方暂时不能操作：此界面只能由你操作”+[继续控制][收回控制]；敏感暂停时通知加“继续控制”动作；读屏提示行。</li>
+          <li><b>R05</b>：新增“控制已暂停 · 此界面不可控制 [继续][收回]”（继续为中性色，收回固定在最外侧，各 ≥48 dp）；读屏自定义操作“继续控制”；≥130% 字号前缀缩为“已暂停”；原因 ≤9 字。</li>
+          <li><b>R07 / R07P（新增）</b>：第二指按下取消单指手势；双指缩放反馈——空心环跟手、松手实心在 dur 内淡出、&lt;5% 快速淡出、关闭动画时静态环；首次提示“双指缩放会在松手后执行”；黑边“双指需在画面内”；明确不做本地缩放预览；Ctrl + 滚轮指针处静态环。新增图标 i-pinch。</li>
+          <li><b>R08</b>：新增“C 期 · 多指与加固”组——“控制已暂停 · 这里需要对方本人操作”、“控制仍在暂停”（敏感暂停 &gt;10 s，一次）、“对方的局域投屏版本不支持双指缩放 / 请对方更新…可在本机「设置 → 把接收端安装到电视」分享安装包”（6 s）、首次缩放提示、黑边提示；角标“控制已暂停 · 需对方本人操作”；暂停提示按优先级。</li>
+          <li><b>输入映射表</b>：双指缩放行写明松手后执行、两指在画面内、不支持平移 / 三指；Ctrl + 滚轮参数。</li>
+        </ul></td></tr>
+      <tr><td>v1.0.3</td><td>2026-11-15</td><td><b>反向控制 B 期走查修订</b>（设计走查 + 用户 / PM 决策；D9 回到桌面、TV 按键码分类、边缘按住连续滚）：
+        <ul>
+          <li><b>分期口径</b>：文字输入从 C 期挪到 B 期（PRD）；C 期 = 多指（双指缩放 / Ctrl + 滚轮）+ 加固。同步第 12 章标题与分期段、R01 / R07 / R08 / R11、输入映射表。</li>
+          <li><b>D9</b>：本应用在前台时控制暂停。R03 从本应用内打开时按钮上方写“允许后将回到桌面，对方即可操作”，允许后自动回到桌面；R04 暂停卡“对方暂时不能操作：你正在使用局域投屏”+ [回到桌面][收回控制]；R05 胶囊“控制已暂停 · 本应用内不可控制”；接收端“控制已暂停 · 对方在投屏应用内 / 对方离开投屏应用后自动恢复”；状态表同步。</li>
+          <li><b>07</b>：新增“可聚焦的不可用”（只用于需要说明原因的项）与“已选中”（primaryContainer + 勾 + selected 语义）两种 TV 按钮状态，CSS <code>.tbtn.na</code>。</li>
+          <li><b>09A / R01</b>：说明改为“电视、平板或手机”；R01 B 期能力行四行（点击、长按、滑动、滚动 / 返回、主页、最近任务 / 文字输入、遥控器方向键 13+ / 播放 / 暂停键 16+），支持的行不写版本副文案；R02 第 2 步服务名“局域投屏 · 反向控制”。</li>
+          <li><b>R03</b>：本机支持文字输入时第一条为“例如点击、滑动和输入文字”。</li>
+          <li><b>R07 / 新画板 R07T</b>：第 2 行 [输入文字][退出控制][连接信息]，内边距 12 dp、大字号流式换行；禁用统一 outline。R07T 输入文字对话框：标题“输入到 ××”、说明、占位“要输入的文字”、1000 字计数、按钮“输入”、失败保留草稿；对方 &lt;13 时按钮可点并每次说明原因。</li>
+          <li><b>R08</b>：新增 B 期提示组（文字 / 方向键 / 播放暂停不支持、对方手机不支持这个操作、密码框、没有选中的输入框、长按请切换光标模式、看不到焦点？）、D9 暂停、“已获得控制”；能力类提示用中性图标；主动点不可用按钮每次提示、被动触发去重；“看不到焦点？”改为行为触发。A 期两条实现文案的处理见下条。</li>
+          <li><b>A 期实现文案对齐</b>：BLOCKED_TARGET 采纳实现文案“这里不能远程操作 / 状态栏和屏幕边缘的控制提示只能在对方手机上操作”（“这里”紧跟操作出现、指代清楚；“屏幕边缘的控制提示”比“控制胶囊”更好懂），R05 防误触同步；LOCAL_TOUCH 定为“对方正在操作手机 / 已让对方优先，对方停手后可以继续操作”（实现版缺“什么时候能继续”，需改代码）。</li>
+          <li><b>R09</b>：长按返回在所有状态打开控制条，触发后松手不生效；冷却时默认焦点“连接信息”，冷却结束不抢焦点；焦点组 + 行内回绕；三种状态都有 ×（不加强调）；8 s 收起以任意按键重新计时；获得控制时自动收起；“(R11)”更正为 R08。</li>
+          <li><b>R10</b>：光标速度改为按时间定义（0–300 ms 120 dp/s，最高速 = 内容区较长边 / 1 s，与刷新率无关）；边缘按住连续滚（300 ms 后每 500 ms 1/3 屏）；淡出 300 ms；阴影 / 描边改 dp；提示卡右上、宽 ≤360 dp，“菜单 / 长按返回”；角标 TV 尺寸与过扫描边距；浮层 / 卡片可见时返回键归它们。</li>
+          <li><b>R11</b>：控制条重画为三行（模式 │ 主页 / 最近任务 / 输入文字；退出 / 连接信息 / 断开 …… ×）；选中态改用 07“已选中”；“方向键（对方不支持）”“输入文字（对方不支持）”用可聚焦的不可用；方向键模式不支持长按；等待态补副文案、×、10 s 播报。</li>
+          <li><b>输入映射表</b>：输入文字 C → B；新增焦点导航、最近任务（Alt + Tab）、Meta = 主页、播放 / 暂停（16+）、回车 / 删除、左键拖动行；方向键模式长按改为不支持；直接键入限拉丁字符；新增“TV 上的按键分类”说明（按键码分类：DPAD 跟随模式，字符 / Esc / Meta / Alt+Tab / Backspace / Enter 按键盘语义）。</li>
+          <li><b>13 播放页</b>：首帧提示按状态三选一、TV 显示 5 s；菜单键 / 长按返回打开控制条；浮层标题改“返回键收起”；新增“按键归属”规则（浮层、卡片、控制条可见时按键不发给对方）。</li>
+        </ul></td></tr>
+      <tr><td>v1.0.2</td><td>2026-11-15</td><td><b>反向控制 A 期走查修订</b>（设计走查 + 用户 / PM 决策 D1–D8）：
+        <ul>
+          <li><b>分期口径</b>以 PRD 为准（A = 触控 + 返回 / 主页 / 最近任务 + 安全闭环；B = TV 遥控器光标 / 方向键 + 鼠标键盘；C = 文字输入、多指、加固），同步第 12 章标题与说明、R01 / R05 / R07 / R09–R11 备注、输入映射表分期标记、13 菜单键说明（A 期 TV 行为不变）；界面只展示当前构建已实现的能力。</li>
+          <li><b>Token</b>：新增扩展色 <code>inverseWarning</code>（浅 #EFC04A = warningDark，深 #7A5900 = warningLight），R05 暂停圆点改用它；对比度表加一行。需重新生成 <code>Color.kt</code>。</li>
+          <li><b>R01</b>：主说明改为“投屏时，平板或手机可以请求点击、滑动等操作。每次都需要你在手机上确认”；能力行 = 当前构建 × 本机版本（A 期删“双指缩放”与“文字输入、遥控器方向键”）；“不支持的项不隐藏”只适用于系统版本不满足、不适用于尚未实现（D2）；新增无通知权限提示卡（D6）。</li>
+          <li><b>R03</b>：第一条改为“对方能看到并操作你的屏幕，例如点击和滑动”；打开确认页时撤下请求通知（真机问题），未作答离开时静默重发；倒计时不设 liveRegion；单应用共享不弹本页。</li>
+          <li><b>R04</b>：状态栏图标改为“替换”方案（一条通知只能一个小图标）；被控制时胶囊只留延迟段 + 被控制中；新增结束原因提示表（RECEIVER_END“对方已退出控制”、SERVICE_OFF“无障碍服务已被系统关闭，控制已结束”等）。</li>
+          <li><b>R05</b>：防误触承诺收窄为“不能从状态栏下拉通知栏、不能点中控制胶囊与确认页”；补大字号与读屏规则。</li>
+          <li><b>R06</b>：把手视觉 24 / 触控 48 dp，登记系统手势排除区；读屏开启时控制条不自动收起；冷却期按钮用 outline。</li>
+          <li><b>R07</b>：A 期隐藏“输入文字”（D3），第 2 行改为 [退出控制][连接信息]（新增入口，控制中打开统计浮层）；涟漪 450 ms，系统关闭动画时静态环 300 ms。</li>
+          <li><b>R08</b>：新增提示——对方旧版本、请求时对方锁屏、单应用共享（D1）、状态栏 / 胶囊不能远程操作（BLOCKED_TARGET）、对方本机触摸优先（LOCAL_TOUCH）；同会话第 2 次被拒冷却 60 s（D7）；按“请求结果 / 控制中 / C 期”分组。</li>
+          <li><b>状态表</b>：新增“不可用（本次）”行（D1）；对方主动收回后接收端冷却 10 s 写为正式规则；D7 冷却；打开 R03 撤下通知。</li>
+          <li><b>新画板</b>：06R 录屏说明卡 · 已开启反向控制（Android 14+ 强制整屏，D1）；10R 投屏报告 · 最近投屏（“本次被 ×× 控制 mm:ss”，D8）。</li>
+          <li><b>09A</b>：“反向控制”改为导航行（状态值 + chevron），A 期说明“允许平板或手机在投屏时操作本机”（v1.0.3 起为“电视、平板或手机”）。</li>
+        </ul></td></tr>
+      <tr><td>v1.0.1</td><td>2026-11-15</td><td><b>深色模式文字对比度优化</b>：深色 onSurface <code>#E1E2E8→#E6E8EE</code>、onSurfaceVariant <code>#C2C7CF→#D0D5DD</code>、onPrimaryContainer <code>#D2E4FA→#E9F1FD</code>、inversePrimary <code>#2F5A82→#234766</code>；不可用文字统一改用 outline（取代 onSurface@38% 与整体透明）；对比度表增加 APCA 参考值与“不可用 ≥3”类型；新增<a href="#dark-rules">深色模式文字规则</a>与变更前后对照；TV 待机页步骤序号 / IP / 扫码说明、统计浮层与重连胶囊底色同步更新；TV 字体表增加 bodyMedium（凭据）。浅色主题未改。</td></tr>
+      <tr><td>v1.0.1</td><td>2026-11-15</td><td><b>反向控制（F23）</b>：新增第 12 章（发送端 R01–R05、接收端手机 R06–R08、TV R09–R11、状态表与输入映射）；09A 设置新增“反向控制”项；13 播放页菜单键改为先打开控制条，控制中返回键交给对方；图标新增 7 个。</td></tr>
+      <tr><td>v1.0</td><td>2026-11-14</td><td>初版：设计推导、色卡与 Token、语义色、对比度、字体、圆角间距、TV 焦点、图标、主流程、发送端 / 接收端交互稿、待确认问题。</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
 </main>
 
 <footer><div class="wrap">交互稿与色卡 v1.0 · 基于 PRD-局域网投屏-v1.0 · 单文件、离线可用、无外部依赖。颜色均由文件顶部 <code>ROLES / EXT</code> Token 生成。</div></footer>
@@ -1351,8 +2067,19 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
   }
   function cr(a,b){ var x=lum(a), y=lum(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); }
+  /* APCA 0.0.98G-4g（WCAG 3 草案，仅作参考）：返回 |Lc| */
+  function apcaY(h){ var n=parseInt(h.slice(1),16); return 0.2126729*Math.pow(((n>>16)&255)/255,2.4)+0.7151522*Math.pow(((n>>8)&255)/255,2.4)+0.0721750*Math.pow((n&255)/255,2.4); }
+  function apca(txt,bg){
+    var t=apcaY(txt), b=apcaY(bg), th=0.022, cl=1.414;
+    if(t<th) t+=Math.pow(th-t,cl); if(b<th) b+=Math.pow(th-b,cl);
+    if(Math.abs(b-t)<0.0005) return 0;
+    var s,o;
+    if(b>t){ s=(Math.pow(b,0.56)-Math.pow(t,0.57))*1.14; o=s<0.1?0:s-0.027; }
+    else { s=(Math.pow(b,0.65)-Math.pow(t,0.62))*1.14; o=s>-0.1?0:s+0.027; }
+    return Math.abs(o*100);
+  }
   function grade(v,type){
-    if(type==='ui'||type==='large') return v>=3 ? ['cr-aaa','通过 ≥3'] : ['cr-no','不达标'];
+    if(type==='ui'||type==='large'||type==='dis') return v>=3 ? ['cr-aaa','通过 ≥3'] : ['cr-no','不达标'];
     if(v>=7) return ['cr-aaa','AAA']; if(v>=4.5) return ['cr-aa','AA']; if(v>=3) return ['cr-lg','仅大字']; return ['cr-no','不达标'];
   }
 
@@ -1438,11 +2165,14 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   /* ---------- 对比度表 ---------- */
   var PAIRS = [
     ['on-surface','surface','正文、标题','text'],
-    ['on-surface-variant','surface','次要文字、说明','text'],
-    ['on-surface-variant','surface-container-high','卡片 / 胶囊内次要文字','text'],
+    ['on-surface','surface-container-high','卡片内正文；TV 凭据卡 IP : 端口','text'],
+    ['on-surface-variant','surface','次要文字、说明（TV 步骤引导语）','text'],
+    ['on-surface-variant','surface-container-low','卡片 / 底部弹层内次要文字','text'],
+    ['on-surface-variant','surface-container-high','胶囊 / TV 凭据卡内次要文字','text'],
+    ['on-surface-variant','surface-container-highest','对话框内次要文字','text'],
     ['primary','surface','文字按钮、链接','text'],
     ['on-primary','primary','主按钮','text'],
-    ['on-primary-container','primary-container','选中项、设备头像','text'],
+    ['on-primary-container','primary-container','选中项、设备头像、TV 步骤序号','text'],
     ['on-secondary-container','secondary-container','分段按钮选中、Tonal 按钮','text'],
     ['on-tertiary-container','tertiary-container','“已信任”标签','text'],
     ['tertiary','surface','锁 / 盾牌图标','ui'],
@@ -1458,8 +2188,13 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     ['lat-4','surface-container-high','胶囊 · 较差','text'],
     ['inverse-on-surface','inverse-surface','Snackbar 文字','text'],
     ['inverse-primary','inverse-surface','Snackbar 操作按钮','text'],
+    ['inverse-warning','inverse-surface','边缘胶囊暂停圆点（v1.0.2）','ui'],
     ['outline','surface','输入框边框、开关轨道','ui'],
     ['outline','surface-container-low','卡片内输入框边框','ui'],
+    ['outline','surface','不可用文字（替代 onSurface@38%）','dis'],
+    ['outline','surface-container-lowest','不可用文字 · PIN 键盘按键','dis'],
+    ['outline','surface-container','不可用文字 · TV 不可用按钮','dis'],
+    ['outline','surface-container-highest','不可用文字 · 对话框内','dis'],
     ['on-surface','surface-container-highest','TV 未聚焦按钮文字','text'],
     ['inverse-on-surface','on-surface','TV 聚焦按钮文字（反相）','text'],
     ['on-surface','surface-container-highest','TV 焦点底 vs 非焦点底（2.4.13）','ui'],
@@ -1469,8 +2204,36 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   tb.innerHTML = PAIRS.map(function(p){
     function cell(d){ var f=hex(p[0],d), b=hex(p[1],d), v=cr(f,b), g=grade(v,p[3]);
       var sample = p[3]==='ui' ? '<span class="cr-sample" style="background:'+b+';color:'+f+'"><span style="width:26px;height:14px;border:2px solid '+f+';border-radius:7px;display:inline-block"></span></span>' : '<span class="cr-sample" style="background:'+b+';color:'+f+'">Aa 文字</span>';
-      return '<td>'+sample+'</td><td class="crv">'+v.toFixed(2)+':1 <span class="cr-badge '+g[0]+'">'+g[1]+'</span></td>'; }
-    return '<tr><td><code style="font-size:12px">'+p[0]+'</code><br><span class="muted" style="font-size:12px">on '+p[1]+'</span></td><td>'+p[2]+'</td><td>'+(p[3]==='ui'?'图形 ≥3':'正文 ≥4.5')+'</td>'+cell(false)+cell(true)+'</tr>';
+      var lc = p[3]==='ui' ? '' : '<div class="muted" style="font-size:11.5px;margin-top:2px">APCA Lc '+apca(f,b).toFixed(0)+'</div>';
+      return '<td>'+sample+'</td><td class="crv">'+v.toFixed(2)+':1 <span class="cr-badge '+g[0]+'">'+g[1]+'</span>'+lc+'</td>'; }
+    return '<tr><td><code style="font-size:12px">'+p[0]+'</code><br><span class="muted" style="font-size:12px">on '+p[1]+'</span></td><td>'+p[2]+'</td><td>'+(p[3]==='ui'?'图形 ≥3':p[3]==='dis'?'不可用 ≥3':'正文 ≥4.5<br><span class="muted" style="font-size:12px">目标 ≥7</span>')+'</td>'+cell(false)+cell(true)+'</tr>';
+  }).join('');
+
+  /* ---------- v1.0.1 深色变更前后（旧值取 TOKEN_HISTORY） ---------- */
+  var PREV = (window.TOKEN_HISTORY||{}).dark || {};
+  function oldHex(tk){ return PREV[tk] || hex(tk,true); }
+  var DELTA = [
+    ['on-surface','surface','正文、标题'],
+    ['on-surface','surface-container-high','卡片正文 / TV IP'],
+    ['on-surface','surface-container-highest','TV 未聚焦按钮文字'],
+    ['on-surface-variant','surface','次要文字（TV 步骤引导语）'],
+    ['on-surface-variant','surface-container-low','卡片内次要文字'],
+    ['on-surface-variant','surface-container','导航 / 键盘面板次要文字'],
+    ['on-surface-variant','surface-container-high','胶囊 / TV 凭据卡次要文字'],
+    ['on-surface-variant','surface-container-highest','对话框次要文字'],
+    ['on-surface-variant','surface-variant','输入框底上的文字（AA 即可）'],
+    ['on-primary-container','primary-container','选中项、TV 步骤序号'],
+    ['inverse-primary','inverse-surface','Snackbar 操作按钮'],
+    ['inverse-on-surface','on-surface','TV 聚焦按钮文字（反相）']
+  ];
+  document.querySelector('#crdelta tbody').innerHTML = DELTA.map(function(p){
+    var fo=oldHex(p[0]), bo=oldHex(p[1]), fn=hex(p[0],true), bn=hex(p[1],true);
+    var vo=cr(fo,bo), vn=cr(fn,bn), go=grade(vo,'text'), gn=grade(vn,'text');
+    var chg = (fo!==fn?'<code>'+fo+'</code> → <code>'+fn+'</code>':'') + (bo!==bn?'<br><span class="muted" style="font-size:12px">底 '+bo+' → '+bn+'</span>':'') || '<span class="muted">token 未变</span>';
+    return '<tr><td><code style="font-size:12px">'+p[0]+'</code><br><span class="muted" style="font-size:12px">on '+p[1]+'</span></td><td>'+p[2]+'</td><td>'+chg+'</td>'
+      + '<td class="crv">'+vo.toFixed(2)+':1 <span class="cr-badge '+go[0]+'">'+go[1]+'</span></td>'
+      + '<td class="crv">'+vn.toFixed(2)+':1 <span class="cr-badge '+gn[0]+'">'+gn[1]+'</span></td>'
+      + '<td class="crv">'+apca(fo,bo).toFixed(0)+' → '+apca(fn,bn).toFixed(0)+'</td></tr>';
   }).join('');
 
   /* ---------- 字体层级 ---------- */
@@ -1492,8 +2255,9 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     ['headlineSmall','26 / 34','600','小张的 Pixel 8 请求投屏','对话框标题'],
     ['titleLarge','22 / 30','600','正在重连…','状态标题'],
     ['bodyLarge','18 / 28','400','手机打开本应用，选择「客厅电视」','正文（TV 最小正文 16）'],
+    ['bodyMedium','16 / 24','400','192.168.1.128 : 8443','需抄写的凭据（onSurface）、卡片说明'],
     ['labelLarge','16 / 22','500','允许','按钮'],
-    ['bodySmall','14 / 20','400','192.168.1.128 : 8443','辅助信息（TV 最小 14）']
+    ['bodySmall','14 / 20','400','无广告 · 无账号 · 不连接互联网','可忽略的辅助信息（TV 最小 14）']
   ];
   function trow(a){ var s=a[1].split(' / '); var w=a[2].split(' ')[0]; var mono=a[2].indexOf('mono')>-1||a[2].indexOf('tnum')>-1;
     return '<div class="type-row"><div><div style="font-weight:600;font-size:13px">'+a[0]+'</div><div class="tk">'+a[1]+' · '+a[2]+'</div></div><div class="sample" style="font-size:'+s[0]+'px;line-height:'+s[1]+'px;font-weight:'+w+';'+(mono?'font-family:var(--mono);font-variant-numeric:tabular-nums;':'')+'">'+a[3]+'</div><div class="sp">'+a[4]+'</div></div>'; }
@@ -1507,7 +2271,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   document.getElementById('elev-d').innerHTML = evHtml();
 
   /* ---------- 图标网格 ---------- */
-  var icons = [['mark','品牌标志（占位）'],['mirror','WSC 镜像设备'],['dlna','DLNA 设备'],['tv','电视'],['phone','手机'],['tablet','平板'],['devices','兼容 Apple 设备'],['shield','已信任'],['lock','已加密'],['wifi','Wi‑Fi'],['router','网络诊断'],['qr','扫码'],['code','投屏码'],['link','手动 IP'],['tune','设置'],['gauge','画质'],['game','游戏档'],['vol','声音'],['volx','无声音'],['refresh','重连 / 刷新'],['stop','停止'],['chart','投屏报告'],['export','导出日志'],['noad','无广告'],['nouser','无账号'],['offline','不联网'],['alert','警告'],['info','信息'],['help','需确认'],['menu','菜单键']];
+  var icons = [['mark','品牌标志（占位）'],['mirror','WSC 镜像设备'],['dlna','DLNA 设备'],['tv','电视'],['phone','手机'],['tablet','平板'],['devices','兼容 Apple 设备'],['shield','已信任'],['lock','已加密'],['wifi','Wi‑Fi'],['router','网络诊断'],['qr','扫码'],['code','投屏码'],['link','手动 IP'],['tune','设置'],['gauge','画质'],['game','游戏档'],['vol','声音'],['volx','无声音'],['refresh','重连 / 刷新'],['stop','停止'],['chart','投屏报告'],['export','导出日志'],['noad','无广告'],['nouser','无账号'],['offline','不联网'],['alert','警告'],['info','信息'],['help','需确认'],['menu','菜单键'],['touch','反向控制'],['handback','收回控制'],['cursor','光标模式'],['dpad','方向键模式'],['keyboard','键盘输入'],['mouse','鼠标'],['a11y','无障碍服务']];
   document.getElementById('icgrid').innerHTML = icons.map(function(i){ return '<div><svg class="ic"><use href="#i-'+i[0]+'"/></svg><span>'+i[1]+'</span></div>'; }).join('');
 
   /* ---------- 延迟直方图 ---------- */

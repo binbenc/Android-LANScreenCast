@@ -12,6 +12,8 @@ import android.os.Looper
 import android.os.PowerManager
 import android.view.Display
 import com.benchan.wireless.screencasting.core.common.WscLog
+import com.benchan.wireless.screencasting.core.protocol.control.InputCodec
+import com.benchan.wireless.screencasting.core.protocol.control.InputMessage
 import com.benchan.wireless.screencasting.core.protocol.datachannel.AudioState
 import com.benchan.wireless.screencasting.core.protocol.datachannel.DcMessage
 import com.benchan.wireless.screencasting.core.protocol.quality.CaptureSize
@@ -82,6 +84,21 @@ class SenderRtcSession(
         fun onAudioState(state: AudioState)
         fun onCapturedAppVisible(visible: Boolean)
         fun onProtectedContent(suspected: Boolean)
+
+        /** DataChannel `wsc` 打开（含 ICE restart 后仍保持的情况只回调一次）：反向控制据此发出当前 CTL_STATE / GEOM。 */
+        fun onDataChannelOpen() = Unit
+
+        /** `wsc` 上发送端自己不处理的消息（反向控制 CTL_REQ / CTL_END 等），在 RTC 线程回调。 */
+        fun onDataChannelMessage(message: DcMessage) = Unit
+
+        /** `wsc-input` 上已解码、已校验的输入消息（PROTOCOL.md 4.2），在 RTC 线程回调。 */
+        fun onInputMessage(message: InputMessage) = Unit
+
+        /**
+         * 采集几何变化（反向控制坐标换算，PROTOCOL.md 6.3）：采集帧 [captureWidth]×[captureHeight]，
+         * 被采集内容 [contentWidth]×[contentHeight]，此刻屏幕 [screenWidth]×[screenHeight]（逻辑像素，含当前旋转）。
+         */
+        fun onCaptureGeometry(captureWidth: Int, captureHeight: Int, contentWidth: Int, contentHeight: Int, screenWidth: Int, screenHeight: Int) = Unit
     }
 
     private val executor = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "wsc-sender-rtc") }
@@ -99,6 +116,8 @@ class SenderRtcSession(
     private var audioTrack: AudioTrack? = null
     private var videoSender: RtpSender? = null
     private var dataChannel: DataChannel? = null
+    private var inputChannel: DataChannel? = null
+    private var contentSize = 0 to 0
     private var audioCapture: PlaybackAudioCapture? = null
     private var statsTask: ScheduledFuture<*>? = null
     private var displayListener: DisplayManager.DisplayListener? = null
@@ -184,6 +203,8 @@ class SenderRtcSession(
         val (sw, sh) = screenSize()
         captureSize = CaptureSize.fit(sw, sh, profile)
         c.startCapture(captureSize.width, captureSize.height, profile.fps)
+        contentSize = sw to sh
+        emitGeometry()
         WscLog.i(TAG, "capture started ${captureSize.width}x${captureSize.height}@${profile.fps}")
         if (Build.VERSION.SDK_INT >= 34) {
             c.mediaProjection?.registerCallback(contentCallback, mainHandler)
@@ -210,6 +231,9 @@ class SenderRtcSession(
         }
         dataChannel = peer.createDataChannel(DC_LABEL, DataChannel.Init().apply { ordered = true })
             .also { it.registerObserver(dcObserver(it)) }
+        // 反向控制输入通道（PROTOCOL.md 4.2）：negotiated，接收端在设置远端描述后创建同一 id 的通道；旧版本接收端不创建，数据被丢弃
+        inputChannel = peer.createDataChannel(RtcConfig.INPUT_CHANNEL_LABEL, RtcConfig.inputChannelInit())
+            .also { it.registerObserver(inputObserver(it)) }
         videoSender?.let { QualityApplier.apply(it, profile) }
         createOffer(iceRestart = false)
     }
@@ -282,6 +306,7 @@ class SenderRtcSession(
         val size = CaptureSize.fit(sw, sh, q)
         captureSize = size
         capturer?.changeCaptureFormat(size.width, size.height, q.fps)
+        emitGeometry()
         pc?.setBitrate(q.minBitrateBps, null, q.maxBitrateBps)
         if (!fromRemote) sendDc(DcMessage.SetQuality(q))
         listener.onQualityChanged(q, fromRemote)
@@ -303,10 +328,45 @@ class SenderRtcSession(
     private fun resizeTo(width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
         val size = CaptureSize.fit(width, height, profile)
-        if (size == captureSize) return
+        val contentChanged = contentSize != (width to height)
+        contentSize = width to height
+        if (size == captureSize) {
+            if (contentChanged) emitGeometry()
+            return
+        }
         captureSize = size
         capturer?.changeCaptureFormat(size.width, size.height, profile.fps)
+        emitGeometry()
         WscLog.i(TAG, "resize -> ${size.width}x${size.height}")
+    }
+
+    /** 在 RTC 线程上调用：把当前采集几何报告给反向控制（只有尺寸，不含任何画面内容）。 */
+    private fun emitGeometry() {
+        val (cw, ch) = contentSize
+        if (cw <= 0 || ch <= 0) return
+        val (sw, sh) = screenSize()
+        listener.onCaptureGeometry(captureSize.width, captureSize.height, cw, ch, sw, sh)
+    }
+
+    /** 反向控制：发送端只在 `wsc-input` 上回 IREJ。 */
+    fun sendInput(message: InputMessage) {
+        val dc = inputChannel ?: return
+        if (dc.state() != DataChannel.State.OPEN) return
+        runCatching { dc.send(DataChannel.Buffer(ByteBuffer.wrap(InputCodec.encode(message).toByteArray()), false)) }
+    }
+
+    private fun inputObserver(dc: DataChannel) = object : DataChannel.Observer {
+        override fun onBufferedAmountChange(previousAmount: Long) = Unit
+        override fun onStateChange() {
+            WscLog.i(TAG, "input channel ${dc.state()}")
+        }
+
+        override fun onMessage(buffer: DataChannel.Buffer) {
+            if (buffer.binary) return
+            val bytes = ByteArray(buffer.data.remaining()).also { buffer.data.get(it) }
+            // 未知类型 / 畸形 / 越界：忽略（日志不记录内容，只在调用方计数）
+            InputCodec.decodeOrNull(String(bytes))?.let(listener::onInputMessage)
+        }
     }
 
     /** 旋转检测（API 29~33 的唯一途径；34+ 作为兜底，与 onCapturedContentResize 去重）。 */
@@ -360,6 +420,7 @@ class SenderRtcSession(
         override fun onStateChange() {
             if (dc.state() == DataChannel.State.OPEN) {
                 sendDc(DcMessage.Audio(if (audioEnabled) AudioState.ON else AudioState.NO_PERMISSION))
+                listener.onDataChannelOpen()
             }
         }
 
@@ -368,7 +429,8 @@ class SenderRtcSession(
             when (val m = DcMessage.decodeOrNull(String(bytes))) {
                 is DcMessage.ReceiverStats -> lastReceiverStats = m
                 is DcMessage.SetQuality -> setQuality(m.profile, fromRemote = true)
-                else -> Unit
+                null -> Unit
+                else -> listener.onDataChannelMessage(m)
             }
         }
     }
@@ -423,6 +485,7 @@ class SenderRtcSession(
                 runCatching { capturer?.stopCapture() }
                 runCatching { capturer?.dispose() }
                 runCatching { dataChannel?.unregisterObserver(); dataChannel?.close(); dataChannel?.dispose() }
+                runCatching { inputChannel?.unregisterObserver(); inputChannel?.close(); inputChannel?.dispose() }
                 runCatching { pc?.close(); pc?.dispose() }
                 runCatching { videoSource?.dispose() }
                 runCatching { audioSource?.dispose() }
@@ -431,7 +494,7 @@ class SenderRtcSession(
                 runCatching { factory?.dispose() }
                 runCatching { adm?.release() }
             } finally {
-                pc = null; capturer = null; factory = null; dataChannel = null
+                pc = null; capturer = null; factory = null; dataChannel = null; inputChannel = null
                 done.countDown()
             }
         }

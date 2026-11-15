@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.feature.settings
 
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -85,7 +87,7 @@ import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
 
 /** 设置页的跳转目标。 */
-enum class SettingsDestination { TRUSTED, REPORT, DIAGNOSTICS, LOGS, INSTALL_HELP }
+enum class SettingsDestination { TRUSTED, REPORT, DIAGNOSTICS, LOGS, INSTALL_HELP, REMOTE_CONTROL }
 
 /**
  * 交互稿 09A：设置。按“发送 → 接收 → 诊断 → 关于”的任务频率排序，接收相关项在 TV 端置顶；
@@ -164,6 +166,33 @@ fun SettingsScreen(
                         }
                     }
                     SwitchRow("录屏前显示说明卡", "关闭后点设备直接弹出系统录屏授权", !settings.skipCaptureIntro, onChange = { viewModel.setSkipIntro(!it) })
+                    // 反向控制（PRD F23，交互稿 09A / R01）：导航行 + 状态值（UX 走查 G12），点按进入 R01 再开关。
+                    // B 期起 TV 接收端有控制入口：说明为“电视或平板”（用户决策 D3）
+                    val rcServiceOn = remember(resumeTick, settings.remoteControlEnabled) { viewModel.remoteControlServiceOn() }
+                    val rcValue = when {
+                        !settings.remoteControlEnabled -> "已关闭"
+                        rcServiceOn -> "已开启"
+                        else -> "已开启 · 还需开启无障碍服务"
+                    }
+                    val rcWarn = settings.remoteControlEnabled && !rcServiceOn
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { lastRow = "remote"; onNavigate(SettingsDestination.REMOTE_CONTROL) }
+                            .semantics(mergeDescendants = true) { stateDescription = rcValue }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("反向控制", style = MaterialTheme.typography.bodyLarge)
+                            Text("允许电视、平板或手机在投屏时操作本机，每次都需你确认", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                rcValue,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (rcWarn) com.benchan.wireless.screencasting.core.ui.theme.WscTheme.extended.warning else MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
             val receiver = @Composable {

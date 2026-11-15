@@ -11,6 +11,8 @@ dependencies {
     implementation(projects.core.discovery)
     implementation(projects.core.net)
     implementation(projects.protocol.airplayApi)
+    // 09A“反向控制”行显示无障碍服务状态（PM 走查 G9）
+    implementation(projects.feature.control)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

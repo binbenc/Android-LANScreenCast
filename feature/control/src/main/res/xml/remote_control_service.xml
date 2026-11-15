@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  反向控制无障碍服务（PRD F23、决策 #16、PRD 8.5 BIND_ACCESSIBILITY_SERVICE）：最小权限声明。
+  - canPerformGestures：注入点击 / 手势（dispatchGesture）。
+  - 不申请 canRetrieveWindowContent：本应用读不到任何屏幕文字与界面结构。
+  - 不申请 canRequestFilterKeyEvents：看不到任何按键（包括硬件键盘输入）。
+  - 只订阅前台窗口切换事件 typeWindowStateChanged（C 期）：只读取事件里的前台包名 / 类名，用于在系统安装器、
+    无障碍设置等敏感界面暂停注入；仍不申请 canRetrieveWindowContent，读不到界面内容。
+  - flagInputMethodEditor（Android 13+，B 期）：只用于把对方输入的文字提交到当前输入框（AccessibilityService.InputMethod），
+    同样不读取屏幕内容；密码框拒绝。Android 12 及以下忽略该标志。
+  - isAccessibilityTool="false"：如实声明不是辅助工具；Android 17 高级保护模式下系统会禁用本服务（设置页如实提示）。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="false"
+    android:canRequestFilterKeyEvents="false"
+    android:accessibilityFlags="flagInputMethodEditor"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:description="@string/ctl_service_description"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="50"
+    tools:ignore="UnusedAttribute" />

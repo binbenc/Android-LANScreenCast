@@ -12,6 +12,8 @@ dependencies {
     implementation(projects.core.discovery)
     implementation(projects.core.net)
     implementation(projects.core.rtc)
+    // 反向控制（PRD F23）：授权编排、无障碍注入、确认页
+    implementation(projects.feature.control)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

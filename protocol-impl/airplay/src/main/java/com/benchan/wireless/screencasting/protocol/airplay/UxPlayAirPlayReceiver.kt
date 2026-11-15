@@ -249,13 +249,9 @@ class UxPlayAirPlayReceiver @Inject constructor(
         }
         if (last) {
             endSession(AppleEndReason.PEER_STOPPED)
-            synchronized(sessionLock) {
-                peerName = null
-                if (pin != null) {
-                    pin = null
-                    if (_state.value is AppleCompatState.Advertising) _state.value = AppleCompatState.Advertising(null)
-                }
-            }
+            // 不在这里收起 PIN：Mac / iPhone 发完 PAIR-PIN-START 就断开连接，等用户输完 PIN 再重新连接，
+            // 这里清掉的话 PIN 一闪而过、用户看不到。PIN 由原生层作废（onDisplayPin("")）、会话开始或 UI 超时收起。
+            synchronized(sessionLock) { peerName = null }
         }
     }
 
@@ -264,12 +260,14 @@ class UxPlayAirPlayReceiver @Inject constructor(
         endSession(if (reason == 2) AppleEndReason.UNSUPPORTED else AppleEndReason.CONNECTION_LOST)
     }
 
+    /** pin 为空串：原生层已作废该 PIN（配对成功 / 输错次数用尽 / 过期），收起覆盖层。 */
     override fun onDisplayPin(pin: String) {
+        val shown = pin.takeIf { it.isNotEmpty() }
         synchronized(sessionLock) {
-            this.pin = pin
-            if (session == null) _state.value = AppleCompatState.Advertising(pin)
+            this.pin = shown
+            if (session == null && _state.value is AppleCompatState.Advertising) _state.value = AppleCompatState.Advertising(shown)
         }
-        WscLog.i(TAG, "pairing PIN displayed")
+        WscLog.i(TAG, if (shown != null) "pairing PIN displayed" else "pairing PIN cleared")
     }
 
     override fun onClientRequest(deviceId: String, model: String, name: String): Boolean {

@@ -2,11 +2,13 @@ package com.benchan.wireless.screencasting.core.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.tv.material3.LocalContentColor as TvLocalContentColor
 import androidx.tv.material3.darkColorScheme as tvDarkColorScheme
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Typography as TvTypographyType
 
-/** 把同一份 Token 同步给 Compose for TV（androidx.tv.material3）的主题，TV 组件与 M3 组件颜色一致。 */
+/** 把同一份 Token 同步给 Compose for TV（androidx.tv.material3）的主题，TV 组件与 M3 组件颜色一致；并提供 onSurface 作为默认内容色。 */
 @Composable
 internal fun TvThemeBridge(content: @Composable () -> Unit) {
     val c = MaterialTheme.colorScheme
@@ -31,6 +33,8 @@ internal fun TvThemeBridge(content: @Composable () -> Unit) {
             bodyLarge = t.bodyLarge, bodyMedium = t.bodyMedium, bodySmall = t.bodySmall,
             labelLarge = t.labelLarge, labelMedium = t.labelMedium, labelSmall = t.labelSmall,
         ),
-        content = content,
-    )
+    ) {
+        // tv-material 的 LocalContentColor 默认也是 Color.Black，未包在 tv Surface 里的 tv Text / Icon 会变黑
+        CompositionLocalProvider(TvLocalContentColor provides c.onSurface, content = content)
+    }
 }

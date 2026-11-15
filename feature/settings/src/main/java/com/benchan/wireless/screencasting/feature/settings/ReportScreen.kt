@@ -93,6 +93,17 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
                     }
                 }
             }
+            if (s.recentControl.isNotEmpty()) {
+                // 反向控制记录（F23，用户决策 D8）：只记录被谁控制、多长时间，不记坐标与内容
+                Text("反向控制", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                val dateFmt = remember { java.text.SimpleDateFormat("M月d日 HH:mm", java.util.Locale.CHINA) }
+                s.recentControl.forEach { u ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("本次被 ${u.peerName} 控制 ${u.durationLabel}", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                        Text(dateFmt.format(java.util.Date(u.endedAt)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Shield, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                 Text("数据只保存在本机，不会上传", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)

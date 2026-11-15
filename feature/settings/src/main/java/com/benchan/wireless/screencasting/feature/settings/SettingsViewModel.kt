@@ -47,7 +47,11 @@ class SettingsViewModel @Inject constructor(
     private val diagnostics: NetworkDiagnostics,
     network: com.benchan.wireless.screencasting.core.net.NetworkMonitor,
     airPlay: Optional<AirPlayReceiver>,
+    private val a11y: com.benchan.wireless.screencasting.feature.control.AccessibilityBridge,
 ) : ViewModel() {
+    /** 反向控制的无障碍服务是否已在系统设置中开启（09A 行状态值）。 */
+    fun remoteControlServiceOn(): Boolean = a11y.isServiceEnabledInSettings()
+
     val settings: StateFlow<AppSettings?> = repo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val trusted: StateFlow<List<TrustedDevice>> = trustedStore.devices
     val lan: StateFlow<com.benchan.wireless.screencasting.core.net.LanInfo?> = network.lan
@@ -121,7 +125,8 @@ class SettingsViewModel @Inject constructor(
                 appendLine(
                     "${fmt.format(Date(r.startedAt))} ${r.protocol.exportLabel()} ${r.role} peer=${r.peerName} path=${r.discoveryPath} " +
                         "firstFrame=${r.firstFrameMs}ms ok=${r.success} p50=${r.latencyP50Ms} p95=${r.latencyP95Ms} " +
-                        "bitrate=${r.avgBitrateKbps}kbps drops=${r.framesDropped} disconnects=${r.disconnects}/${r.autoRecovered} codec=${r.codec} end=${r.endReason}",
+                        "bitrate=${r.avgBitrateKbps}kbps drops=${r.framesDropped} disconnects=${r.disconnects}/${r.autoRecovered} codec=${r.codec} end=${r.endReason}" +
+                        (r.controlledMs?.let { " controlled=${it / 1000}s" } ?: ""),
                 )
             }
             appendLine()

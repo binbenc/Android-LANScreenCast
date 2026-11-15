@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,8 @@ fun StatusCapsule(
     resolutionLabel: String? = null,
     noAudio: Boolean = false,
     reconnectingLabel: String? = null,
+    /** 反向控制中（交互稿 R04）：追加一段“被控制中”（primary 色 + 手势图标），不挤掉延迟数值。 */
+    controlled: Boolean = false,
 ) {
     val ext = WscTheme.extended
     val colors = MaterialTheme.colorScheme
@@ -53,6 +56,7 @@ fun StatusCapsule(
             grade?.let { append("，").append(it.label) }
             bitrateKbps?.let { append("，码率 ").append(formatMbps(it)) }
             if (noAudio) append("，无声音")
+            if (controlled) append("，被控制中")
         }
     }
     Row(
@@ -86,6 +90,11 @@ fun StatusCapsule(
             Divider()
             Icon(Icons.Rounded.VolumeOff, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
             Text("无声音", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+        }
+        if (controlled) {
+            Divider()
+            Icon(Icons.Rounded.TouchApp, null, Modifier.size(16.dp), tint = colors.primary)
+            Text("被控制中", style = MaterialTheme.typography.labelLarge, color = colors.primary)
         }
     }
 }

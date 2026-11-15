@@ -193,7 +193,7 @@ fun NumericKeypad(
                             Text(
                                 key,
                                 style = if (key.length == 1) MaterialTheme.typography.titleLarge else MaterialTheme.typography.labelLarge,
-                                color = if (!isDigit || digitsEnabled) c.onSurface else c.onSurface.copy(alpha = 0.38f),
+                                color = if (!isDigit || digitsEnabled) c.onSurface else c.outline, // 不可用用 outline，不叠透明度
                             )
                         }
                     }

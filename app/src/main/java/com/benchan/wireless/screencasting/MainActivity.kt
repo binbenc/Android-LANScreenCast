@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting
 
+import com.benchan.wireless.screencasting.feature.control.ui.AccessibilityGuideScreen
+import com.benchan.wireless.screencasting.feature.control.ui.RemoteControlSettingsScreen
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -125,6 +127,7 @@ class MainActivity : ComponentActivity() {
                 SettingsDestination.DIAGNOSTICS -> "diagnostics"
                 SettingsDestination.LOGS -> "logs"
                 SettingsDestination.INSTALL_HELP -> "install"
+                SettingsDestination.REMOTE_CONTROL -> "remote_control"
             },
         )
 
@@ -189,6 +192,25 @@ class MainActivity : ComponentActivity() {
             composable("diagnostics") { NetworkDiagnosticsScreen(onBack = { nav.popBackStack() }) }
             composable("logs") { LogExportScreen(versionName = version, onBack = { nav.popBackStack() }) }
             composable("install") { InstallHelpScreen(onBack = { nav.popBackStack() }) }
+            // 反向控制（PRD F23）：R01 设置 → R02 引导；R02 检测到服务已开启时返回 R01 并提示
+            composable("remote_control") { entry ->
+                val justEnabled by entry.savedStateHandle.getStateFlow("rc_enabled", false).collectAsStateWithLifecycle()
+                RemoteControlSettingsScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenGuide = { nav.navigate("remote_control_guide") },
+                    justEnabled = justEnabled,
+                    onJustEnabledShown = { entry.savedStateHandle["rc_enabled"] = false },
+                )
+            }
+            composable("remote_control_guide") {
+                AccessibilityGuideScreen(
+                    onBack = { nav.popBackStack() },
+                    onEnabled = {
+                        nav.previousBackStackEntry?.savedStateHandle?.set("rc_enabled", true)
+                        nav.popBackStack()
+                    },
+                )
+            }
         }
     }
 }

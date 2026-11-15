@@ -30,6 +30,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.benchan.wireless.screencasting.feature.control.ControlEvent
+import com.benchan.wireless.screencasting.feature.control.ControlUi
+import com.benchan.wireless.screencasting.feature.control.SenderControlCoordinator
 import javax.inject.Inject
 
 /** 列表中的一行（交互稿 03）。 */
@@ -58,7 +61,12 @@ class SenderViewModel @Inject constructor(
     private val trusted: TrustedDeviceStore,
     private val settingsRepo: SettingsRepository,
     private val network: NetworkMonitor,
+    private val control: SenderControlCoordinator,
 ) : ViewModel() {
+    /** 反向控制状态（交互稿 R04）。 */
+    val controlUi: StateFlow<ControlUi> = control.ui
+    val controlEvents: SharedFlow<ControlEvent> = control.events
+
     val state: StateFlow<SenderState> = controller.state
     val events: SharedFlow<SenderEvent> = controller.events
     val settings: StateFlow<AppSettings?> = settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -159,6 +167,8 @@ class SenderViewModel @Inject constructor(
     fun undoAutoDowngrade() = controller.undoAutoDowngrade()
     fun setAutoAdjust(enabled: Boolean) = controller.setAutoAdjust(enabled)
     fun setAudioEnabled(enabled: Boolean) = controller.setAudioEnabled(enabled)
+    fun revokeControl() = control.revoke()
+    fun continueControl() = control.continueDespiteSensitive()
 
     fun setSkipIntro(skip: Boolean) = viewModelScope.launch { settingsRepo.setSkipCaptureIntro(skip) }
     fun setAudioPreference(enabled: Boolean) = viewModelScope.launch { settingsRepo.setAudioEnabled(enabled) }

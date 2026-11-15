@@ -2,6 +2,9 @@ package com.benchan.wireless.screencasting.core.rtc.receiver
 
 import android.content.Context
 import com.benchan.wireless.screencasting.core.common.WscLog
+import com.benchan.wireless.screencasting.core.protocol.control.InputCodec
+import com.benchan.wireless.screencasting.core.protocol.control.InputMessage
+import com.benchan.wireless.screencasting.core.protocol.control.PointerAction
 import com.benchan.wireless.screencasting.core.protocol.datachannel.DcMessage
 import com.benchan.wireless.screencasting.core.rtc.MediaState
 import com.benchan.wireless.screencasting.core.rtc.RtcConfig
@@ -50,6 +53,12 @@ class ReceiverRtcSession(
         fun onFirstFrame()
         fun onStats(stats: ReceiverStatsSnapshot, senderStats: DcMessage.SenderStats?)
         fun onDataChannelMessage(message: DcMessage)
+
+        /** 反向控制：`wsc-input` 上发送端回的消息（IREJ），在 RTC 线程回调。 */
+        fun onInputMessage(message: InputMessage) = Unit
+
+        /** 解码帧尺寸（已应用旋转）变化，在解码线程回调：反向控制据此换算坐标、匹配几何代号。 */
+        fun onFrameSize(width: Int, height: Int) = Unit
     }
 
     private val executor = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "wsc-receiver-rtc") }
@@ -59,6 +68,7 @@ class ReceiverRtcSession(
     private var pc: PeerConnection? = null
     private var videoTrack: VideoTrack? = null
     private var dataChannel: DataChannel? = null
+    private var inputChannel: DataChannel? = null
     private var statsTask: ScheduledFuture<*>? = null
     private val pendingRemoteIce = mutableListOf<IceCandidate>()
     private var remoteDescriptionSet = false
@@ -74,10 +84,20 @@ class ReceiverRtcSession(
         @Volatile
         var gotFirst = false
 
+        private var lastW = 0
+        private var lastH = 0
+
         override fun onFrame(frame: VideoFrame) {
             if (!gotFirst) {
                 gotFirst = true
                 listener.onFirstFrame()
+            }
+            val w = frame.rotatedWidth
+            val h = frame.rotatedHeight
+            if (w != lastW || h != lastH) {
+                lastW = w
+                lastH = h
+                listener.onFrameSize(w, h)
             }
             target?.onFrame(frame)
         }
@@ -119,6 +139,11 @@ class ReceiverRtcSession(
                     remoteDescriptionSet = true
                     pendingRemoteIce.forEach { peer.addIceCandidate(it) }
                     pendingRemoteIce.clear()
+                    if (inputChannel == null) {
+                        // 反向控制输入通道（PROTOCOL.md 4.2）：与发送端约定的 negotiated id，旧版本发送端没有对应通道时消息被丢弃
+                        inputChannel = runCatching { peer.createDataChannel(RtcConfig.INPUT_CHANNEL_LABEL, RtcConfig.inputChannelInit()) }
+                            .getOrNull()?.also { it.registerObserver(inputObserver()) }
+                    }
                     createAnswer(peer)
                 }
             }
@@ -161,6 +186,30 @@ class ReceiverRtcSession(
         val dc = dataChannel ?: return
         if (dc.state() != DataChannel.State.OPEN) return
         runCatching { dc.send(DataChannel.Buffer(ByteBuffer.wrap(DcMessage.encode(message).toByteArray()), false)) }
+    }
+
+    /**
+     * 反向控制：发送一条输入消息。发送缓冲超过阈值时丢弃 MOVE（DOWN / UP / CANCEL / 按键从不丢）。
+     * @return 是否已交给 DataChannel。
+     */
+    fun sendInput(message: InputMessage): Boolean {
+        val dc = inputChannel ?: return false
+        if (dc.state() != DataChannel.State.OPEN) return false
+        if (message is InputMessage.Pointer && message.a == PointerAction.MOVE && dc.bufferedAmount() > RtcConfig.INPUT_BACKPRESSURE_BYTES) return false
+        return runCatching { dc.send(DataChannel.Buffer(ByteBuffer.wrap(InputCodec.encode(message).toByteArray()), false)) }.getOrDefault(false)
+    }
+
+    /** 输入通道是否已打开（发送端支持反向控制且 SCTP 已连通）。 */
+    val inputChannelOpen: Boolean get() = inputChannel?.state() == DataChannel.State.OPEN
+
+    private fun inputObserver() = object : DataChannel.Observer {
+        override fun onBufferedAmountChange(previousAmount: Long) = Unit
+        override fun onStateChange() = Unit
+        override fun onMessage(buffer: DataChannel.Buffer) {
+            if (buffer.binary) return
+            val bytes = ByteArray(buffer.data.remaining()).also { buffer.data.get(it) }
+            InputCodec.decodeOrNull(String(bytes))?.let(listener::onInputMessage)
+        }
     }
 
     private fun startStats() {
@@ -237,11 +286,12 @@ class ReceiverRtcSession(
                 proxySink.target = null
                 runCatching { videoTrack?.removeSink(proxySink) }
                 runCatching { dataChannel?.unregisterObserver(); dataChannel?.close() }
+                runCatching { inputChannel?.unregisterObserver(); inputChannel?.close(); inputChannel?.dispose() }
                 runCatching { pc?.close(); pc?.dispose() }
                 runCatching { factory?.dispose() }
                 runCatching { adm?.release() }
             } finally {
-                pc = null; factory = null; dataChannel = null; videoTrack = null
+                pc = null; factory = null; dataChannel = null; inputChannel = null; videoTrack = null
                 done.countDown()
             }
         }

@@ -41,6 +41,12 @@ object WscProtocol {
         const val H264 = "h264"
         const val H265 = "h265"
         const val OPUS = "opus"
+
+        /**
+         * 反向控制（PRD F23，PROTOCOL.md 第 6 节）。发送端带上 = 本构建能被控制（是否真的可用看 DataChannel 上的 CTL_STATE）；
+         * 接收端带上 = 能发起控制请求。旧版本忽略未知能力。
+         */
+        const val CTL = "ctl"
     }
 }
 

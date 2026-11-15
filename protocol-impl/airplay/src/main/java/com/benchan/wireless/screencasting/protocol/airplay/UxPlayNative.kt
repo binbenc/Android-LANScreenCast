@@ -17,6 +17,7 @@ interface UxPlayCallbacks {
 
     /** reason：1 = 网络中断，2 = 不支持的视频网址来源（UxPlay conn_reset）。 */
     fun onConnectionReset(reason: Int)
+    /** 显示 Apple 设备配对 PIN；空串表示收起（PIN 已作废）。 */
     fun onDisplayPin(pin: String)
 
     /** 发送端完成配对后请求建立会话；返回 false 拒绝（R-09）。会在 httpd 线程上同步等待。 */

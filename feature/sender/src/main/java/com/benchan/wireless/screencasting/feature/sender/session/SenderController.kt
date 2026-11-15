@@ -20,7 +20,10 @@ import com.benchan.wireless.screencasting.core.data.report.SessionStatsAccumulat
 import com.benchan.wireless.screencasting.core.data.settings.SettingsRepository
 import com.benchan.wireless.screencasting.core.protocol.VersionNegotiation
 import com.benchan.wireless.screencasting.core.protocol.WscProtocol
+import com.benchan.wireless.screencasting.core.protocol.control.ControlReason
+import com.benchan.wireless.screencasting.core.protocol.control.InputMessage
 import com.benchan.wireless.screencasting.core.protocol.datachannel.AudioState
+import com.benchan.wireless.screencasting.core.protocol.datachannel.DcMessage
 import com.benchan.wireless.screencasting.core.protocol.message.Answer
 import com.benchan.wireless.screencasting.core.protocol.message.Bye
 import com.benchan.wireless.screencasting.core.protocol.message.ByeReason
@@ -62,6 +65,8 @@ import com.benchan.wireless.screencasting.core.signaling.SignalingConnectExcepti
 import com.benchan.wireless.screencasting.core.signaling.SignalingConnection
 import com.benchan.wireless.screencasting.core.signaling.SignalingEvent
 import com.benchan.wireless.screencasting.core.signaling.WscClient
+import com.benchan.wireless.screencasting.feature.control.ControlLink
+import com.benchan.wireless.screencasting.feature.control.SenderControlCoordinator
 import com.benchan.wireless.screencasting.feature.sender.service.ScreenCastService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -95,6 +100,7 @@ class SenderController @Inject constructor(
     private val settings: SettingsRepository,
     private val reports: SessionReportStore,
     private val rtcEngine: RtcEngine,
+    private val control: SenderControlCoordinator,
 ) {
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val dispatcher = Dispatchers.Default.limitedParallelism(1)
@@ -187,7 +193,8 @@ class SenderController @Inject constructor(
         name = name,
         model = Build.MODEL.orEmpty(),
         role = "sender",
-        caps = listOf(WscProtocol.Caps.H264, WscProtocol.Caps.OPUS),
+        // ctl：本构建支持被反向控制（是否可用由 DataChannel 上的 CTL_STATE 告知，PROTOCOL.md 第 6 节）
+        caps = listOf(WscProtocol.Caps.H264, WscProtocol.Caps.OPUS, WscProtocol.Caps.CTL),
         resume = resume,
         trusted = if (resume) null else trustsReceiver,
     )
@@ -258,6 +265,8 @@ class SenderController @Inject constructor(
                 WscLog.i(TAG, "resume accepted, restarting ICE")
                 reconnectJob?.cancel()
                 reconnectJob = null
+                // 同一会话 30 秒内重连成功：反向控制自动续上，不再确认（决策 #16 细化）
+                control.setPaused(ControlReason.RECONNECTING, false)
                 rtc?.restartIce()
                 watchMedia()
             } else {
@@ -422,6 +431,13 @@ class SenderController @Inject constructor(
         }
         val session = SenderRtcSession(serviceContext, rtcEngine, data, profile, audio, rtcListener(sessionGen))
         rtc = session
+        // 反向控制只存在于 WSC 镜像会话（PRD F23）：授权仍需接收端请求 + 本机确认
+        val peer = receiverName ?: t.name
+        control.attach(object : ControlLink {
+            override val peerName: String = peer
+            override fun sendDc(message: DcMessage) = session.sendDc(message)
+            override fun sendInput(message: InputMessage) = session.sendInput(message)
+        })
         session.start()
         // 首帧超时：60 秒还没有连上媒体就判定失败（交互稿 10 统计口径）
         armTimeout(FIRST_MEDIA_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP, failure = ConnectFailure.FIRST_FRAME_TIMEOUT) }
@@ -483,11 +499,36 @@ class SenderController @Inject constructor(
         }
 
         override fun onCapturedAppVisible(visible: Boolean) {
-            onCurrent { updateCasting { it.copy(appVisible = visible) } }
+            onCurrent {
+                updateCasting { it.copy(appVisible = visible) }
+                // 被共享的应用不在前台：接收端看不到画面，暂停反向控制（避免盲操作其他应用）
+                control.setPaused(ControlReason.APP_HIDDEN, !visible)
+            }
         }
 
         override fun onProtectedContent(suspected: Boolean) {
-            onCurrent { updateCasting { it.copy(protectedSuspected = suspected) } }
+            onCurrent {
+                updateCasting { it.copy(protectedSuspected = suspected) }
+                control.setPaused(ControlReason.PROTECTED, suspected)
+            }
+        }
+
+        // —— 反向控制（PRD F23）：直接转交，协调器在会话结束（detach）后忽略迟到的回调 ——
+
+        override fun onDataChannelOpen() {
+            if (endGuard.isCurrent(gen)) control.onDataChannelOpen()
+        }
+
+        override fun onDataChannelMessage(message: DcMessage) {
+            if (endGuard.isCurrent(gen)) control.onDataChannelMessage(message)
+        }
+
+        override fun onInputMessage(message: InputMessage) {
+            if (endGuard.isCurrent(gen)) control.onInput(message)
+        }
+
+        override fun onCaptureGeometry(captureWidth: Int, captureHeight: Int, contentWidth: Int, contentHeight: Int, screenWidth: Int, screenHeight: Int) {
+            if (endGuard.isCurrent(gen)) control.onGeometry(captureWidth, captureHeight, contentWidth, contentHeight, screenWidth, screenHeight)
         }
     }
 
@@ -505,6 +546,7 @@ class SenderController @Inject constructor(
                         _state.value = SenderState.Casting(t, System.currentTimeMillis(), profile, autoAdjust, audioState)
                     }
                     is SenderState.Reconnecting -> {
+                        if (reconnectJob == null) control.setPaused(ControlReason.RECONNECTING, false)
                         accumulator.onRecovered()
                         _state.value = SenderState.Casting(t, castStartedAtOr(cur.since), profile, autoAdjust, audioState)
                         _events.tryEmit(SenderEvent.Recovered)
@@ -561,6 +603,7 @@ class SenderController @Inject constructor(
 
     private fun enterReconnecting() {
         val t = target ?: return
+        control.setPaused(ControlReason.RECONNECTING, true)
         if (_state.value is SenderState.Reconnecting) return
         accumulator.onDisconnected()
         _state.value = SenderState.Reconnecting(t, attempt = 0, since = System.currentTimeMillis(), nextRetryAt = null, profile = profile)
@@ -586,6 +629,7 @@ class SenderController @Inject constructor(
     private fun startReconnect() {
         if (reconnectJob != null) return
         sm.onEvent(SessionEvent.TransportLost)
+        control.setPaused(ControlReason.RECONNECTING, true)
         val t = target ?: return
         val fp = receiverFp ?: return
         val id = identity ?: return
@@ -709,6 +753,9 @@ class SenderController @Inject constructor(
             reconnectJob = null
             reconnectShowJob?.cancel()
             mediaWatchdog?.cancel()
+            // 停止投屏 = 同时收回控制；会话结束立即停止注入（PRD 风险表）。先取被控制时长写进本机报告（D8）
+            val controlledMs = control.controlledDurationMs()
+            control.detach()
             if (sendBye != null) send(Bye(sendBye))
             val conn = connection
             connection = null
@@ -719,7 +766,7 @@ class SenderController @Inject constructor(
             if (session != null) {
                 withContext(Dispatchers.IO) { session.close() }
                 stopService()
-                writeReport(reason)
+                writeReport(reason, controlledMs)
             }
             sm.onEvent(SessionEvent.Closed)
             WscLog.i(TAG, "session ended: $reason ${failure ?: ""} ${detail.orEmpty()}")
@@ -727,7 +774,7 @@ class SenderController @Inject constructor(
         }
     }
 
-    private fun writeReport(reason: EndReason) {
+    private fun writeReport(reason: EndReason, controlledMs: Long) {
         val t = target ?: return
         val firstFrameMs = if (firstMediaAt > 0 && captureGrantedAt > 0) firstMediaAt - captureGrantedAt else null
         runCatching {
@@ -752,6 +799,7 @@ class SenderController @Inject constructor(
                     codec = accumulator.codec,
                     androidVersion = Build.VERSION.RELEASE.orEmpty(),
                     deviceModel = Build.MODEL.orEmpty(),
+                    controlledMs = controlledMs.takeIf { it >= 1_000 },
                 ),
             )
         }.onFailure { WscLog.w(TAG, "write report failed", it) }

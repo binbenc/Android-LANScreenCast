@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 控制请求的高优先级通知（交互稿 R03）；全屏意图在系统不允许时退化为悬浮通知 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Android 17 高级保护模式下系统禁用非辅助工具的无障碍服务：查询该模式以如实提示（交互稿 R01“不可用”） -->
+    <uses-permission android:name="android.permission.QUERY_ADVANCED_PROTECTION_MODE" />
+
+    <application>
+        <!-- 只在用户开启“反向控制”时引导到系统设置手动开启（PRD 8.5）。系统以 BIND_ACCESSIBILITY_SERVICE 绑定，只有系统能连接。 -->
+        <service
+            android:name=".RemoteControlService"
+            android:exported="true"
+            android:label="@string/ctl_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/remote_control_service" />
+        </service>
+
+        <!-- R03 控制请求确认页：独立任务、不进最近任务，确认后回到原界面 -->
+        <activity
+            android:name=".ui.ControlConsentActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.benchan.wireless.screencasting.control"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- R02 引导页（从“请开启无障碍服务”通知进入） -->
+        <activity
+            android:name=".ui.AccessibilityGuideActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:taskAffinity="com.benchan.wireless.screencasting.control"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- 通知按钮：拒绝请求 / 收回控制 -->
+        <receiver
+            android:name=".ControlActionReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

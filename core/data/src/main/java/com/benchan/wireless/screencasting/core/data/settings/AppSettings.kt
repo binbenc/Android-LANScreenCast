@@ -28,6 +28,18 @@ data class AppSettings(
     val bootStart: Boolean = false,
     /** 录屏授权前说明卡“下次不再提示”。 */
     val skipCaptureIntro: Boolean = false,
+    /** 反向控制（PRD F23）：允许接收端在投屏时请求操作本机，默认关闭；每次会话仍需本人确认（决策 #16）。 */
+    val remoteControlEnabled: Boolean = false,
+    /** TV 接收端反向控制模式（光标 / 方向键），切换后记住到下次（交互稿 R11）。 */
+    val tvControlMode: com.benchan.wireless.screencasting.core.control.TvControlMode = com.benchan.wireless.screencasting.core.control.TvControlMode.CURSOR,
+    /** 投屏结束后自动关闭无障碍服务（R01，C 期，默认关）。 */
+    val remoteControlAutoDisable: Boolean = false,
+    /** 上次会话结束时已按设置自动关闭了无障碍服务（R01 显示说明卡，服务重新开启后清除）。 */
+    val remoteControlAutoDisabled: Boolean = false,
+    /** 接收端“双指缩放会在松手后执行”提示已显示过（每次安装一次）。 */
+    val pinchHintShown: Boolean = false,
+    /** TV 首次进入控制的操作提示卡已看过（交互稿 R10）。 */
+    val tvControlHintShown: Boolean = false,
 )
 
 /** 实际生效的模式：未手动选择时按设备类型（TV → 接收端，其余 → 发送端）。 */

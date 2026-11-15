@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 系统“无障碍”列表里显示的服务名与说明（交互稿 R02：与系统界面用语一致） -->
+    <string name="ctl_service_label">局域投屏 · 反向控制</string>
+    <string name="ctl_service_description">投屏时，让你确认过的电视、平板或手机操作本机：模拟点击、滑动、滚动、方向键和返回 / 主页 / 最近任务，双指缩放，并可在你允许时向当前输入框输入文字（密码框除外）。为了安全，只读取当前应用和页面的名称（不含页面上的文字），例如在安装器、无障碍设置中暂停控制；不读取屏幕内容，不收集任何数据。只在你每次确认后的本次投屏中生效，可随时收回。</string>
+    <string name="ctl_channel_name">反向控制请求</string>
+    <string name="ctl_channel_desc">投屏时有设备请求操作本机，需要你确认</string>
+</resources>

@@ -89,6 +89,7 @@ dependencies {
     implementation(projects.feature.sender)
     implementation(projects.feature.receiver)
     implementation(projects.feature.settings)
+    implementation(projects.feature.control)
     implementation(projects.protocol.airplayApi)
     if (airplayEnabled) {
         implementation(projects.protocol.airplay)

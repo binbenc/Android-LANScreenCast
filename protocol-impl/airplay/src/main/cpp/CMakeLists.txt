@@ -86,7 +86,72 @@ else()
     message(WARNING "UxPlay airplay_video.c exit(1) patch did not apply; review protocol-impl/airplay/src/main/cpp/CMakeLists.txt")
 endif()
 
-add_library(airplay STATIC ${UX_SRC} bridge/android_dnssd.c)
+# 构建期补丁（不改子模块）：PIN 配对改由 bridge/wsc_pin_guard.c 管理（原因见 wsc_pin_guard.h）。
+# 上游 PIN 只能用一次、用后清零为 "0000"：macOS 输错后重试必然失败，且不经 PAIR-PIN-START 也能拿 "0000" 尝试。
+# raop_handlers.h 只被 raop.c 以 #include "..." 引入，所以把两者一起写到 uxplay_patched/（同目录优先）。
+# 这是安全相关补丁，任何一处匹配失败都直接终止构建。
+file(READ ${UXPLAY_LIB}/raop_handlers.h RH_SRC)
+file(READ ${UXPLAY_LIB}/raop.c RAOP_SRC)
+# 分号会被 CMake 当作列表分隔符，所以每段补丁用单独的变量，逐个应用
+macro(wsc_patch_rh FROM TO)
+    string(FIND "${RH_SRC}" "${${FROM}}" RH_POS)
+    if(RH_POS EQUAL -1)
+        message(FATAL_ERROR "UxPlay raop_handlers.h PIN patch ${FROM} did not apply; review protocol-impl/airplay/src/main/cpp/CMakeLists.txt")
+    endif()
+    string(REPLACE "${${FROM}}" "${${TO}}" RH_SRC "${RH_SRC}")
+endmacro()
+# 1. PAIR-PIN-START 签发随机 PIN
+set(RH_P1_FROM [=[            raop->pin = (unsigned short) pin_4 % 10000;
+]=])
+set(RH_P1_TO [=[            raop->pin = (unsigned short) pin_4 % 10000;
+            wsc_pin_issued(); /* WSC patch */
+]=])
+wsc_patch_rh(RH_P1_FROM RH_P1_TO)
+# 2. pair-setup-pin 第一步：PIN 未签发 / 已过期 / 失败次数用尽 → 直接拒绝；不再用后清零
+set(RH_P2_FROM [=[        snprintf(pin, 6, "%04u", raop->pin % 10000);
+        if (raop->pin < 10000) {
+            raop->pin = 0;
+        }
+]=])
+set(RH_P2_TO [=[        if (raop->pin < 10000 && !wsc_pin_usable()) { /* WSC patch */
+            logger_log(raop->logger, LOGGER_ERR, "pair-setup-pin rejected: no valid PIN issued (start pairing again)");
+            plist_mem_free(user);
+            plist_free(req_root_node);
+            goto authentication_failed;
+        }
+        snprintf(pin, 6, "%04u", raop->pin % 10000);
+]=])
+wsc_patch_rh(RH_P2_FROM RH_P2_TO)
+# 3. 校验失败计数；用尽后作废并收起屏幕上的 PIN（display_pin 传空串）
+set(RH_P3_FROM [=[            logger_log(raop->logger, LOGGER_ERR, "Client Authentication Failure (client proof not validated)");
+]=])
+set(RH_P3_TO [=[            logger_log(raop->logger, LOGGER_ERR, "Client Authentication Failure (client proof not validated)");
+            if (raop->pin < 10000 && wsc_pin_failed() && raop->callbacks.display_pin) { /* WSC patch */
+                raop->callbacks.display_pin(raop->callbacks.cls, "");
+            }
+]=])
+wsc_patch_rh(RH_P3_FROM RH_P3_TO)
+# 4. 配对成功：作废 PIN 并收起屏幕上的 PIN
+set(RH_P4_FROM [=[            logger_log(raop->logger, LOGGER_DEBUG, "pair-pin-setup success\n");
+]=])
+set(RH_P4_TO [=[            logger_log(raop->logger, LOGGER_INFO, "pair-pin-setup success");
+            if (raop->pin < 10000) { /* WSC patch */
+                wsc_pin_reset();
+                if (raop->callbacks.display_pin) raop->callbacks.display_pin(raop->callbacks.cls, "");
+            }
+]=])
+wsc_patch_rh(RH_P4_FROM RH_P4_TO)
+string(FIND "${RAOP_SRC}" "#include \"raop_handlers.h\"" RAOP_POS)
+if(RAOP_POS EQUAL -1)
+    message(FATAL_ERROR "UxPlay raop.c include anchor not found; review protocol-impl/airplay/src/main/cpp/CMakeLists.txt")
+endif()
+string(REPLACE "#include \"raop_handlers.h\"" "#include \"wsc_pin_guard.h\"\n#include \"raop_handlers.h\"" RAOP_SRC "${RAOP_SRC}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/uxplay_patched/raop_handlers.h "${RH_SRC}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/uxplay_patched/raop.c "${RAOP_SRC}")
+list(REMOVE_ITEM UX_SRC ${UXPLAY_LIB}/raop.c)
+list(APPEND UX_SRC ${CMAKE_CURRENT_BINARY_DIR}/uxplay_patched/raop.c)
+
+add_library(airplay STATIC ${UX_SRC} bridge/android_dnssd.c bridge/wsc_pin_guard.c)
 target_include_directories(airplay PUBLIC ${UXPLAY_LIB} ${UXPLAY_LIB}/llhttp ${UXPLAY_LIB}/playfair bridge)
 # 与上游 lib/CMakeLists.txt 的 Linux 配置一致；libplist ≥2.3 → PLIST_210 / PLIST_230
 target_compile_definitions(airplay PUBLIC

@@ -137,6 +137,14 @@ class ReceiverController @Inject constructor(
     private val _session = MutableStateFlow<MirrorSession?>(null)
     val session: StateFlow<MirrorSession?> = _session.asStateFlow()
 
+    private val _controlNotices = kotlinx.coroutines.flow.MutableSharedFlow<ControlNotice>(extraBufferCapacity = 4)
+
+    /** 反向控制提示（交互稿 R08，底部 4 秒）。 */
+    val controlNotices: kotlinx.coroutines.flow.SharedFlow<ControlNotice> = _controlNotices
+
+    /** 当前 WSC 镜像会话的反向控制客户端（DLNA / 兼容 Apple 设备会话没有）。界面线程直接调用，内部加锁。 */
+    internal val control: ReceiverControlClient? get() = active?.control
+
     val confirmRequest: StateFlow<ConfirmRequest?> = consent.current
 
     /** DLNA 推送播放（F09）。 */
@@ -509,6 +517,7 @@ class ReceiverController @Inject constructor(
         var consentRequestId: Long? = null
         var replacing = false
         var helloDone = false
+        var peerCaps: List<String> = emptyList()
 
         suspend fun run() {
             sm.onEvent(SessionEvent.TransportOpened)
@@ -585,6 +594,7 @@ class ReceiverController @Inject constructor(
             }
             sid = msg.sessionId ?: Ids.newSessionId()
             peerId = h.deviceId
+            if (!h.resume) peerCaps = h.caps
             peerName = h.name.ifBlank { h.model.ifBlank { ip } }
             val name = settings.current().deviceName
             if (h.resume) {
@@ -607,7 +617,8 @@ class ReceiverController @Inject constructor(
             send(
                 Hello(
                     WscProtocol.VERSION, me.deviceId, name, Build.MODEL.orEmpty(), "receiver",
-                    caps = listOf(WscProtocol.Caps.H264, WscProtocol.Caps.OPUS),
+                    // ctl：本机能发起反向控制请求（PROTOCOL.md 第 6 节）
+                    caps = listOf(WscProtocol.Caps.H264, WscProtocol.Caps.OPUS, WscProtocol.Caps.CTL),
                     trusted = wasTrusted, confirmRequired = confirm,
                 ),
             )
@@ -797,6 +808,7 @@ class ReceiverController @Inject constructor(
         val gradeTracker = LatencyGradeTracker()
         val history = ArrayDeque<Int>()
         lateinit var rtc: ReceiverRtcSession
+        lateinit var control: ReceiverControlClient
     }
 
     private fun startActive(inbound: Inbound): Active {
@@ -806,10 +818,17 @@ class ReceiverController @Inject constructor(
         if (appleBusy()) airPlay.ifPresent { it.disconnect() }
         val rtc = ReceiverRtcSession(context, rtcEngine, rtcListener(a))
         a.rtc = rtc
+        a.control = ReceiverControlClient(
+            rtc,
+            peerSupportsControl = WscProtocol.Caps.CTL in inbound.peerCaps,
+            isTv = com.benchan.wireless.screencasting.core.ui.util.DeviceKind.isTv(context),
+            onState = { st -> _session.update { s -> if (s?.sessionId == a.sid) s.copy(control = st) else s } },
+            onNotice = { n -> _controlNotices.tryEmit(n) },
+        )
         active = a
         rtc.start()
         renderers.forEach(rtc::attachRenderer)
-        _session.value = MirrorSession(a.sid, a.peerName, a.peerAddress, a.startedAt)
+        _session.value = MirrorSession(a.sid, a.peerName, a.peerAddress, a.startedAt, control = ReceiverControl(supported = WscProtocol.Caps.CTL in inbound.peerCaps))
         ReceiverService.start(context, a.peerName)
         alertIfBackground(a.peerName)
         // 没有可见的播放界面时不在后台只放声音：先用通知拉起界面，约 10 秒内仍没有挂上画面就结束（P1）
@@ -864,7 +883,20 @@ class ReceiverController @Inject constructor(
             scope.launch { onRtcStats(a, stats, senderStats) }
         }
 
+        override fun onInputMessage(message: com.benchan.wireless.screencasting.core.protocol.control.InputMessage) {
+            if (active === a) a.control.onInput(message)
+        }
+
+        override fun onFrameSize(width: Int, height: Int) {
+            if (active === a) a.control.onFrameSize(width, height)
+        }
+
         override fun onDataChannelMessage(message: DcMessage) {
+            // 反向控制状态 / 几何：直接交给控制客户端（内部加锁）
+            if (message is DcMessage.CtlState || message is DcMessage.Geometry) {
+                if (active === a) a.control.onDataChannel(message)
+                return
+            }
             scope.launch {
                 when (message) {
                     is DcMessage.AppSwitched -> _session.update { it?.copy(appVisible = message.visible) }
@@ -906,6 +938,7 @@ class ReceiverController @Inject constructor(
         // 不加保护时第一个挂起点（关闭 RTC）就会抛 CancellationException，后续清理全部被跳过
         withContext(NonCancellable) {
             active = null
+            a.control.close()
             a.reconnectTimer?.cancel()
             a.displayWatchdog?.cancel()
             if (bye != null) a.inbound.send(Bye(bye))

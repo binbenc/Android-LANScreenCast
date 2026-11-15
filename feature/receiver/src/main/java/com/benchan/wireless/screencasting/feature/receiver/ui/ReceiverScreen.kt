@@ -107,7 +107,17 @@ fun ReceiverScreen(
             apple is AppleCompatState.Active ->
                 AppleCompatPlayback((apple as AppleCompatState.Active).session, viewModel.appleVideoPlayer, viewModel::setAppleSurface, viewModel::disconnectApple, viewModel::setVideoDisplay)
             dlna != null -> DlnaPlaybackScreen(dlna!!, viewModel.dlnaPlayer, viewModel::stopDlna, viewModel::setVideoDisplay)
-            s != null -> PlaybackScreen(s, viewModel.eglContext, viewModel::attach, viewModel::detach, viewModel::disconnect)
+            s != null -> {
+                val tvMode by viewModel.tvControlMode.collectAsStateWithLifecycle()
+                val tvHintShown by viewModel.tvControlHintShown.collectAsStateWithLifecycle()
+                val pinchHintShown by viewModel.pinchHintShown.collectAsStateWithLifecycle()
+                PlaybackScreen(
+                    s, viewModel.eglContext, viewModel::attach, viewModel::detach, viewModel::disconnect, viewModel.control, viewModel.controlNotices,
+                    tvMode = tvMode, onTvMode = { viewModel.setTvControlMode(it) },
+                    tvHintShown = tvHintShown, onTvHintShown = { viewModel.markTvControlHintShown() },
+                    pinchHintShown = pinchHintShown, onPinchHintShown = { viewModel.markPinchHintShown() },
+                )
+            }
             saver -> ScreenSaver(standby)
             else -> StandbyScreen(standby, onOpenSettings, onEnableAppleCompat, appleFailure = (apple as? AppleCompatState.Failed)?.reason)
         }

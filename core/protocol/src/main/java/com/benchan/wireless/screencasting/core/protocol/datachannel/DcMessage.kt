@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.core.protocol.datachannel
 
+import com.benchan.wireless.screencasting.core.protocol.control.ControlPhase
+import com.benchan.wireless.screencasting.core.protocol.control.ControlReason
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -18,8 +20,9 @@ enum class AudioState {
 }
 
 /**
- * WebRTC DataChannel 消息（PRD 8.3.1）：STATS / SET_QUALITY / APP_SWITCHED，以及 MVP 用到的若干状态提示。
- * JSON 以 "t" 作类型判别字段。
+ * WebRTC DataChannel `wsc` 上的消息（PRD 8.3.1、PROTOCOL.md 4.1）：STATS / SET_QUALITY / APP_SWITCHED、MVP 用到的若干状态提示，
+ * 以及反向控制的低频握手（CTL_REQ / CTL_STATE / CTL_END / GEOM）。JSON 以 "t" 作类型判别字段。
+ * DataChannel 上未知的 t 一律忽略（[decodeOrNull] 返回 null），与信令通道不同。
  */
 @Serializable
 sealed interface DcMessage {
@@ -69,6 +72,53 @@ sealed interface DcMessage {
     @Serializable
     @SerialName("AUDIO")
     data class Audio(val state: AudioState) : DcMessage
+
+    // —— 反向控制（PRD F23，PROTOCOL.md 4.1 / 第 6 节）——
+
+    /** 收→发：请求控制。[rid] 是接收端的请求号，[want] 是期望的能力（见 ControlFeatures）。 */
+    @Serializable
+    @SerialName("CTL_REQ")
+    data class CtlRequest(val rid: Int, val want: List<String> = emptyList()) : DcMessage
+
+    /**
+     * 发→收：幂等的完整控制状态（DataChannel 打开时、任何变化时都发送）。
+     *
+     * @property rid 对应的请求号（没有请求时省略）。
+     * @property reason 进入当前状态的原因：UNAVAILABLE / IDLE 时是不可用或结束的原因，PAUSED 时是暂停原因。
+     * @property feat 发送端当前能执行的能力。
+     * @property g 发送端当前几何代号（与 GEOM 一致）。
+     * @property remainMs PENDING：确认剩余毫秒（接收端倒计时与发送端同步）；IDLE / UNAVAILABLE：距离可以再次请求的毫秒数（冷却）。
+     * @property guide UNAVAILABLE + SERVICE_OFF 时：发送端是否已显示无障碍开启步骤（通知被关闭时为 false，接收端换提示文案）。
+     */
+    @Serializable
+    @SerialName("CTL_STATE")
+    data class CtlState(
+        val state: ControlPhase,
+        val rid: Int? = null,
+        val reason: ControlReason? = null,
+        val feat: List<String> = emptyList(),
+        val g: Int? = null,
+        val remainMs: Long? = null,
+        val guide: Boolean? = null,
+    ) : DcMessage
+
+    /** 双向：结束控制 / 取消请求（接收端退出控制、取消请求；发送端收回）。 */
+    @Serializable
+    @SerialName("CTL_END")
+    data class CtlEnd(val reason: ControlReason = ControlReason.RECEIVER_END) : DcMessage
+
+    /**
+     * 发→收：采集几何（PROTOCOL.md 6.3）。每次采集尺寸 / 旋转 / 被共享内容尺寸变化时 [g] 加一。
+     *
+     * @property cw 采集帧宽（= 编码前的帧尺寸，16 对齐）。
+     * @property ch 采集帧高。
+     * @property sw 被采集内容的宽（全屏 = 屏幕逻辑像素宽）。
+     * @property sh 被采集内容的高。
+     * @property mode FULL = 整个屏幕；APP = 单应用共享（Android 14+）。
+     */
+    @Serializable
+    @SerialName("GEOM")
+    data class Geometry(val g: Int, val cw: Int, val ch: Int, val sw: Int, val sh: Int, val mode: String? = null) : DcMessage
 
     companion object {
         val json: Json = Json {

@@ -35,4 +35,6 @@ data class SessionRecord(
     val codec: String? = null,
     val androidVersion: String = "",
     val deviceModel: String = "",
+    /** 反向控制（F23，用户决策 D8）：本次投屏被控制的累计时长（毫秒，含暂停）；只存本地，不记坐标与内容。 */
+    val controlledMs: Long? = null,
 )

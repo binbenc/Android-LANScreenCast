@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -154,7 +155,7 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
                 ) {
                     if (info.qrContent != null) {
                         QrCode(info.qrContent, Modifier.size(200.dp), description = "扫码连接二维码")
-                        Text("扫码连接 · 免输入 PIN", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        Text("扫码连接 · 免输入 PIN", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
                     }
                     val code = info.castCode
                     if (code != null) {
@@ -170,7 +171,8 @@ internal fun StandbyScreen(info: StandbyInfo, onOpenSettings: () -> Unit, onEnab
                         info.castCodeUnavailableReason?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant) }
                     }
                     if (info.ip != null) {
-                        Text("${info.ip} : ${info.port ?: "—"}", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        // IP / 端口是需要抄写的凭据：onSurface + bodyMedium（TV 16sp），不按次要文字处理
+                        Text("${info.ip} : ${info.port ?: "—"}", style = MaterialTheme.typography.bodyMedium, color = c.onSurface)
                     }
                 }
             }
@@ -198,9 +200,9 @@ private fun Step(n: Int, text: String) {
     val c = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(28.dp).background(c.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
-            Text("$n", style = MaterialTheme.typography.labelLarge, color = c.onPrimaryContainer)
+            Text("$n", style = MaterialTheme.typography.labelLarge, color = c.onPrimaryContainer, fontWeight = FontWeight.SemiBold)
         }
-        Text(text, style = MaterialTheme.typography.bodyLarge)
+        Text(text, style = MaterialTheme.typography.bodyLarge, color = c.onSurface)
     }
 }
 

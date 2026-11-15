@@ -13,6 +13,8 @@ data class ReportSummary(
     val p95LatencyMs: Int?,
     val histogram: List<Int>,
     val topDevices: List<DeviceUsage>,
+    /** 最近被反向控制的投屏（新 → 旧，最多 5 条）：“本次被××控制 mm:ss”。 */
+    val recentControl: List<ControlUsage> = emptyList(),
 ) {
     val successRatePercent: Int? get() = if (total == 0) null else (succeeded * 100 + total / 2) / total
 
@@ -38,7 +40,19 @@ data class ReportSummary(
                 p95LatencyMs = SessionStatsAccumulator.percentileOf(hist, 0.95),
                 histogram = hist,
                 topDevices = devices,
+                recentControl = list.filter { (it.controlledMs ?: 0) > 0 }.sortedByDescending { it.endedAt }.take(5)
+                    .map { ControlUsage(it.peerName, it.controlledMs ?: 0, it.endedAt) },
             )
         }
     }
+}
+
+/** 一次被反向控制的投屏（本机报告，用户决策 D8）。 */
+data class ControlUsage(val peerName: String, val controlledMs: Long, val endedAt: Long) {
+    /** “mm:ss”（超过 1 小时为“h:mm:ss”）。 */
+    val durationLabel: String
+        get() {
+            val t = controlledMs / 1_000
+            return if (t >= 3_600) "%d:%02d:%02d".format(t / 3_600, t / 60 % 60, t % 60) else "%02d:%02d".format(t / 60, t % 60)
+        }
 }
