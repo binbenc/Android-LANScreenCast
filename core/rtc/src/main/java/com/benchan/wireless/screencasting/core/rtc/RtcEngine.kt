@@ -2,6 +2,7 @@ package com.benchan.wireless.screencasting.core.rtc
 
 import android.content.Context
 import com.benchan.wireless.screencasting.core.common.WscLog
+import com.benchan.wireless.screencasting.core.protocol.quality.ReceiverTuning
 import com.benchan.wireless.screencasting.core.rtc.stats.StatEntry
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.webrtc.EglBase
@@ -88,10 +89,17 @@ object RtcConfig {
     }
 
     /**
-     * 接收端低延迟字段试验（技术方案 3.4）：min_ms=0 且 max_ms>0 启用低延迟渲染路径。
-     * TODO(M0-T4): 扫参 0/50/100/150 校准，并验证该字段试验在 150 里程碑仍生效（统计里 jitterBufferDelay 下降）。
+     * 接收端低延迟字段试验（技术方案 3.4）：min_ms=0 且 max_ms>0 启用低延迟渲染路径；min=max=0 为“零播放延迟”（游戏档）。
+     * 通过 PeerConnectionFactory.Builder.setFieldTrials 按工厂设置（每个接收会话 / 每次媒体重建各自一个工厂）。
+     * 取值集中在 [ReceiverTuning]。TODO(M0-T4): 验证该字段试验在 150 里程碑按工厂生效（统计里 jitterBufferDelay 下降）。
      */
     fun receiverFieldTrials(maxPlayoutDelayMs: Int): String = "WebRTC-ForcePlayoutDelay/min_ms:0,max_ms:$maxPlayoutDelayMs/"
+
+    /** 接收端 RTCConfiguration：在 [hostOnly] 基础上按档位调整音频抖动缓冲（F18）。 */
+    fun receiver(tuning: ReceiverTuning): PeerConnection.RTCConfiguration = hostOnly().apply {
+        audioJitterBufferFastAccelerate = tuning.audioFastAccelerate
+        tuning.audioJitterMaxPackets?.let { audioJitterBufferMaxPackets = it }
+    }
 
     /** 关闭软件音频处理（内录不需要 AEC/NS/AGC，技术方案 3.3）。新版本是否仍识别这些 constraints 待 M0 验证。 */
     fun noAudioProcessing(): MediaConstraints = MediaConstraints().apply {

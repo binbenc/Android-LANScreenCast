@@ -47,6 +47,10 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="wsc" />
             </intent-filter>
+            <!-- F14 Direct Share 分享目标（feature/sender res/xml/shortcuts.xml） -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- 导出本地日志（F25）：只共享 cache/exports 下用户预览过的文件 -->

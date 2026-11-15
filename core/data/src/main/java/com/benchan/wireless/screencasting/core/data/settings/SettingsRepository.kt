@@ -44,6 +44,15 @@ class SettingsRepository @Inject constructor(
         val remoteAutoDisable = booleanPreferencesKey("remote_control_auto_disable")
         val remoteAutoDisabled = booleanPreferencesKey("remote_control_auto_disabled")
         val pinchHint = booleanPreferencesKey("pinch_hint_shown")
+        val directShare = booleanPreferencesKey("direct_share")
+        val shareIntro = booleanPreferencesKey("share_intro_dismissed")
+        val elder = booleanPreferencesKey("elder_mode")
+        val elderTargets = stringPreferencesKey("elder_targets")
+        val elderRecommend = booleanPreferencesKey("elder_recommend_dismissed")
+        val elderExitNotice = booleanPreferencesKey("elder_exit_notice")
+        val elderPrevQuality = stringPreferencesKey("elder_prev_quality")
+        val elderPrevAuto = booleanPreferencesKey("elder_prev_auto_adjust")
+        val elderPrevSkipIntro = booleanPreferencesKey("elder_prev_skip_intro")
     }
 
     /** 默认设备名 = 机型名（PRD 8.6）。 */
@@ -71,6 +80,12 @@ class SettingsRepository @Inject constructor(
             remoteControlAutoDisable = p[Keys.remoteAutoDisable] ?: false,
             remoteControlAutoDisabled = p[Keys.remoteAutoDisabled] ?: false,
             pinchHintShown = p[Keys.pinchHint] ?: false,
+            directShareEnabled = p[Keys.directShare] ?: true,
+            shareIntroDismissed = p[Keys.shareIntro] ?: false,
+            elderModeEnabled = p[Keys.elder] ?: false,
+            elderTargets = ElderTarget.decode(p[Keys.elderTargets]),
+            elderRecommendDismissed = p[Keys.elderRecommend] ?: false,
+            elderExitNotice = p[Keys.elderExitNotice] ?: false,
         )
     }
 
@@ -97,6 +112,45 @@ class SettingsRepository @Inject constructor(
     suspend fun setRemoteControlAutoDisable(enabled: Boolean) = edit { it[Keys.remoteAutoDisable] = enabled }
     suspend fun setRemoteControlAutoDisabled(disabled: Boolean) = edit { it[Keys.remoteAutoDisabled] = disabled }
     suspend fun setPinchHintShown() = edit { it[Keys.pinchHint] = true }
+    suspend fun setDirectShareEnabled(enabled: Boolean) = edit { it[Keys.directShare] = enabled }
+    suspend fun setShareIntroDismissed() = edit { it[Keys.shareIntro] = true }
+    suspend fun setElderRecommendDismissed() = edit { it[Keys.elderRecommend] = true }
+    suspend fun setElderExitNoticeShown() = edit { it[Keys.elderExitNotice] = false }
+
+    /** 只改家人固定的电视（长辈设置页“换电视 / 改叫法”）。 */
+    suspend fun setElderTargets(targets: List<ElderTarget>) = edit {
+        it[Keys.elderTargets] = ElderTarget.encode(targets.take(ElderTarget.MAX_TARGETS))
+    }
+
+    /**
+     * 开启长辈模式（PRD 8.1.4 B/D）：保存家人固定的电视；画质固定“均衡”+ 自动调节开、录屏前普通说明卡跳过
+     * （长辈页面自己每次显示 E05 预演）。原来的这三项记下来，退出时恢复。
+     */
+    suspend fun enableElderMode(targets: List<ElderTarget>) = edit {
+        if (it[Keys.elder] != true) {
+            it[Keys.elderPrevQuality] = it[Keys.quality] ?: QualityProfile.DEFAULT.name
+            it[Keys.elderPrevAuto] = it[Keys.autoAdjust] ?: true
+            it[Keys.elderPrevSkipIntro] = it[Keys.skipIntro] ?: false
+        }
+        it[Keys.elder] = true
+        it[Keys.elderTargets] = ElderTarget.encode(targets.take(ElderTarget.MAX_TARGETS))
+        it[Keys.quality] = QualityProfile.BALANCED.name
+        it[Keys.autoAdjust] = true
+        it[Keys.skipIntro] = true
+        it[Keys.elderExitNotice] = false
+        // 已经开启过：设备列表的推荐卡不再出现
+        it[Keys.elderRecommend] = true
+    }
+
+    /** 退出长辈模式：恢复开启前的画质 / 自动调节 / 说明卡设置；家人设置的电视与叫法保留（交互稿 E11）。 */
+    suspend fun disableElderMode() = edit {
+        if (it[Keys.elder] != true) return@edit
+        it[Keys.elder] = false
+        it[Keys.elderPrevQuality]?.let { q -> it[Keys.quality] = q }
+        it[Keys.elderPrevAuto]?.let { a -> it[Keys.autoAdjust] = a }
+        it[Keys.elderPrevSkipIntro]?.let { k -> it[Keys.skipIntro] = k }
+        it[Keys.elderExitNotice] = true
+    }
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.settingsStore.edit { block(it) }

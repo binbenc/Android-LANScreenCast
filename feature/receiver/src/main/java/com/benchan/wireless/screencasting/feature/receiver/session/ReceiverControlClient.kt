@@ -426,6 +426,7 @@ internal class ReceiverControlClient(
                             else -> ControlNotice.ServiceOff
                         }
                         ControlReason.AAPM -> ControlNotice.AdvancedProtection
+                        ControlReason.ELDER_MODE -> if (prev.controlling) ControlNotice.Revoked else ControlNotice.ElderMode
                         else -> if (prev.controlling) ControlNotice.Revoked else ControlNotice.NotEnabled
                     }
                 }

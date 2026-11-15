@@ -21,6 +21,10 @@ data class ReportSummary(
     val pushTotal: Int = 0,
     val pushSucceeded: Int = 0,
     val pushFirstPlayP50Ms: Long? = null,
+    /** 游戏模式延迟中位数（F18，与其他档位分开，交互稿 G06 报告行）。 */
+    val gameLatencyP50Ms: Int? = null,
+    /** 游戏模式累计时长（毫秒）。 */
+    val gameDurationMs: Long = 0,
 ) {
     val pushSuccessRatePercent: Int? get() = if (pushTotal == 0) null else (pushSucceeded * 100 + pushTotal / 2) / pushTotal
 
@@ -30,12 +34,19 @@ data class ReportSummary(
         fun from(records: List<SessionRecord>, sinceMillis: Long? = null): ReportSummary {
             val list = if (sinceMillis == null) records else records.filter { it.startedAt >= sinceMillis }
             val pushes = list.filter { it.protocol == CastProtocol.DLNA_PUSH }
+            // 镜像延迟按档位分开（PRD 8.1.3 I）：总体指标扣除游戏模式期间的样本，游戏模式单列
             val merged = IntArray(SessionStatsAccumulator.BUCKETS)
-            list.forEach { r -> r.latencyHistogram.forEachIndexed { i, c -> if (i < merged.size) merged[i] += c } }
+            list.forEach { r ->
+                val g = r.game?.latencyHistogram.orEmpty()
+                r.latencyHistogram.forEachIndexed { i, c -> if (i < merged.size) merged[i] += (c - (g.getOrNull(i) ?: 0)).coerceAtLeast(0) }
+            }
             val hist = merged.toList()
             val samples = hist.sum()
             val avg = if (samples == 0) null else
                 (hist.mapIndexed { i, c -> (i * SessionStatsAccumulator.BUCKET_MS + SessionStatsAccumulator.BUCKET_MS / 2).toLong() * c }.sum() / samples).toInt()
+            val games = list.mapNotNull { it.game }
+            val gameHist = IntArray(SessionStatsAccumulator.BUCKETS)
+            games.forEach { g -> g.latencyHistogram.forEachIndexed { i, c -> if (i < gameHist.size) gameHist[i] += c } }
             val devices = list.groupBy { it.peerName }.map { (name, rs) ->
                 val lat = rs.mapNotNull { it.latencyP50Ms }
                 DeviceUsage(name, rs.size, if (lat.isEmpty()) null else lat.average().toInt())
@@ -55,6 +66,8 @@ data class ReportSummary(
                 pushTotal = pushes.size,
                 pushSucceeded = pushes.count { it.success },
                 pushFirstPlayP50Ms = pushes.mapNotNull { it.firstFrameMs }.sorted().let { if (it.isEmpty()) null else it[(it.size - 1) / 2] },
+                gameLatencyP50Ms = SessionStatsAccumulator.percentileOf(gameHist.toList(), 0.5),
+                gameDurationMs = games.sumOf { it.durationMs },
             )
         }
     }

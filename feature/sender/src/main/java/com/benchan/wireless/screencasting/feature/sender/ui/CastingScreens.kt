@@ -36,7 +36,6 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.LockClock
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shield
-import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.VideocamOff
@@ -52,9 +51,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -215,10 +211,13 @@ internal fun CastingScreen(
     control: ControlUi = ControlUi(),
     onRevokeControl: () -> Unit = {},
     onContinueControl: () -> Unit = {},
+    game: GameActions = GameActions(),
 ) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
     val elapsed = rememberElapsed(state.startedAt)
+    // F18：点下即进入的切换态，胶囊与分段按钮共用（GameModeUi.kt）
+    val qualitySwitch = rememberQualitySwitchUi(state)
     // 内容可滚动、“停止投屏”固定在页脚，任何字号 / 横屏下都在首屏（C10）
     Column(Modifier.fillMaxSize().systemBarsPadding()) {
     Column(
@@ -241,12 +240,17 @@ internal fun CastingScreen(
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(elapsed, style = DisplayNumber, modifier = Modifier.semantics { contentDescription = "已投屏 $elapsed" })
             val s = state.stats
+            // F18 切换中：延迟段换成“切换中 均衡 → 游戏”，码率 / 分辨率段隐藏（交互稿 G02）
+            val switchLabel = qualitySwitch.switching?.let { to -> "${(qualitySwitch.from ?: to).label} → ${to.label}" }
+            // ≥150% 字号胶囊只留延迟段（交互稿 07 / 15，UX 走查 P1-2）
+            val compact = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.5f
             StatusCapsule(
                 latencyMs = s.latencyMs,
                 grade = s.grade,
                 // 被控制中隐藏码率与分辨率段，给“被控制中”让出空间（UX 走查 G7）
-                bitrateKbps = s.bitrateKbps.takeIf { it > 0 && !control.controlled },
-                resolutionLabel = if (s.height > 0 && !control.controlled) "${minOf(s.width, s.height)}p${s.fps}" else null,
+                bitrateKbps = s.bitrateKbps.takeIf { it > 0 && !control.controlled && switchLabel == null && !compact },
+                resolutionLabel = if (s.height > 0 && !control.controlled && switchLabel == null && !compact) "${minOf(s.width, s.height)}p${s.fps}" else null,
+                switchingLabel = switchLabel,
                 noAudio = state.audio == AudioState.NO_PERMISSION || state.audio == AudioState.OFF,
                 controlled = control.controlled,
             )
@@ -274,29 +278,9 @@ internal fun CastingScreen(
                 IconButton(onClick = onDismissNotificationTip) { Icon(Icons.Rounded.Close, "关闭提示", tint = c.onSecondaryContainer) }
             }
         }
-        Text("画质", style = MaterialTheme.typography.titleSmall, color = c.primary)
-        val profiles = listOf(QualityProfile.SMOOTH, QualityProfile.BALANCED, QualityProfile.HD, QualityProfile.GAME)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            profiles.forEachIndexed { i, p ->
-                SegmentedButton(
-                    selected = state.profile == p,
-                    onClick = { onQuality(p) },
-                    shape = SegmentedButtonDefaults.itemShape(i, profiles.size),
-                    icon = { if (p == QualityProfile.GAME) Icon(Icons.Rounded.SportsEsports, null, Modifier.size(16.dp)) else SegmentedButtonDefaults.Icon(state.profile == p) },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                ) { Text(p.label) }
-            }
-        }
-        Text(
-            state.profile.summary + when (state.profile) {
-                QualityProfile.SMOOTH -> "，网络一般时更稳定"
-                QualityProfile.BALANCED -> "，适合日常镜像"
-                QualityProfile.HD -> "，需要较好的 5GHz 网络"
-                QualityProfile.GAME -> "，延迟优先（声音可能略晚于画面）"
-            },
-            style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
-        )
-        SwitchRow("自动调节", "网络变差时自动降为“流畅”", state.autoAdjust, onAutoAdjust)
+        // F18 画质分段 + 切换中 + 档位说明 + 提示位 + G01（交互稿 15，GameModeUi.kt）
+        QualitySection(state, onQuality, game, qualitySwitch)
+        SwitchRow("自动调节", SenderCopy.autoAdjustDetail(state.profile), state.autoAdjust, onAutoAdjust)
         SwitchRow(
             "声音",
             if (state.audio == AudioState.NO_PERMISSION) SenderCopy.AUDIO_NO_PERMISSION else "在电视上播放手机的声音",

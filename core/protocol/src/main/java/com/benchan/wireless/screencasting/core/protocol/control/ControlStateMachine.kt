@@ -79,7 +79,7 @@ class ControlStateMachine(
         }
     }
 
-    /** 可用性变化：null = 可用；否则为不可用原因（SETTING_OFF / SERVICE_OFF / AAPM）。不可用时结束已有的请求或授权。 */
+    /** 可用性变化：null = 可用；否则为不可用原因（SETTING_OFF / SERVICE_OFF / AAPM / ELDER_MODE）。不可用时结束已有的请求或授权。 */
     fun setAvailability(reason: ControlReason?): ControlTransition = mutate {
         availability = reason
         if (reason != null && core != Core.Idle) {

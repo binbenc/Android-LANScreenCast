@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  F14 Direct Share（PRD 8.1.2 H，决策 #34）：动态快捷方式由 DirectShareShortcuts 按“最近推送成功的电视”登记，
+  这里只声明分享目标与分类。电视匹配视频 / 照片 / 音乐 / 文字；音箱只匹配音乐。
+  由 app 模块 MainActivity 的 android.app.shortcuts meta-data 引用。
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <share-target android:targetClass="com.benchan.wireless.screencasting.feature.sender.share.ShareActivity">
+        <data android:mimeType="video/*" />
+        <data android:mimeType="image/*" />
+        <data android:mimeType="audio/*" />
+        <data android:mimeType="text/plain" />
+        <category android:name="com.benchan.wireless.screencasting.category.SHARE_TO_TV" />
+    </share-target>
+    <share-target android:targetClass="com.benchan.wireless.screencasting.feature.sender.share.ShareActivity">
+        <data android:mimeType="audio/*" />
+        <category android:name="com.benchan.wireless.screencasting.category.SHARE_TO_SPEAKER" />
+    </share-target>
+</shortcuts>

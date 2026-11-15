@@ -129,7 +129,19 @@ class DmcController @Inject constructor(
         val failedItems = HashSet<Int>()
         var skipped: PushSkipNotice? = null
         var photoSlow = false
+        var succeeded = false
     }
+
+    /**
+     * F14：分享进来的文件在推送开始时可能还在复制到缓存（第 1 项准备好就开始，其余边放边准备，交互稿 Q15-B）。
+     * 设置后，每个本地项在准备前先等它就绪；返回 false = 这一项读取 / 复制失败。
+     */
+    fun interface PushInputGate {
+        suspend fun await(uri: Uri): Boolean
+    }
+
+    @Volatile
+    var inputGate: PushInputGate? = null
 
     /** 遥控页是否在前台（结束时决定是否发“推送已结束”通知）。 */
     @Volatile
@@ -190,7 +202,7 @@ class DmcController @Inject constructor(
         val session = Session(id, target, server, engine, localIp, source, dir)
         session.resumeAt = resumePositionMs
         s = session
-        renderers.recordUse(target.udn, target.name, target.description.manufacturer, target.description.modelName, target.description.location)
+        renderers.recordUse(target.udn, target.name, target.description.manufacturer, target.description.modelName, target.description.location, wscId = target.description.wscId)
         setInputs(session, inputs)
         session.totalItems = inputs.size
         observe(session)
@@ -391,6 +403,12 @@ class DmcController @Inject constructor(
         when (e) {
             is PushEvent.Loaded -> {
                 val item = session.items.getOrNull(e.index)
+                if (!session.succeeded) {
+                    // 第一次成功开始播放：记下时间（F14 Direct Share 只放推送成功过的设备，PRD 8.1.2 H）
+                    session.succeeded = true
+                    val http = session.target.sink?.filter { it.isHttpGet }.orEmpty()
+                    renderers.recordSuccess(session.target.udn, audioOnly = http.isNotEmpty() && http.all { it.contentFormat.startsWith("audio/") })
+                }
                 // 用户选了“直接尝试原文件”且成功：这台电视同类格式以后不再提议（PRD F2）
                 if (item?.kind == MediaKind.VIDEO && !item.remote && e.index in session.originalChosen) {
                     session.probes[e.index]?.let { renderers.recordFormat(session.target.udn, it.format.key, ok = true) }
@@ -459,6 +477,7 @@ class DmcController @Inject constructor(
             )
         }
         val uri = (input as PushInput.Local).uri
+        inputGate?.let { gate -> if (!gate.await(uri)) return PrepareResult.Failed(PushError.FILE_UNREADABLE) }
         return when (item.kind) {
             MediaKind.IMAGE -> preparePhoto(session, index, uri)
             MediaKind.AUDIO -> prepareOriginal(session, index, uri, item.mime ?: "audio/mpeg", MediaKind.AUDIO, probe = null)

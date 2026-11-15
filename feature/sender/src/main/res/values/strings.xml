@@ -4,7 +4,10 @@
     <string name="sender_channel_desc">投屏进行中时显示延迟、码率和停止按钮</string>
     <string name="sender_notif_title">局域投屏</string>
     <string name="sender_notif_casting_to">正在投屏到 %1$s</string>
-    <string name="sender_notif_latency">延迟 %1$d ms</string>
+    <string name="sender_notif_latency">延迟约 %1$d ms</string>
+    <string name="sender_notif_fps_capped">已降为 30 帧</string>
+    <string name="sender_notif_switching">正在切换画质…</string>
+    <string name="sender_notif_fps_capped_thermal">已降为 30 帧 · 手机温度较高</string>
     <string name="sender_notif_starting">正在建立连接…</string>
     <string name="sender_notif_reconnecting">正在重连…</string>
     <string name="sender_notif_reconnecting_detail">与 %1$s 的连接中断了一下，录屏没有停止</string>
@@ -41,4 +44,6 @@
     <string name="push_stop">停止</string>
     <string name="push_cancel">取消</string>
     <string name="push_keep_alive">继续</string>
+    <!-- F14：分享面板里的名称（不叫“投屏到电视”，免得用户以为会镜像，PRD 8.1.2 B） -->
+    <string name="share_label">推送到电视</string>
 </resources>

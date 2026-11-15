@@ -6,6 +6,7 @@ import com.benchan.wireless.screencasting.core.common.Base64Url
 import com.benchan.wireless.screencasting.core.common.Ids
 import com.benchan.wireless.screencasting.core.common.WscLog
 import com.benchan.wireless.screencasting.core.data.report.CastProtocol
+import com.benchan.wireless.screencasting.core.data.report.GameReport
 import com.benchan.wireless.screencasting.core.data.report.SessionRecord
 import com.benchan.wireless.screencasting.core.data.report.SessionReportStore
 import com.benchan.wireless.screencasting.core.data.report.SessionStatsAccumulator
@@ -43,6 +44,8 @@ import com.benchan.wireless.screencasting.core.protocol.pairing.QrNonceManager
 import com.benchan.wireless.screencasting.core.protocol.pairing.QrPayload
 import com.benchan.wireless.screencasting.core.protocol.pairing.QrProof
 import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGradeTracker
+import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
+import com.benchan.wireless.screencasting.core.protocol.quality.ReceiverTuning
 import com.benchan.wireless.screencasting.core.protocol.session.SessionEvent
 import com.benchan.wireless.screencasting.core.protocol.session.SessionState
 import com.benchan.wireless.screencasting.core.protocol.session.SessionStateMachine
@@ -617,8 +620,8 @@ class ReceiverController @Inject constructor(
             send(
                 Hello(
                     WscProtocol.VERSION, me.deviceId, name, Build.MODEL.orEmpty(), "receiver",
-                    // ctl：本机能发起反向控制请求（PROTOCOL.md 第 6 节）
-                    caps = listOf(WscProtocol.Caps.H264, WscProtocol.Caps.OPUS, WscProtocol.Caps.CTL),
+                    // ctl：本机能发起反向控制请求（PROTOCOL.md 第 6 节）；game：按档位调整接收链路、支持 OFFER.rebuild（4.3）
+                    caps = listOf(WscProtocol.Caps.H264, WscProtocol.Caps.OPUS, WscProtocol.Caps.CTL, WscProtocol.Caps.GAME),
                     trusted = wasTrusted, confirmRequired = confirm,
                 ),
             )
@@ -752,13 +755,17 @@ class ReceiverController @Inject constructor(
         private fun activeFor(): Active? = active?.takeIf { it.inbound === this }
 
         private suspend fun onOffer(o: Offer) {
-            var a = activeFor()
-            if (a == null) {
-                // 新会话：替换旧会话（已在确认弹窗中同意）
-                active?.let { endActive(it, ByeReason.REPLACED, notice = null) }
-                a = startActive(this)
+            val a = activeFor()
+            when {
+                a == null -> {
+                    // 新会话：替换旧会话（已在确认弹窗中同意）；按 OFFER 的档位一次到位地建立接收链路（F18）
+                    active?.let { endActive(it, ByeReason.REPLACED, notice = null) }
+                    val na = startActive(this, o.qualityProfile, senderSendsProfile = o.profile != null)
+                    na.rtc.onRemoteOffer(o.sdp, o.iceRestart)
+                }
+                o.rebuild -> rebuildMedia(a, o)
+                else -> a.rtc.onRemoteOffer(o.sdp, o.iceRestart)
             }
-            a.rtc.onRemoteOffer(o.sdp, o.iceRestart)
         }
 
         private suspend fun onBye(b: Bye) {
@@ -804,19 +811,52 @@ class ReceiverController @Inject constructor(
         var signalingLostAt = 0L
         var reconnectTimer: Job? = null
         var displayWatchdog: Job? = null
+        /** 发送端当前档位（null = 旧版发送端没告诉我们）。 */
+        var profile: QualityProfile? = null
+        /** F18：媒体重建开始时间（0 = 没有进行中的切换）。 */
+        var rebuildStartedAt = 0L
+        var rebuildWatchdog: Job? = null
+        /** 媒体中断（信令仍在）时的 30 秒窗口。 */
+        var mediaLossTimer: Job? = null
+        /** 发送端 OFFER 带 profile（F18 起的发送端）；旧版发送端为 false。 */
+        var senderSendsProfile = false
         val accumulator = SessionStatsAccumulator()
+        /** F18 报告：游戏模式期间的延迟、时长、切换（与其他档位分开，PRD 8.1.3 I）。 */
+        val gameAccumulator = SessionStatsAccumulator()
+        var gameSince = 0L
+        var gameDurationMs = 0L
+        var gameEnteredAtStart: Boolean? = null
+        var gameSwitches = 0
+        var maxRebuildPauseMs: Long? = null
+        var lowLatencyDecoder: Boolean? = null
+        var fpsCapped = false
+
+        /** 接收链路按游戏模式建立 / 取消时记账。 */
+        fun onGameMode(game: Boolean, atStart: Boolean) {
+            val now = System.currentTimeMillis()
+            if (game && gameSince == 0L) {
+                gameSince = now
+                if (gameEnteredAtStart == null) gameEnteredAtStart = atStart
+            } else if (!game && gameSince > 0L) {
+                gameDurationMs += now - gameSince
+                gameSince = 0L
+            }
+        }
         val gradeTracker = LatencyGradeTracker()
         val history = ArrayDeque<Int>()
         lateinit var rtc: ReceiverRtcSession
         lateinit var control: ReceiverControlClient
     }
 
-    private fun startActive(inbound: Inbound): Active {
+    private fun startActive(inbound: Inbound, profile: QualityProfile?, senderSendsProfile: Boolean): Active {
         val a = Active(inbound.sid!!, inbound.peerFp, inbound.peerName, inbound.ip, inbound)
+        a.profile = profile
+        a.senderSendsProfile = senderSendsProfile
         // R-09：同时只接一路；新的镜像会话（已确认替换）结束正在进行的 DLNA 播放
         if (dlna.playback.value != null) dlna.stopPlayback()
         if (appleBusy()) airPlay.ifPresent { it.disconnect() }
-        val rtc = ReceiverRtcSession(context, rtcEngine, rtcListener(a))
+        val rtc = ReceiverRtcSession(context, rtcEngine, rtcListener(a), ReceiverTuning.of(profile))
+        a.onGameMode(ReceiverTuning.of(profile) == ReceiverTuning.GAME, atStart = true)
         a.rtc = rtc
         a.control = ReceiverControlClient(
             rtc,
@@ -828,7 +868,12 @@ class ReceiverController @Inject constructor(
         active = a
         rtc.start()
         renderers.forEach(rtc::attachRenderer)
-        _session.value = MirrorSession(a.sid, a.peerName, a.peerAddress, a.startedAt, control = ReceiverControl(supported = WscProtocol.Caps.CTL in inbound.peerCaps))
+        _session.value = MirrorSession(
+            a.sid, a.peerName, a.peerAddress, a.startedAt,
+            control = ReceiverControl(supported = WscProtocol.Caps.CTL in inbound.peerCaps), profile = profile,
+            gameMode = ReceiverTuning.of(profile) == ReceiverTuning.GAME,
+            senderLegacy = !senderSendsProfile,
+        )
         ReceiverService.start(context, a.peerName)
         alertIfBackground(a.peerName)
         // 没有可见的播放界面时不在后台只放声音：先用通知拉起界面，约 10 秒内仍没有挂上画面就结束（P1）
@@ -841,6 +886,51 @@ class ReceiverController @Inject constructor(
         }
         WscLog.i(TAG, "mirror session ${a.sid} started from ${a.peerName}")
         return a
+    }
+
+    /**
+     * F18 会话中切换（PROTOCOL.md 4.3 `OFFER.rebuild`）：丢弃旧连接、按新档位重建接收链路。画面保留最后一帧；
+     * 档位真的变了才显示“正在切换…”（同档位的重建是发送端的恢复手段，不打扰用户）。旧连接的断开不计入断线。
+     */
+    private fun rebuildMedia(a: Active, o: Offer) {
+        val next = o.qualityProfile
+        val visible = a.firstFrameAt > 0L && (next != a.profile || ReceiverTuning.of(next) != a.rtc.tuning)
+        a.profile = next ?: a.profile
+        a.rebuildStartedAt = System.currentTimeMillis()
+        a.onGameMode(ReceiverTuning.of(next) == ReceiverTuning.GAME, atStart = false)
+        if (visible) a.gameSwitches++
+        _session.update { it?.copy(profile = a.profile, switching = visible, gameMode = ReceiverTuning.of(next) == ReceiverTuning.GAME) }
+        a.rtc.rebuild(ReceiverTuning.of(next), o.sdp)
+        a.rebuildWatchdog?.cancel()
+        a.rebuildWatchdog = scope.launch {
+            delay(REBUILD_OVERLAY_TIMEOUT_MS)
+            if (active !== a || a.rebuildStartedAt == 0L) return@launch
+            // 发送端 5 秒没收到 REBUILT 会自己回退（新的 OFFER{rebuild} 会重置本计时）。到这里说明还没有画面：
+            // 如实显示“正在重连”，并真正启动 30 秒窗口；之后只要再收到一帧就撤下（PM 走查 P0-1）。
+            // rebuildStartedAt 保留，新连接首帧到达时仍按“切换完成”处理并回 REBUILT
+            WscLog.w(TAG, "media rebuild produced no frame in ${REBUILD_OVERLAY_TIMEOUT_MS}ms")
+            _session.update { it?.copy(switching = false, reconnecting = a.firstFrameAt > 0L) }
+            if (a.firstFrameAt > 0L) startMediaLossWindow(a)
+        }
+        WscLog.i(TAG, "media rebuild requested, profile=${o.profile}")
+    }
+
+    /** 进入“正在重连”时真正启动 30 秒窗口（文案“最长等待 30 秒”），期间任何一帧画面都会撤下它。 */
+    private fun startMediaLossWindow(a: Active) {
+        a.rtc.notifyOnNextFrame()
+        if (a.mediaLossTimer?.isActive == true) return
+        a.mediaLossTimer = scope.launch {
+            delay(WscProtocol.RECONNECT_WINDOW_MS)
+            if (active === a && _session.value?.reconnecting == true && a.signalingLostAt == 0L) {
+                WscLog.w(TAG, "no media for ${WscProtocol.RECONNECT_WINDOW_MS}ms, ending session")
+                endActive(a, null, "${a.peerName} 已断开")
+            }
+        }
+    }
+
+    private fun cancelMediaLossWindow(a: Active) {
+        a.mediaLossTimer?.cancel()
+        a.mediaLossTimer = null
     }
 
     private fun rtcListener(a: Active) = object : ReceiverRtcSession.Listener {
@@ -858,14 +948,19 @@ class ReceiverController @Inject constructor(
                 when (state) {
                     MediaState.CONNECTED -> {
                         a.inbound.sm.onEvent(SessionEvent.MediaConnected)
+                        if (a.rebuildStartedAt > 0L) WscLog.i(TAG, "rebuilt media connected in ${System.currentTimeMillis() - a.rebuildStartedAt}ms")
                         if (a.signalingLostAt == 0L) _session.update { it?.copy(reconnecting = false) }
+                        if (a.rebuildStartedAt == 0L) cancelMediaLossWindow(a)
                         if (a.accumulator.disconnects > a.accumulator.autoRecovered) a.accumulator.onRecovered()
                     }
                     MediaState.DISCONNECTED, MediaState.FAILED -> {
                         // 首帧前从未连通：不是“重连”，界面保持“正在接收…”（E3）
                         if (a.firstFrameAt == 0L) return@launch
+                        // 档位切换中的新连接：由发送端的切换超时负责回退，不显示“正在重连”
+                        if (a.rebuildStartedAt > 0L) return@launch
                         a.accumulator.onDisconnected()
                         _session.update { it?.copy(reconnecting = true, reconnectAttempt = (it.reconnectAttempt) + 1) }
+                        startMediaLossWindow(a)
                     }
                     else -> Unit
                 }
@@ -881,6 +976,33 @@ class ReceiverController @Inject constructor(
 
         override fun onStats(stats: ReceiverStatsSnapshot, senderStats: DcMessage.SenderStats?) {
             scope.launch { onRtcStats(a, stats, senderStats) }
+        }
+
+        override fun onRebuiltFirstFrame() {
+            scope.launch {
+                if (active !== a || a.rebuildStartedAt == 0L) return@launch
+                // 切换停顿（OFFER{rebuild} 到新连接首帧上屏，目标 ≤1.5 秒；真机实测见开发进度清单）
+                val pause = System.currentTimeMillis() - a.rebuildStartedAt
+                WscLog.i(TAG, "media rebuild pause ${pause}ms, profile=${a.profile}")
+                a.maxRebuildPauseMs = maxOf(a.maxRebuildPauseMs ?: 0L, pause)
+                a.rebuildStartedAt = 0L
+                a.rebuildWatchdog?.cancel()
+                cancelMediaLossWindow(a)
+                _session.update { it?.copy(switching = false, reconnecting = if (a.signalingLostAt == 0L) false else it.reconnecting) }
+                // 告诉发送端：新连接首帧已上屏，切换成功（PROTOCOL.md 4.3 REBUILT）
+                a.rtc.sendDcWhenOpen(DcMessage.Rebuilt(pause))
+            }
+        }
+
+        override fun onFrameResumed() {
+            scope.launch {
+                if (active !== a) return@launch
+                // 又收到画面：撤下“正在重连”（信令仍断开时除外，那由信令恢复决定）
+                if (a.signalingLostAt == 0L) {
+                    cancelMediaLossWindow(a)
+                    _session.update { it?.copy(reconnecting = false) }
+                }
+            }
         }
 
         override fun onInputMessage(message: com.benchan.wireless.screencasting.core.protocol.control.InputMessage) {
@@ -902,6 +1024,11 @@ class ReceiverController @Inject constructor(
                     is DcMessage.AppSwitched -> _session.update { it?.copy(appVisible = message.visible) }
                     is DcMessage.ProtectedContent -> _session.update { it?.copy(protectedSuspected = message.suspected) }
                     is DcMessage.Audio -> _session.update { it?.copy(audio = message.state) }
+                    // 不需要重建的改档（分辨率 / 帧率），或旧版发送端的游戏档：只更新显示
+                    is DcMessage.SetQuality -> if (active === a && a.rebuildStartedAt == 0L) {
+                        a.profile = message.profile
+                        _session.update { it?.copy(profile = message.profile) }
+                    }
                     else -> Unit
                 }
             }
@@ -910,7 +1037,25 @@ class ReceiverController @Inject constructor(
 
     private fun onRtcStats(a: Active, s: ReceiverStatsSnapshot, sender: DcMessage.SenderStats?) {
         if (active !== a) return
-        val latency = sender?.latencyMs ?: LatencyEstimator.estimate(s.fps, sender?.encodeMs, s.rttMs, s.jitterBufferMs, s.decodeMs)
+        // 发送端 STATS 带的档位（SET_QUALITY 丢失时兜底；切换进行中以 OFFER 为准）
+        val senderProfile = sender?.profile
+        if (senderProfile != null && senderProfile != a.profile && a.rebuildStartedAt == 0L) {
+            a.profile = senderProfile
+            _session.update { it?.copy(profile = senderProfile) }
+        }
+        // 本机统计最新：用本机的缓冲 / 解码 / 处理耗时 + 发送端的编码 / 排队耗时现算分段（F18）；拿不到时用发送端算好的值
+        // 帧间隔按档位目标帧率（含降帧上限）算，画面静止 / 低帧率内容不抬高估算（PM 走查 P0-3）
+        val targetFps = sender?.capFps ?: (a.profile ?: sender?.profile)?.fps ?: 30
+        val breakdown = LatencyEstimator.breakdown(targetFps, sender?.encodeMs, s.rttMs, s.jitterBufferMs, s.decodeMs, s.processingMs, sender?.pacerMs)
+        val latency = breakdown?.totalMs ?: sender?.latencyMs
+        // F18：游戏模式延迟单独统计；发送端降为 30 帧时显示 3 秒标签
+        if (a.gameSince > 0L && a.rebuildStartedAt == 0L) latency?.let(a.gameAccumulator::addLatency)
+        if (a.gameSince > 0L) s.lowLatencyDecoder?.let { a.lowLatencyDecoder = it }
+        val capped = sender?.capFps != null && a.gameSince > 0L
+        if (capped != a.fpsCapped) {
+            a.fpsCapped = capped
+            _session.update { it?.copy(fpsCapped = capped) }
+        }
         latency?.let {
             a.accumulator.addLatency(it)
             a.history.addLast(it)
@@ -927,6 +1072,7 @@ class ReceiverController @Inject constructor(
                     latencyMs = latency, grade = grade, dropPercent = s.dropPercent,
                     decoder = s.decoder, hardwareDecoder = s.hardwareDecoder, codec = s.codec,
                     latencyHistory = a.history.toList(),
+                    breakdown = breakdown, lowLatencyDecoder = s.lowLatencyDecoder,
                 ),
             )
         }
@@ -941,6 +1087,8 @@ class ReceiverController @Inject constructor(
             a.control.close()
             a.reconnectTimer?.cancel()
             a.displayWatchdog?.cancel()
+            a.rebuildWatchdog?.cancel()
+            a.mediaLossTimer?.cancel()
             if (bye != null) a.inbound.send(Bye(bye))
             a.inbound.conn.close("session end")
             renderers.forEach(a.rtc::detachRenderer)
@@ -967,9 +1115,21 @@ class ReceiverController @Inject constructor(
                     framesDropped = a.accumulator.framesDropped, disconnects = a.accumulator.disconnects,
                     autoRecovered = a.accumulator.autoRecovered, endReason = reason, codec = a.accumulator.codec,
                     androidVersion = Build.VERSION.RELEASE.orEmpty(), deviceModel = Build.MODEL.orEmpty(),
+                    game = gameReport(a),
                 ),
             )
         }
+    }
+
+    private fun gameReport(a: Active): GameReport? {
+        a.onGameMode(false, atStart = false)
+        val start = a.gameEnteredAtStart ?: return null
+        return GameReport(
+            durationMs = a.gameDurationMs, enteredAtStart = start, switches = a.gameSwitches,
+            maxSwitchPauseMs = a.maxRebuildPauseMs, latencyHistogram = a.gameAccumulator.histogram.toList(),
+            latencyP50Ms = a.gameAccumulator.percentile(0.5), latencyP95Ms = a.gameAccumulator.percentile(0.95),
+            lowLatencyDecoder = a.lowLatencyDecoder, receiverSupportsGame = true,
+        )
     }
 
     private fun rotateCastPin() {
@@ -982,5 +1142,8 @@ class ReceiverController @Inject constructor(
         const val HELLO_TIMEOUT_MS = 8_000L
         const val DLNA_REMEMBER_MS = 24 * 60 * 60 * 1000L
         const val NO_DISPLAY_TIMEOUT_MS = 10_000L
+
+        /** 媒体重建后多久还没有新画面就撤下“正在切换…”（发送端 5 秒超时回退 + 余量）。 */
+        const val REBUILD_OVERLAY_TIMEOUT_MS = 6_000L
     }
 }

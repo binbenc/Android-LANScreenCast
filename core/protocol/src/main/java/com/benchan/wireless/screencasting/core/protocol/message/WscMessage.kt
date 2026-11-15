@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.core.protocol.message
 
+import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -121,8 +122,22 @@ data class PairOk(val mac: String? = null) : WscPayload
 @Serializable
 data class PairQr(val mac: String) : WscPayload
 
+/**
+ * @property profile 发送端当前画质档位（F18，PROTOCOL.md 4.3）：接收端据此选择播放缓冲 / 解码器。线上是档位名字符串，
+ *   未知值（新版本加的档位）按普通档处理，所以这里不用枚举类型，避免整条 OFFER 解码失败。旧版本发送端不带。
+ * @property rebuild 发送端为这条 OFFER 新建了 PeerConnection（新的 ICE / DTLS，复用采集与轨道）：接收端须丢弃当前
+ *   PeerConnection、按 [profile] 重新建立接收链路后应答。只在接收端 HELLO 的 caps 含 `game` 时发送。
+ */
 @Serializable
-data class Offer(val sdp: String, val iceRestart: Boolean = false) : WscPayload
+data class Offer(
+    val sdp: String,
+    val iceRestart: Boolean = false,
+    val profile: String? = null,
+    val rebuild: Boolean = false,
+) : WscPayload {
+    /** [profile] 对应的档位；缺失或未知时为 null。 */
+    val qualityProfile: QualityProfile? get() = QualityProfile.fromWire(profile)
+}
 
 @Serializable
 data class Answer(val sdp: String) : WscPayload

@@ -172,8 +172,10 @@ class SenderControlCoordinator @Inject constructor(
             }
         }
         scope.launch {
-            combine(settingsRepo.settings.map { it.remoteControlEnabled }.distinctUntilChanged(), bridge.connected, bridge.advancedProtection) { enabled, connected, aapm ->
+            // F24：长辈模式下反向控制不可用，请求自动拒绝并告诉接收端原因（PRD 8.1.4 D，PROTOCOL.md 6.2 ELDER_MODE）
+            combine(settingsRepo.settings.map { (if (it.elderModeEnabled) null else it.remoteControlEnabled) }.distinctUntilChanged(), bridge.connected, bridge.advancedProtection) { enabled, connected, aapm ->
                 when {
+                    enabled == null -> ControlReason.ELDER_MODE
                     !enabled -> ControlReason.SETTING_OFF
                     aapm -> ControlReason.AAPM
                     !connected -> ControlReason.SERVICE_OFF

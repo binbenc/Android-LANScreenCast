@@ -13,7 +13,9 @@ import com.benchan.wireless.screencasting.core.discovery.ssdp.SsdpSearcher
 import com.benchan.wireless.screencasting.core.net.MulticastLockHolder
 import com.benchan.wireless.screencasting.core.net.NetworkMonitor
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,8 +59,25 @@ class DeviceDiscovery @Inject constructor(
 
     private var job: Job? = null
 
+    /** 发现任务挂在单例自己的作用域上，按持有者引用计数：主界面、长辈首页、分享页互不影响（F14 走查 P0-1）。 */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val owners = OwnerRefCount()
+
+    /** [owner] 开始需要发现结果（同一持有者重复调用无副作用）。 */
     @Synchronized
-    fun start(scope: CoroutineScope) {
+    fun start(owner: Any) {
+        owners.acquire(owner)
+        startJob()
+    }
+
+    /** [owner] 不再需要；最后一个持有者释放时才真正停止。 */
+    @Synchronized
+    fun stop(owner: Any) {
+        if (owners.release(owner)) stopJob()
+    }
+
+    @Synchronized
+    private fun startJob() {
         if (job?.isActive == true) return
         startedAt = System.currentTimeMillis()
         _devices.value = emptyList()
@@ -125,7 +144,8 @@ class DeviceDiscovery @Inject constructor(
     }
 
     @Synchronized
-    fun stop() {
+    private fun stopJob() {
+        if (job == null) return
         job?.cancel()
         job = null
         _searching.value = false
@@ -134,10 +154,12 @@ class DeviceDiscovery @Inject constructor(
     }
 
     /** 重新搜索（诊断页“刷新”）。 */
-    fun restart(scope: CoroutineScope) {
-        stop()
+    @Synchronized
+    fun restart(owner: Any) {
+        owners.acquire(owner)
+        stopJob()
         resolver.invalidate()
-        start(scope)
+        startJob()
     }
 
     private suspend fun onSsdpHit(hit: SsdpHit) {

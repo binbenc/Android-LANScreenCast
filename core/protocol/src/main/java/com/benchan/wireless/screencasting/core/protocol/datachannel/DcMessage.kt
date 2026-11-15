@@ -40,6 +40,10 @@ sealed interface DcMessage {
         val lossPercent: Double = 0.0,
         val codec: String? = null,
         val profile: QualityProfile? = null,
+        /** 发送端平均排队发送耗时（outbound-rtp `totalPacketSendDelay / packetsSent`，ms），F18 延迟分段用。 */
+        val pacerMs: Double? = null,
+        /** 游戏模式下已把帧率降到该值（过热 / 跟不上 60 帧，PRD 8.1.3 F / H）；接收端据此显示 3 秒“已降为 30 帧”。没降时省略。 */
+        val capFps: Int? = null,
     ) : DcMessage
 
     /** 接收端每秒一次：接收与解码侧统计，用于发送端估算端到端延迟（技术方案 3.4 方法 M3）。 */
@@ -53,7 +57,19 @@ sealed interface DcMessage {
         val fps: Int = 0,
         val decoder: String? = null,
         val hardwareDecoder: Boolean? = null,
+        /** 每帧从收到第一个包到解码完成的平均耗时（inbound-rtp `totalProcessingDelay / framesDecoded`，ms），含组帧 + 缓冲 + 解码。 */
+        val procMs: Double? = null,
+        /** 解码器是否开启了低延迟特性（F18；null = 未使用低延迟解码器工厂 / 未知）。 */
+        val lowLatency: Boolean? = null,
     ) : DcMessage
+
+    /**
+     * 收→发（F18，PROTOCOL.md 4.3）：`OFFER{rebuild}` 建立的新连接**首帧已上屏**。发送端以此判定切换成功（不是 ICE 连通），
+     * [pauseMs] = 接收端从收到 `OFFER{rebuild}` 到首帧上屏的停顿。只有支持 `game` 能力的接收端会发；旧版发送端忽略。
+     */
+    @Serializable
+    @SerialName("REBUILT")
+    data class Rebuilt(val pauseMs: Long) : DcMessage
 
     @Serializable
     @SerialName("SET_QUALITY")

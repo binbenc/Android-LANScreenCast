@@ -27,6 +27,11 @@ class FrameRepeater(
     @Volatile
     private var running = false
 
+    /** 采集器真正出的新帧数（不含静止画面的保底重发）：F18 用来区分“画面本身帧率低”和“跟不上”。 */
+    @Volatile
+    var contentFrames = 0L
+        private set
+
     private val tick = object : Runnable {
         override fun run() {
             if (!running) return
@@ -55,6 +60,7 @@ class FrameRepeater(
         lastFrameAtMs = SystemClock.elapsedRealtime()
         frameTap?.invoke(frame)
         if (frame.timestampNs > lastTimestampNs) {
+            contentFrames++
             lastTimestampNs = frame.timestampNs
             downstream.onFrameCaptured(frame)
             return

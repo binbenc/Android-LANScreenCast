@@ -109,6 +109,8 @@ internal fun DeviceListScreen(
     onSettings: () -> Unit,
     onDiagnostics: () -> Unit,
     onInstallHelp: () -> Unit,
+    /** 列表顶部的常驻卡片（F14 改用镜像横幅、F24 推荐卡 / 退出提示）。 */
+    topCard: @Composable () -> Unit = {},
 ) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -140,6 +142,7 @@ internal fun DeviceListScreen(
             NoLanCard(onDiagnostics)
         }
         ui.pushing?.let { PushingBanner(it, onOpenPush) }
+        topCard()
         if (showDiagnostics) {
             NotFoundContent(ui.lan, elapsed, onScan, onCastCode, onDiagnostics, onInstallHelp, Modifier.weight(1f))
         } else {
@@ -267,7 +270,8 @@ private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -
         Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    d.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    // 带 [推送] 按钮的行宽度有限：单行省略，不折成“…arm6 / 4”（EMU-F5）
+                    d.name, style = MaterialTheme.typography.titleMedium, maxLines = if (wscPush) 1 else 2, overflow = TextOverflow.Ellipsis,
                     color = c.onSurface, modifier = Modifier.weight(1f, fill = false),
                 )
                 when {

@@ -117,6 +117,12 @@ class ScreenCastService : LifecycleService() {
                 state.stats.latencyMs?.let { append(getString(R.string.sender_notif_latency, it)).append(" · ") }
                 append(state.profile.label)
             }
+            // F18：切换画质进行中
+            is SenderState.Casting if state.switchingTo != null -> getString(R.string.sender_notif_casting_to, state.target.name) to getString(R.string.sender_notif_switching)
+            // F18：降为 30 帧时静默改副标题，保持到本次投屏结束或回到 60 帧（产品拍板）（不悬浮、不响铃，交互稿 G03 通知）
+            is SenderState.Casting if state.fpsCapped != null && state.fpsCapped != com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason.REMEMBERED -> getString(R.string.sender_notif_casting_to, state.target.name) to getString(
+                if (state.fpsCapped == com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason.THERMAL) R.string.sender_notif_fps_capped_thermal else R.string.sender_notif_fps_capped,
+            )
             is SenderState.Casting -> getString(R.string.sender_notif_casting_to, state.target.name) to buildString {
                 state.stats.latencyMs?.let { append(getString(R.string.sender_notif_latency, it)).append(" · ") }
                 if (state.stats.bitrateKbps > 0) append(String.format(java.util.Locale.US, "%.1f Mbps", state.stats.bitrateKbps / 1000.0)).append(" · ")
@@ -151,7 +157,8 @@ class ScreenCastService : LifecycleService() {
             return b.build()
         }
         b.addAction(0, getString(R.string.sender_stop), stopIntent)
-        if (state is SenderState.Casting && state.profile != QualityProfile.SMOOTH) {
+        // 切换画质进行中不提供“切换为流畅”（按了也会被忽略，PM 走查 P2-6）
+        if (state is SenderState.Casting && state.profile != QualityProfile.SMOOTH && state.switchingTo == null) {
             val smooth = PendingIntent.getService(
                 this, 2, Intent(this, ScreenCastService::class.java).setAction(ACTION_SMOOTH), PendingIntent.FLAG_IMMUTABLE,
             )

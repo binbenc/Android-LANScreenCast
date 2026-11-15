@@ -2,6 +2,8 @@ package com.benchan.wireless.screencasting.feature.sender.session
 
 import com.benchan.wireless.screencasting.core.discovery.DiscoverySource
 import com.benchan.wireless.screencasting.core.protocol.datachannel.AudioState
+import com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason
+import com.benchan.wireless.screencasting.core.protocol.quality.GameHint
 import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGrade
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 
@@ -126,6 +128,26 @@ sealed interface SenderState {
         val stats: CastingStats = CastingStats(),
         val appVisible: Boolean = true,
         val protectedSuspected: Boolean = false,
+        /** F18：正在切换到该档位（媒体连接重建中，≤1.5 秒目标、5 秒超时回退），期间分段按钮不可再切（交互稿 G02）。 */
+        val switchingTo: QualityProfile? = null,
+        /** F18：切换前的档位（胶囊“均衡 → 游戏”）。 */
+        val switchingFrom: QualityProfile? = null,
+        /** F18：这次切换是失败后的回退（说明行“正在恢复‘均衡’…”）。 */
+        val switchingRollback: Boolean = false,
+        /** F18：本机已确认过 G01 首次说明卡（没确认时点“游戏”不本地转圈，避免闪一下）。 */
+        val gameIntroAcknowledged: Boolean = false,
+        /** F18：音频当前是否和视频在不同 stream（决定说明里写不写“声音可能比画面稍晚”）。 */
+        val audioSplit: Boolean = false,
+        /** F18：接收端版本较旧（HELLO caps 没有 `game`），游戏档只能提供 720p60，低延迟部分不生效。 */
+        val receiverLegacy: Boolean = false,
+        /** F18：提示位当前显示的卡片（交互稿 G04，一次一张）。 */
+        val hint: GameHint? = null,
+        /** F18：第一次选“游戏”，等待 G01 说明卡确认。 */
+        val gameIntroPending: Boolean = false,
+        /** F18：游戏模式下已降为 30 帧的原因（null = 没降）。 */
+        val fpsCapped: FpsCapReason? = null,
+        /** F18：这台接收端以前实测的游戏模式延迟（交互稿 G03“这台电视上实测约 85 ms”）。 */
+        val measuredGameLatencyMs: Int? = null,
     ) : SenderState
 
     data class Reconnecting(

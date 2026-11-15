@@ -50,7 +50,17 @@ class SettingsViewModel @Inject constructor(
     network: com.benchan.wireless.screencasting.core.net.NetworkMonitor,
     airPlay: Optional<AirPlayReceiver>,
     private val a11y: com.benchan.wireless.screencasting.feature.control.AccessibilityBridge,
+    private val gameStore: com.benchan.wireless.screencasting.core.data.game.GameModeStore,
 ) : ViewModel() {
+    /** F18 G06：把“游戏”设为默认前，本机是否已确认过 G01 首次说明卡。 */
+    fun gameIntroAcknowledged(): Boolean = gameStore.introAcknowledged
+
+    /** G01 “开启”后保存默认档为“游戏”（从设置进来只保存默认档，不切换当前会话）。 */
+    fun acknowledgeGameIntroAndSetGame() = viewModelScope.launch {
+        gameStore.acknowledgeIntro()
+        repo.setQuality(QualityProfile.GAME)
+    }
+
     /** 反向控制的无障碍服务是否已在系统设置中开启（09A 行状态值）。 */
     fun remoteControlServiceOn(): Boolean = a11y.isServiceEnabledInSettings()
 
@@ -90,7 +100,11 @@ class SettingsViewModel @Inject constructor(
         _summaryForRange.value = ReportSummary.from(reports.records.value, since)
     }
 
-    fun clearReports() = reports.clear()
+    fun clearReports() {
+        reports.clear()
+        // 清空报告时一并清掉游戏模式的实测记忆（实测延迟、“只能 30 帧”，PM 走查 P1-6 / P2-9）
+        gameStore.clearReceivers()
+    }
 
     fun setDeviceName(v: String) = viewModelScope.launch { repo.setDeviceName(v) }
     fun setMode(v: AppMode) = viewModelScope.launch { repo.setMode(v) }
@@ -103,7 +117,11 @@ class SettingsViewModel @Inject constructor(
     fun setAppleCompat(enabled: Boolean, pin: Boolean) = viewModelScope.launch { repo.setAppleCompat(enabled, pin) }
     fun setBootStart(v: Boolean) = viewModelScope.launch { repo.setBootStart(v) }
     fun setSkipIntro(v: Boolean) = viewModelScope.launch { repo.setSkipCaptureIntro(v) }
-    fun removeTrusted(id: String) = trustedStore.remove(id)
+    fun setDirectShare(v: Boolean) = viewModelScope.launch { repo.setDirectShareEnabled(v) }
+    fun removeTrusted(id: String) {
+        trustedStore.remove(id)
+        gameStore.removeReceiver(id)
+    }
 
     // —— F11 网络诊断 ——
     private val _checks = MutableStateFlow<List<DiagnosticCheck>?>(null)

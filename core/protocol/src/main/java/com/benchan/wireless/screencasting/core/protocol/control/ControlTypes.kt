@@ -39,6 +39,9 @@ enum class ControlReason {
     /** 发送端开启了高级保护模式（Android 17+），系统不允许非辅助工具使用无障碍服务。 */
     AAPM,
 
+    /** 发送端开着长辈模式（F24，PRD 8.1.4 D）：反向控制不可用，接收端提示“对方手机开着长辈模式，不能远程操作”。旧版按 UNKNOWN 解析。 */
+    ELDER_MODE,
+
     /** 发送端本人拒绝。 */
     USER_DENIED,
 

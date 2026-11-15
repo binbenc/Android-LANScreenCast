@@ -517,6 +517,79 @@ td.crv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;
 .volpanel .vt i{position:absolute;left:0;right:0;bottom:0;border-radius:4px;background:var(--primary)}
 .mini{border:1px solid var(--outline-variant);border-radius:20px;padding:14px 16px;background:var(--surface-container-low)}
 
+/* ---------- 分享推送 / 游戏模式 / 长辈模式（F14 / F18 / F24，v1.0.6） ---------- */
+/* 来源 App（相册）占位：属于“内容”，两种主题相同（同 .mirror / .film） */
+.gal{position:absolute;left:0;right:0;top:96px;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:0 3px;align-content:start}
+.gal i{aspect-ratio:1;background:#8FA6B5}
+.gal i:nth-child(3n){background:#C9B99A}.gal i:nth-child(4n+1){background:#B7C4A3}.gal i:nth-child(5n){background:#3F5363}
+.thumbs{display:flex;gap:6px;flex:none}
+.thumbs i{width:48px;height:48px;border-radius:10px;flex:none;background:#8FA6B5;position:relative}
+.thumbs i:nth-child(2n){background:#C9B99A}.thumbs i:nth-child(3n){background:#B7C4A3}
+.thumbs i.vid::after{content:"";position:absolute;left:19px;top:16px;border-left:12px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent;filter:drop-shadow(0 0 1px rgba(0,0,0,.6))}
+.thumbs i.more{background:var(--surface-container-high);color:var(--on-surface-variant);display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:500}
+.thumbs.s i{width:36px;height:36px;border-radius:8px}.thumbs.s i.vid::after{left:14px;top:11px;border-left-width:10px;border-top-width:7px;border-bottom-width:7px}
+/* 信息条：中性事实说明（不是警告），surfaceContainer 底 */
+.infol{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--surface-container);font-size:12px;line-height:18px;color:var(--on-surface-variant)}
+.infol .ic{margin-top:1px;flex:none}
+.infol b{display:block;color:var(--on-surface);font-weight:500;font-size:13px;line-height:19px}
+.urlbox{border-radius:12px;background:var(--surface-container-highest);color:var(--on-surface);padding:10px 12px;font-family:var(--mono);font-size:13px;line-height:19px;overflow-wrap:anywhere}
+/* Direct Share：系统分享面板示意（样式由系统决定） */
+.dsrow{display:flex;gap:4px;justify-content:space-between}
+.dst{display:flex;flex-direction:column;align-items:center;gap:6px;width:74px;font-size:12px;line-height:16px;text-align:center}
+.dst .a{width:52px;height:52px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:grid;place-items:center;position:relative}
+.dst .a.g{background:var(--surface-container-highest);color:var(--on-surface-variant)}
+.dst .a .bdg{position:absolute;right:-3px;bottom:-3px;width:22px;height:22px;border-radius:7px;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;box-shadow:0 0 0 2px var(--surface-container-low)}
+/* 分段按钮：不可用 / 切换中 */
+.seg span.na{color:var(--outline)}
+.seg span.ld{background:var(--secondary-container);color:var(--on-secondary-container)}
+/* 游戏模式：TV 角标与小画框 */
+.gtag{position:absolute;z-index:3;height:36px;padding:0 16px;border-radius:18px;background:rgba(0,0,0,.6);color:var(--on-scrim);display:flex;align-items:center;gap:8px;font-size:16px;font-weight:500;white-space:nowrap}
+.tvmini{width:480px;max-width:100%;aspect-ratio:16/9;position:relative;overflow:hidden;background:#000;border-radius:6px;flex:none;box-shadow:0 0 0 6px #0B0C0E}
+.lseg{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px}
+.lseg i{display:block;height:100%}
+.hintc{border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:19px;background:var(--surface-container-high);color:var(--on-surface)}
+.hintc small{display:block;font-size:12px;line-height:18px;color:var(--on-surface-variant)}
+.hintc .acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.hintc .acts span{font-size:13px;font-weight:500;color:var(--primary);height:36px;padding:0 10px;display:inline-flex;align-items:center;border-radius:18px}
+.hintc.w{background:var(--warning-container);color:var(--on-warning-container)}
+.hintc.w small,.hintc.w .acts span{color:var(--on-warning-container)}
+/* 复选框（向导） */
+.cb{width:20px;height:20px;border-radius:4px;border:2px solid var(--on-surface-variant);flex:none;display:grid;place-items:center;margin-top:2px}
+.cb.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+/* 长辈模式：字号 ×1.25–1.3（独立 Typography，不改 Density），触控 ≥64 dp，主按钮 ≥96 dp */
+.e-hl{font-size:32px;line-height:40px;font-weight:600}
+.e-tl{font-size:26px;line-height:34px;font-weight:500}
+.e-bt{font-size:22px;line-height:30px;font-weight:500}
+.e-bl{font-size:20px;line-height:30px}
+.e-bs{font-size:18px;line-height:26px}
+.ebtn{min-height:64px;border-radius:32px;padding:12px 24px;display:flex;width:100%;align-items:center;justify-content:center;gap:12px;font-size:22px;line-height:30px;font-weight:500;text-align:center}
+.ebtn .ic{width:28px;height:28px}
+.ebtn.fill{background:var(--primary);color:var(--on-primary)}
+.ebtn.ton{background:var(--secondary-container);color:var(--on-secondary-container)}
+.ebtn.out{border:2px solid var(--outline);color:var(--on-surface)}
+.ebtn.stop{background:var(--error-container);color:var(--on-error-container);min-height:72px;border-radius:36px}
+.ebtn.half{width:auto;flex:1;padding:12px 12px}
+.ebig{display:flex;align-items:center;gap:16px;width:100%;min-height:112px;border-radius:28px;padding:16px 20px;background:var(--primary);color:var(--on-primary);text-align:left}
+.ebig .ic{width:40px;height:40px;stroke-width:1.6}
+.ebig.sec{min-height:88px;background:var(--secondary-container);color:var(--on-secondary-container)}
+.ebig.m{min-height:96px}
+.estat{display:flex;align-items:center;gap:12px;min-height:48px;font-size:20px;line-height:30px;color:var(--on-surface)}
+.estat .d{width:14px;height:14px;border-radius:50%;flex:none}
+.ecard{border-radius:24px;padding:20px;background:var(--surface-container-high);color:var(--on-surface)}
+.erow{display:flex;align-items:center;gap:16px;min-height:88px;padding:12px 16px;border-radius:24px;background:var(--surface-container-low)}
+.erow .ic{width:32px;height:32px}
+.ebar{height:72px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px}
+.eback{min-height:64px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:32px;font-size:20px;font-weight:500;color:var(--on-surface)}
+.ekp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 12px 6px;background:var(--surface-container);flex:none}
+.ekp span{height:72px;border-radius:16px;background:var(--surface-container-lowest);display:grid;place-items:center;font-size:32px;font-family:var(--mono);color:var(--on-surface)}
+.ekp span.fn{background:transparent;font-family:var(--font);font-size:20px;font-weight:500}
+.epin{display:flex;gap:12px;justify-content:center}
+.epin span{width:64px;height:76px;border-radius:16px;border:2px solid var(--outline);display:grid;place-items:center;font-family:var(--mono);font-size:36px;font-weight:500}
+.epin span.cur{border:3px solid var(--primary)}
+.sysdlg{border-radius:24px;background:var(--surface-container-highest);padding:18px 18px 10px;color:var(--on-surface);box-shadow:var(--e3)}
+.sysdlg .hl{box-shadow:0 0 0 3px var(--surface-container-highest),0 0 0 6px var(--primary);border-radius:20px}
+.holdring{width:36px;height:36px;flex:none}
+
 .qs{margin-top:8px}
 .qs li{margin:10px 0;padding-left:4px}
 .qs b{font-weight:600}
@@ -595,6 +668,9 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   <symbol id="i-queue" viewBox="0 0 24 24"><path d="M4 6.5h12M4 11.5h12M4 16.5h7"/><path d="M15 14.5v5l4-2.5z"/></symbol>
   <symbol id="i-swap" viewBox="0 0 24 24"><rect x="3.5" y="4" width="11" height="9" rx="1.8"/><path d="M8 20h9.5a2 2 0 0 0 2-2V9.5"/><path d="m17 12 2.5-2.5L22 12"/></symbol>
   <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3" y="7.5" width="16" height="9" rx="2"/><path d="M21.5 10.5v3M6.5 10.5v3"/></symbol>
+  <!-- v1.0.6 · F18 游戏模式 / F24 长辈模式 -->
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 14.2V5.5a2 2 0 0 1 4 0v8.7a4 4 0 1 1-4 0z"/><path d="M12 10v6.5"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M3 18.5 7.8 5.5l4.7 13M4.8 14h6"/><path d="M14 18.5l3.2-8 3.3 8M15 16h4.4"/></symbol>
   <symbol id="scene" viewBox="0 0 960 432" preserveAspectRatio="xMidYMid slice">
     <rect width="960" height="432" fill="url(#sky)"/>
     <circle cx="690" cy="150" r="46" fill="#E4D6B5" opacity=".75"/>
@@ -610,7 +686,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   <div class="wrap">
     <div class="brand"><span class="tile"><svg class="ic s20"><use href="#i-mark"/></svg></span><span>交互稿与色卡 <span class="muted" style="font-weight:400">v1.0</span></span></div>
     <nav class="toc" aria-label="目录">
-      <a href="#principle">设计推导</a><a href="#color">色卡</a><a href="#semantic">语义色</a><a href="#contrast">对比度</a><a href="#type">字体</a><a href="#shape">圆角间距</a><a href="#focus">TV 焦点</a><a href="#icons">图标</a><a href="#flow">主流程</a><a href="#sender">发送端</a><a href="#receiver">接收端</a><a href="#remote">反向控制</a><a href="#push">DLNA 推送</a><a href="#questions">待确认</a><a href="#changelog">变更记录</a>
+      <a href="#principle">设计推导</a><a href="#color">色卡</a><a href="#semantic">语义色</a><a href="#contrast">对比度</a><a href="#type">字体</a><a href="#shape">圆角间距</a><a href="#focus">TV 焦点</a><a href="#icons">图标</a><a href="#flow">主流程</a><a href="#sender">发送端</a><a href="#receiver">接收端</a><a href="#remote">反向控制</a><a href="#push">DLNA 推送</a><a href="#share">分享推送</a><a href="#game">游戏模式</a><a href="#elder">长辈模式</a><a href="#questions">待确认</a><a href="#changelog">变更记录</a>
     </nav>
     <div class="themesw" role="group" aria-label="主题">
       <button type="button" data-t="auto" title="跟随系统" aria-label="跟随系统"><svg class="ic s18"><use href="#i-auto"/></svg></button>
@@ -631,7 +707,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
     <span class="chip">Compose for TV</span>
     <span class="chip">手机 360 dp / TV 960×540 dp，1 CSS px = 1 dp</span>
     <span class="chip">产品名 “局域投屏” 为占位（PRD Q6）</span>
-    <span class="chip"><a href="#changelog" style="color:inherit;text-decoration:none">v1.0.5 · 2026-11-15 · DLNA 推送（F13）</a></span>
+    <span class="chip"><a href="#changelog" style="color:inherit;text-decoration:none">v1.0.6 · 2026-11-15 · 分享推送（F14）· 游戏模式（F18）· 长辈模式（F24）</a></span>
   </div>
 </div>
 
@@ -1164,7 +1240,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
           <div class="card" style="border-radius:24px;padding:20px">
             <div class="row gap12"><span class="iconTile" style="width:48px;height:48px;border-radius:14px"><svg class="ic"><use href="#i-tv"/></svg></span><div style="flex:1;min-width:0"><div class="t-tm">客厅电视</div><div class="row gap4 t-bs mv"><svg class="ic" style="width:14px;height:14px;color:var(--tertiary)"><use href="#i-lock"/></svg>已加密 · <span class="proto">WSC</span></div></div><span class="row gap6 t-ls" style="color:var(--success)"><span class="breath" style="width:8px;height:8px"></span>投屏中</span></div>
             <div class="num mt16" style="font-size:40px;line-height:48px;font-weight:500;letter-spacing:.01em">00:12:48</div>
-            <div class="capsule mt12"><span><i class="d" style="background:var(--lat-1)"></i>68 ms<b style="color:var(--lat-1);font-weight:500">极佳</b></span><span>7.6 Mbps</span><span>1080p30</span></div>
+            <div class="capsule mt12"><span><i class="d" style="background:var(--lat-1)"></i>约 68 ms<b style="color:var(--lat-1);font-weight:500">极佳</b></span><span>7.6 Mbps</span><span>1080p30</span></div>
           </div>
           <div class="lbl" style="padding-top:22px">画质</div>
           <div class="seg"><span>流畅</span><span class="on"><svg class="ic s16"><use href="#i-check"/></svg>均衡</span><span>高清</span><span><svg class="ic s16"><use href="#i-game"/></svg>游戏</span></div>
@@ -1179,7 +1255,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
         <dt>规则</dt><dd><ul><li>胶囊每 1 s 刷新，数值等宽不抖动；等级文字只在跨档时变化（加 1 s 滞后，防止 99/101 ms 来回闪）。</li><li>分段按钮视觉 40 dp，触控区扩展到 48 dp；切档即时生效（DataChannel SET_QUALITY）。</li><li>停止按钮用 errorContainer：表达“终止”而不制造警报感；位于拇指热区。</li><li>悬浮胶囊需悬浮窗权限，与 8.5 冲突 → 胶囊放 App 内 + 通知（见问题 Q1）。</li></ul></dd>
         <dt>出口</dt><dd>停止 → 1 s 内释放 → 03；网络变差 → Snackbar；断线 → 08A。</dd>
       </dl>
-      <div class="notif mt16" aria-label="通知示意"><div class="h"><i><svg class="ic" style="width:12px;height:12px"><use href="#i-mark"/></svg></i>局域投屏 · 现在</div><div class="t-ll mt8" style="color:var(--on-surface)">正在投屏到 客厅电视</div><div class="t-bs mv num">延迟 68 ms · 7.6 Mbps · 均衡</div><div class="acts"><span>停止</span><span>切换为流畅</span></div></div>
+      <div class="notif mt16" aria-label="通知示意"><div class="h"><i><svg class="ic" style="width:12px;height:12px"><use href="#i-mark"/></svg></i>局域投屏 · 现在</div><div class="t-ll mt8" style="color:var(--on-surface)">正在投屏到 客厅电视</div><div class="t-bs mv num">延迟约 68 ms · 7.6 Mbps · 均衡</div><div class="acts"><span>停止</span><span>切换为流畅</span></div></div>
       <div class="snack mt12"><span style="flex:1">网络较差，已切换为“流畅”</span><b>撤销</b></div>
       </div>
     </article>
@@ -1454,7 +1530,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
             <div class="kv"><span>协议</span><span class="row gap6" style="justify-content:flex-end"><svg class="ic s16" style="color:var(--tertiary)"><use href="#i-lock"/></svg>WSC · 已加密</span></div>
             <div class="kv"><span>分辨率</span><span>1920 × 1080 · 30 fps</span></div>
             <div class="kv"><span>码率</span><span>7.6 Mbps</span></div>
-            <div class="kv"><span>端到端延迟</span><span class="row gap6" style="justify-content:flex-end"><i style="width:8px;height:8px;border-radius:50%;background:var(--lat-1)"></i>68 ms 极佳</span></div>
+            <div class="kv"><span>延迟（估算）</span><span class="row gap6" style="justify-content:flex-end"><i style="width:8px;height:8px;border-radius:50%;background:var(--lat-1)"></i>约 68 ms 极佳</span></div>
             <div class="kv"><span>丢帧</span><span>0.2 %</span></div>
             <div class="kv"><span>解码</span><span>硬件 · H.264</span></div>
           </div>
@@ -2608,9 +2684,1130 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   </div>
 </div></section>
 
-<!-- ==================== 14 待确认 ==================== -->
+<!-- ==================== 14 系统分享推送（F14，v1.0.6） ==================== -->
+<section class="sec" id="share"><div class="wrap">
+  <div class="sec-h"><span class="no">14</span><h2>系统分享推送（F14 · 相册 / 文件 / 浏览器 →“推送到电视”）</h2><p>本质：<b>用户的注意力在来源 App 里，分享页只是“路过”</b>。由此推出三条公理：① 分享页是盖在来源 App 上的一个轻工具——不进本应用任务栈、一步就能回去、推送开始后立刻让路；② 分享进来的东西可能读不到、放不下、电视放不了——<b>在用户选电视之前就查清、说清</b>，不让推送进行到一半才失败；③ 选完电视之后的一切复用 F13（P02 首次确认、P10 转换、P05 的 20 秒规则、P06–P14 遥控与结束、P12 通知），分享页不另造一套遥控。</p>
+  <p><b>用户拍板（2026-11-15，以此为准）</b>：独立分享页 ShareActivity（不进本应用任务栈），列出可推送的电视，选中即推，推送开始后可 [打开遥控] 进入 F13 遥控页；网页地址照常接收，先提示“电视通常打不开网页地址”，主按钮 [改用屏幕镜像]、次按钮 [仍然推送]；Direct Share V1 做，最多 3 台最近推过的电视，设置里可关；推送中再分享到同一台只能替换当前内容（需确认）；<b>分享进来的文件先复制到本应用缓存</b>，有“准备中 xx%”进度与取消，并提示空间不足、读不到文件（云盘 / 无权限）、不支持的类型；没发现设备、正在镜像时有对应状态。页面编号 <b>S01–S08</b>（S = Share），手机画面跟随右上角浅 / 深色切换。</p></div>
+
+  <div class="pathsum">
+    <span class="node k">系统分享面板<small>“推送到电视”/ Direct Share S08</small></span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node k">选设备 S01<small>同时检查并复制文件</small></span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node">首次确认 P02 · 转换 P10<small>按需</small></span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node k">准备与连接 S02<small>准备中 xx% → 连接 → 播放</small></span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node k">已开始 S03<small>[完成] 回来源 App · [打开遥控] → P06</small></span>
+    <span class="node">分支：网页地址 S04 · 读取 / 空间 / 类型 S05 · 没设备 S06 · 冲突 S07</span>
+  </div>
+
+  <h3 class="sub">分享页状态 <small>ShareActivity 内的单一事实来源；推送开始后的状态以第 13 章“推送会话状态”表为准</small></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:15%">状态</th><th style="width:33%">分享页</th><th style="width:20%">通知</th><th>进入 → 退出</th></tr></thead>
+    <tbody>
+      <tr><td><b>检查与准备</b><br><small>到达即开始</small></td><td>S01：摘要下方“正在准备文件 43%”；检查结果（忽略 / 读不到 / 空间不足）以信息条或结果卡呈现（S05）</td><td>无（分享页在前台）</td><td>到达 → 逐项试读（≤2 s）并按分享顺序复制到缓存；<b>关闭分享页 = 放弃</b>：停止复制、删除已复制文件</td></tr>
+      <tr><td><b>找设备</b></td><td>S01：0–3 s 骨架行；3 s 起“还在找…”；10 s 没有 → S06</td><td>无</td><td>点一行 = 决定推送（推送前台服务从此接管）</td></tr>
+      <tr><td><b>准备中 / 连接中</b></td><td>S02：三步——准备文件 xx% → 连接电视 → 开始播放；[取消推送]；返回箭头 = 换一台</td><td>“正在准备推送到 卧室电视 43%”[取消]</td><td>第 1 项准备好即连接（其余边放边准备）；连接 / 加载沿用 P05 的 10 s 提示与 20 s 终点</td></tr>
+      <tr><td><b>已开始</b></td><td>S03：“已在 卧室电视 上开始播放”+ 其余项准备进度；[完成][打开遥控]</td><td>切换为 P12 媒体通知；仍在准备时副标题加“其余 5 项准备中”</td><td>[完成] / 下滑 → 关闭回来源 App，推送继续；[打开遥控] → 本应用 P06 / P07 / P09</td></tr>
+      <tr><td><b>出错</b></td><td>S02 的步骤卡换成 P13 对应失败卡（紧凑版，动作相同）</td><td>同 P13</td><td>按卡内动作；需要转换 → 面板内容换成 P10</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub mt32">发送端（手机）</h3>
+  <div class="boards">
+
+    <!-- S01 选设备页 -->
+    <article class="board">
+      <div class="bh"><span class="id">S01</span><b>选设备 · 盖在来源 App 上的底部面板（同时准备文件）</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="从相册分享后出现的推送到电视面板，列出可推送的电视"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>21:05</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">相册 · 海边</span></div>
+        <div class="gal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle" style="margin-bottom:10px"></div>
+          <div class="row"><span class="t-tl" style="flex:1">推送到电视</span><span class="ib" style="margin-right:-12px"><svg class="ic"><use href="#i-close"/></svg></span></div>
+          <div class="row gap12 mt4"><div class="thumbs"><i class="vid"></i><i></i><i class="vid"></i><i class="more">+3</i></div><div style="flex:1;min-width:0"><div class="t-ll">3 个视频 · 3 张照片</div><div class="t-bs mv">按分享的顺序播放</div></div></div>
+          <div class="mt12"><div class="row t-bs mv num"><span class="row gap6"><span class="spin" style="width:12px;height:12px;border-width:1.5px"></span>正在准备文件 43%</span><span class="sp"></span><span>选好电视后自动开始</span></div><div class="lin mt4" style="color:var(--primary)"><i style="width:43%"></i></div></div>
+          <div class="lbl" style="padding-top:12px"><span>最近推送过</span><span class="row gap4 t-bs"><span class="spin" style="width:10px;height:10px;border-width:1.5px"></span>仍在搜索</span></div>
+          <div class="li" style="min-height:64px"><span class="av p"><svg class="ic"><use href="#i-dlna"/></svg></span><div class="tx"><div class="t1">卧室电视</div><div class="t2"><span class="proto">DLNA</span> 上次 昨天</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+          <div class="lbl" style="padding-top:6px"><span>电视自带投屏</span><span class="row gap4" style="min-height:32px"><svg class="ic s16"><use href="#i-info"/></svg>不加密</span></div>
+          <div class="li" style="min-height:64px"><span class="av"><svg class="ic"><use href="#i-dlna"/></svg></span><div class="tx"><div class="t1">次卧电视 <span class="tag ol">新设备</span></div><div class="t2"><span class="proto">DLNA</span> 海信</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+          <div class="lbl" style="padding-top:6px">本应用接收端</div>
+          <div class="li" style="min-height:64px"><span class="av"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">书房盒子 <span class="tag trust"><svg class="ic" style="width:12px;height:12px"><use href="#i-shield"/></svg>已信任</span></div><div class="t2"><span class="proto">WSC</span> 可以接收推送</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+          <div class="li dis" style="min-height:64px;align-items:flex-start"><span class="av"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">客厅电视</div><div class="t2" style="white-space:normal">在这台电视的设置里打开“DLNA 接收”后才能推送</div></div></div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.2 B / C / E</span><span class="tagref">用户拍板：复制到缓存</span><span class="tagref">P01 行样式</span></div><dl>
+        <dt>承载</dt><dd>ShareActivity，<b>独立任务</b>（不进本应用任务栈、不在最近任务里留条目、处理完即结束）。底部面板盖在来源 App 上，遮罩只压暗 32%（scrimAlpha.dim），能看见身后的相册：用户知道“我还在相册里，只是叫出了一个工具”，心智上没有“跳进了另一个 App”的切换成本。面板高度随内容，最高到状态栏下 64 dp，设备多时面板内滚动。不经过引导页 / 模式选择 / 首页，不改默认模式。</dd>
+        <dt>摘要</dt><dd>最多 4 个 48 dp 缩略图（超过 4 项时第 4 格写“+n”），视频带播放三角；文字按类型计数（“3 个视频 · 3 张照片”“2 首音乐”）；分享的是网址时显示网址本身（单行，中间省略，见 S04）。缩略图本地生成，只在本机显示，不写日志。</dd>
+        <dt>准备文件</dt><dd><ul><li><b>到达即开始</b>：逐项试读（≤2 s）后按分享顺序复制到本应用缓存，与找设备<b>并行</b>——用户找电视、读名字的几秒正好被复制用掉，照片和短视频多半在点电视之前就已准备好（把等待藏进用户本来就要花的时间）。</li><li>0–1 s 不显示进度行（避免一闪而过）；之后显示“正在准备文件 43%”+ 线性进度，右侧“选好电视后自动开始”告诉用户<b>不用等它</b>；完成后变为 success 勾“文件已准备好”，2 s 后收起该行。</li><li>大小未知（只能顺序读取的云盘流）：“正在准备文件 · 已读取 320 MB”+ 不定进度条。</li><li>为什么复制（拍板依据）：分享授权会随来源 App 被回收（锁屏久了、来源 App 被系统杀掉），复制后推送 1 小时也不中断；缓存文件可随机读取，电视能拖动进度。</li></ul></dd>
+        <dt>分组</dt><dd>“最近推送过”（含推送过的本应用接收端）→“电视自带投屏”→“本应用接收端”，行样式与 P01 一致（图标 + 等宽协议标签，不靠颜色）；空组不显示标题。“ⓘ 不加密”同 P01（可点，说明弹层）。只列<b>能推送</b>的设备，不显示镜像能力（这里推的是内容，不是画面）。</dd>
+        <dt>置灰</dt><dd>关了“DLNA 接收”的本应用接收端排在最下方，outline 色 + 原因写在副标题里（可换行，不截断）；可获得焦点，点按不做任何事（原因已在眼前）。内容含视频或照片时，音箱行同样置灰，副标题“只能推送音乐”。</dd>
+        <dt>点一行</dt><dd>= <b>决定推送</b>：首次 → P02 对话框（盖在面板上）→ 视频很可能放不了 → 面板内容换成 P10 → S02。从这一刻起推送由前台服务持有：关闭面板、按主页键都不会取消。</dd>
+        <dt>搜索</dt><dd>最近推送过的电视按上次地址直接探测，通常 1 秒内出现；0–3 s 骨架行（同 02）；3 s 起列表下方“还在找… 请确认电视已开机，并且和手机连的是同一个路由器”；10 s 一台可推送设备都没有 → S06。</dd>
+        <dt>关闭</dt><dd>下滑、点遮罩、✕、返回键 = 放弃本次分享：停止复制、删除已复制的文件、不推送、不弹确认（还没决定推送，丢弃没有损失，原文件仍在来源 App）。右上角 ✕ 是下滑手势的可见替代（TalkBack、开关控制用户无法依赖拖动）。</dd>
+        <dt>首次</dt><dd>本机从没推送过时，摘要下方出现一次性说明（下方示意），[知道了] 后不再显示。</dd>
+        <dt>读屏</dt><dd>打开时焦点在标题“推送到电视”；摘要合并朗读“3 个视频，3 张照片，正在准备文件 43%”；准备进度每 25% 播报一次（polite），完成时播报“文件已准备好”；分组标题为 heading；置灰行读作“客厅电视，不可用，在这台电视的设置里打开 DLNA 接收后才能推送”；✕ 读作“关闭，不推送”。</dd>
+        <dt>深色</dt><dd>面板 surfaceContainerLow；缩略图与身后的相册是“内容”，两种主题一致；进度轨道 surfaceVariant + primary；置灰只用 outline 实色，不叠透明度。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">第一次使用时的说明（摘要下方，一次性）</div>
+      <div class="infol mt8" style="max-width:328px"><svg class="ic s16"><use href="#i-shield"/></svg><div style="flex:1"><b>电视会直接从手机读取你分享的文件</b>不需要存储权限。文件会先复制到本应用里，推送结束后立即删除。电视自带投屏不加密。<div style="margin-top:4px"><span class="btn txt sm" style="padding:0;height:36px">知道了</span></div></div></div>
+      </div>
+    </article>
+
+    <!-- S02 准备与连接 -->
+    <article class="board">
+      <div class="bh"><span class="id">S02</span><b>准备中 xx% → 连接 → 开始播放 · 可取消</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="选好电视后，正在准备文件并连接电视"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>21:06</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">相册 · 海边</span></div>
+        <div class="gal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle" style="margin-bottom:10px"></div>
+          <div class="row gap4" style="margin-left:-12px"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t-tl" style="flex:1">推送到 卧室电视</span></div>
+          <div class="row gap12 mt8"><div class="thumbs s"><i class="vid"></i><i></i><i class="vid"></i></div><div class="t-bs mv">3 个视频 · 3 张照片</div></div>
+          <div class="card mt12" style="padding:14px 16px">
+            <div class="step"><span class="sd"><span class="spin pc"></span></span><b style="font-weight:500;flex:1">正在准备第 1 项</b><span class="num" style="font-size:20px;font-weight:600">43<small style="font-size:13px;font-weight:500">%</small></span></div>
+            <div class="lin mt8" style="color:var(--primary)"><i style="width:43%"></i></div>
+            <div class="row t-bs mv mt8 num"><span>1.2 GB / 2.8 GB</span><span class="sp"></span><span>约剩 20 秒</span></div>
+            <div class="step todo mt12"><span class="sd wait"></span>连接 卧室电视</div>
+            <div class="step todo mt4"><span class="sd wait"></span>开始播放</div>
+          </div>
+          <div class="infol mt12"><svg class="ic s16"><use href="#i-info"/></svg><div>第 1 项准备好就开始播放，其余边放边准备。现在离开这里，推送也不会中断。</div></div>
+          <div class="mt16"><span class="btn out blk">取消推送</span></div>
+          <div style="height:8px"></div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">用户拍板：准备中 xx% + 取消</span><span class="tagref">P05 三步 / 20 s</span></div><dl>
+        <dt>结构</dt><dd>与 P05 同一套“三步进度”语言，前面多一步“准备文件”：准备 → 连接 → 播放。<b>只等第 1 项</b>（多项时写“正在准备第 1 项”，进度按第 1 项计）：用户要的是“电视尽快开始放”，不是“全部复制完”。单项时写“正在准备文件”。</dd>
+        <dt>进度</dt><dd>百分比 20 sp 等宽数字是本卡唯一大数字；下方“已复制 / 总大小”与“约剩 n 秒”，预计超过 60 s 改写“文件较大，约剩 3 分钟。可以先离开，准备好后自动播放”。大小未知时只写“已读取 320 MB”，不显示百分比与剩余时间（不编造数字）。剩余时间只在跨档时变化，不逐秒跳。</dd>
+        <dt>连接</dt><dd>第 1 项就绪后进入“连接 卧室电视 → 电视正在加载…”，规则完全沿用 P05：10 s 起提示“如果电视上出现确认提示，请用遥控器点「允许」”（推到本应用接收端时一开始就提示），20 s 或明确错误 → 本卡换成 P13 对应失败卡（紧凑版）。</dd>
+        <dt>取消</dt><dd>[取消推送] 用 Outlined（还没开始播放，取消是“退回”不是“终止”）：停止复制并删除缓存；已在连接则向电视发停止；关闭面板回到来源 App，系统 Toast“已取消，没有推送任何内容”（面板已关闭，只能用 Toast；它是结果确认，不需要操作）。不弹二次确认：损失只是重新分享一次。</dd>
+        <dt>换一台</dt><dd>左上返回箭头 = 回到 S01 重新选电视，<b>已复制的进度保留</b>（复制与选哪台无关）；读屏标签“换一台电视”。</dd>
+        <dt>离开</dt><dd>按主页键 / 切走：推送前台服务继续准备和连接，通知“正在准备推送到 卧室电视 43%”[取消]；成功后通知换成 P12 媒体通知。再从通知点进来 → 本应用遥控页（不再回到分享面板）。</dd>
+        <dt>读屏</dt><dd>当前步骤为 polite liveRegion（“正在准备第 1 项”“已连接卧室电视”“电视正在加载”），百分比每 25% 播报一次，秒数不播报；失败卡出现时焦点移到卡片标题并 assertive 播报。</dd>
+        <dt>深色</dt><dd>完成的步骤 successContainer 勾；进行中 primary 转圈；未开始 outline 空心圈 + onSurfaceVariant 字（同 P05）。</dd>
+      </dl></div>
+    </article>
+
+    <!-- S03 已开始 -->
+    <article class="board">
+      <div class="bh"><span class="id">S03</span><b>已开始推送 · [完成] 回来源 App / [打开遥控]</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="已在卧室电视上开始播放，可以完成或打开遥控"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>21:07</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-dlna"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">相册 · 海边</span></div>
+        <div class="gal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="iconTile" style="width:48px;height:48px;border-radius:14px;background:var(--success-container);color:var(--on-success-container)"><svg class="ic"><use href="#i-check"/></svg></div>
+          <div class="t-tl mt12">已在 卧室电视 上开始播放</div>
+          <div class="t-bm mv mt4" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">第 1 / 6 项 · 家庭旅行_海边.mp4</div>
+          <div class="card mt16" style="padding:12px 14px">
+            <div class="row t-bs num" style="color:var(--on-surface)"><span class="row gap6"><span class="spin" style="width:12px;height:12px;border-width:1.5px;color:var(--primary)"></span>其余 5 项正在准备</span><span class="sp"></span><span>60%</span></div>
+            <div class="lin mt8" style="color:var(--primary)"><i style="width:60%"></i></div>
+          </div>
+          <div class="infol mt12"><svg class="ic s16"><use href="#i-remote"/></svg><div>离开后，可以在通知栏或锁屏上暂停、切换和结束推送。</div></div>
+          <div class="mt20"><span class="btn fill blk">完成</span></div>
+          <div class="mt8"><span class="btn ton blk"><svg class="ic s18"><use href="#i-remote"/></svg>打开遥控</span></div>
+          <div style="height:12px"></div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">用户拍板：推送开始后可“打开遥控”</span><span class="tagref">PRD 8.1.2 F</span></div><dl>
+        <dt>何时</dt><dd>电视报告开始播放（视频 / 音乐）或已取走照片（照片写“已发送到 卧室电视”，不写“已显示”，同 P09）。</dd>
+        <dt>两个出口</dt><dd><ul><li><b>[完成]</b>（Filled，主）= 关闭面板回到来源 App，推送继续。分享的典型后续是“接着在相册里看 / 再选别的”，主按钮应顺着用户原来的任务走，而不是把人拉进本应用。</li><li><b>[打开遥控]</b>（Tonal）= 在本应用自己的任务里打开本次会话的遥控页（P06 / P07 / P09），分享面板随即结束。遥控页的返回 = 本应用设备列表（顶部推送横幅），<b>不会</b>回到来源 App（来源 App 在最近任务里）；见待确认 Q15-A。</li></ul></dd>
+        <dt>不自动关</dt><dd>不做“3 秒后自动关闭”：限时消失的内容对读屏和阅读慢的用户不友好（WCAG 2.2.1）；下滑 / 点遮罩 / 返回与 [完成] 等价，关闭成本本来就只有一步。</dd>
+        <dt>其余项</dt><dd>仍在准备时显示“其余 5 项正在准备 60%”；全部完成后这块卡片换成 success 勾“全部 6 项已准备好”。准备中途某项读取中断 / 文件已不存在：该项跳过，卡片下方一行“第 3 项读取中断，已跳过”（中性信息，不打断播放，沿用 P08 列表失败策略）。</dd>
+        <dt>读屏</dt><dd>进入时焦点移到标题并 polite 播报“已在卧室电视上开始播放”；“完成”在“打开遥控”之前（视觉顺序 = 焦点顺序）。</dd>
+        <dt>深色</dt><dd>成功图标块 successContainer + onSuccessContainer（深色 #135228 / #B5F1BD）；只在图标块上用成功色，标题仍是 onSurface。</dd>
+      </dl></div>
+    </article>
+
+    <!-- S04 网页地址 -->
+    <article class="board">
+      <div class="bh"><span class="id">S04</span><b>分享的是网页地址 · [改用屏幕镜像] / [仍然推送]</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="分享的是网页地址时的说明面板"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>21:10</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-close"/></svg></span><span class="t">视频详情</span></div>
+        <div style="margin:0 16px;border-radius:16px;overflow:hidden;aspect-ratio:16/9;background:#000;position:relative"><svg class="scene" viewBox="0 0 960 432" preserveAspectRatio="xMidYMid slice"><use href="#scene" width="960" height="432"/></svg></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="row" style="align-items:flex-start"><span class="t-tl" style="flex:1">这是网页地址，电视通常打不开</span><span class="ib" style="margin:-10px -12px 0 0"><svg class="ic"><use href="#i-close"/></svg></span></div>
+          <div class="urlbox mt12">https://b23.tv/AbC12xY</div>
+          <div class="t-bm mv mt12">电视只能打开视频文件的地址（如 .mp4、.m3u8）。想在电视上看这个视频，可以把手机屏幕镜像到电视，再回到视频 App 播放。</div>
+          <div class="mt20"><span class="btn fill blk"><svg class="ic s18"><use href="#i-mirror"/></svg>改用屏幕镜像</span></div>
+          <div class="t-bs mv ctr mt4">需要电视上装有本应用 · 手机会询问是否允许录屏</div>
+          <div class="mt12"><span class="btn ton blk">仍然推送</span></div>
+          <div class="t-bs mv ctr mt4">电视会自己联网打开这个地址，本应用不会访问它</div>
+          <div style="height:12px"></div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">D14-1 = A（用户拍板）</span><span class="tagref">PRD 8.1.2 C 网址类型</span><span class="tagref">零外联</span></div><dl>
+        <dt>判定</dt><dd>只看文字里第一个 http / https 网址的扩展名（PRD C）：能识别为媒体地址 → 直接按 F13 推网址（S01 摘要显示网址 + [修改] → P04）；识别不出来（含 b23.tv 这类短链接）一律视为网页地址 → 本面板。App <b>不访问</b>、不展开短链接。</dd>
+        <dt>为什么在选设备前</dt><dd>“推还是镜像”决定了能选哪些设备（镜像只能选本应用接收端）。先让用户做这个决定，再给对应的设备列表，避免选了电视才发现路不通。</dd>
+        <dt>文案</dt><dd>标题直接说结论“这是网页地址，电视通常打不开”（用户最想知道“行不行”）；正文一句原因 + 一句出路。网址等宽显示、可换行（onSurface：这是要核对的信息）。两个按钮下各一行代价说明：镜像要本应用接收端 + 录屏授权；推送是电视自己联网（零外联承诺的可感知部分）。</dd>
+        <dt>改用镜像</dt><dd>关闭面板，在本应用自己的任务里打开设备列表（03 / P01），顶部横幅“选好电视开始镜像后，回到视频 App 播放即可”；之后走正常镜像流程（06 → 系统授权 → 07）。附近没有本应用接收端时，03 照常显示 04 诊断和“获取安装方法”（F26）。</dd>
+        <dt>仍然推送</dt><dd>→ S01，摘要显示该网址与 [修改]；失败时沿用 P13 ④“电视打不开这个网址”[修改网址][换成本地文件]。</dd>
+        <dt>正在镜像</dt><dd>分享进来时已经在镜像：主按钮换成 [知道了]，正文“正在镜像到 客厅电视。回到视频 App 直接播放，电视上就能看到”；次按钮 [仍然推送] 照旧（点电视时走 S07 冲突确认）。</dd>
+        <dt>读屏</dt><dd>标题为 heading，打开时焦点在标题；网址读作“网址：https 冒号 b23 点 tv …”（按字符读，便于核对）；两行代价说明分别作为对应按钮的描述（“改用屏幕镜像，按钮，需要电视上装有本应用，手机会询问是否允许录屏”）。</dd>
+        <dt>深色</dt><dd>网址框 surfaceContainerHighest + onSurface 等宽字；不使用 warning：这是事实说明，用户没有做错什么。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">已经在镜像时（内容示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="t-tm">这是网页地址，电视通常打不开</div><div class="t-bm mv mt8">正在镜像到 客厅电视。回到视频 App 直接播放，电视上就能看到。</div><div class="mt12"><span class="btn fill blk">知道了</span></div><div class="mt8"><span class="btn ton blk">仍然推送</span></div></div>
+      </div>
+    </article>
+
+    <!-- S05 读取 / 空间 / 类型 -->
+    <article class="board wide">
+      <div>
+        <div class="bh"><span class="id">S05</span><b>读不到 · 放不下 · 不支持 · 提示与下一步（图示：部分忽略 + 部分读不到）</b></div>
+        <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+          <div class="fit" style="flex:0 1 380px;min-width:0"><div class="phone" role="img" aria-label="分享面板顶部提示已忽略 1 个文件、2 个文件读不到"><span class="cam"></span><div class="scr">
+            <div class="sb"><span>21:12</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+            <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">文件管理 · 下载</span></div>
+            <div class="scrim"></div>
+            <div class="sheet">
+              <div class="handle" style="margin-bottom:10px"></div>
+              <div class="row"><span class="t-tl" style="flex:1">推送到电视</span><span class="ib" style="margin-right:-12px"><svg class="ic"><use href="#i-close"/></svg></span></div>
+              <div class="row gap12 mt4"><div class="thumbs"><i class="vid"></i><i class="vid"></i></div><div style="flex:1;min-width:0"><div class="t-ll">2 个视频</div><div class="t-bs mv">按分享的顺序播放</div></div></div>
+              <div class="infol mt12"><svg class="ic s16"><use href="#i-info"/></svg><div><b>已忽略 1 个文件</b>只能推送视频、照片和音乐</div></div>
+              <div class="infol mt8"><svg class="ic s16"><use href="#i-file"/></svg><div><b>有 2 个文件读不到，已跳过</b>它们在云盘里，还没下载到手机。可以先在云盘 App 里下载，再分享一次</div></div>
+              <div class="mt12"><div class="row t-bs mv num"><span>正在准备文件 18%</span><span class="sp"></span><span>选好电视后自动开始</span></div><div class="lin mt4" style="color:var(--primary)"><i style="width:18%"></i></div></div>
+              <div class="lbl" style="padding-top:12px">最近推送过</div>
+              <div class="li" style="min-height:64px"><span class="av p"><svg class="ic"><use href="#i-dlna"/></svg></span><div class="tx"><div class="t1">卧室电视</div><div class="t2"><span class="proto">DLNA</span> 上次 昨天</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+              <div class="li" style="min-height:64px"><span class="av p"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">书房盒子</div><div class="t2"><span class="proto">WSC</span> 上次 3 天前</div></div><span class="tr"><svg class="ic"><use href="#i-chev"/></svg></span></div>
+              <div class="gb"></div>
+            </div>
+          </div></div></div>
+          <div style="flex:1;min-width:280px;max-width:420px;display:flex;flex-direction:column;gap:8px">
+            <div class="t-ls mv">不阻断 · 摘要下方信息条（中性色），能推的照常推</div>
+            <div class="infol"><svg class="ic s16"><use href="#i-info"/></svg><div><b>① 已忽略 2 个文件</b>只能推送视频、照片和音乐（PDF、文档、压缩包等被过滤）</div></div>
+            <div class="infol"><svg class="ic s16"><use href="#i-file"/></svg><div><b>② 有 2 个文件读不到，已跳过</b>分享它的应用没有允许读取（无授权 / file:// 地址）</div></div>
+            <div class="infol"><svg class="ic s16"><use href="#i-file"/></svg><div><b>③ 有 2 个文件读不到，已跳过</b>它们在云盘里，还没下载到手机。可以先在云盘 App 里下载，再分享一次</div></div>
+            <div class="infol"><svg class="ic s16"><use href="#i-info"/></svg><div><b>④ 一次最多推送 100 项，已取前 100 项</b></div></div>
+            <div class="infol"><svg class="ic s16"><use href="#i-info"/></svg><div><b>⑤ 第 3 项读取中断，已跳过 / 第 2 项已不存在，已跳过</b>准备过程中发生，显示在 S02 / S03 卡片下方</div></div>
+            <div class="t-ls mv mt8">阻断 · 面板内容换成结果卡（同 P13 组件），不显示设备列表</div>
+            <div class="failc"><svg class="ic s18" style="color:var(--error)"><use href="#i-file"/></svg><div>⑥ 这些文件不能推送到电视<small>可以推送视频、照片、音乐，或者视频网址。PDF、文档可以打开后用屏幕镜像在电视上看</small><div class="acts"><span class="p">知道了</span><span>改用屏幕镜像</span></div></div></div>
+            <div class="failc"><svg class="ic s18" style="color:var(--error)"><use href="#i-file"/></svg><div>⑦ 读不到分享的文件<small>分享它的应用没有允许读取。可以选好电视后，在本应用里重新选择</small><div class="acts"><span class="p">在本应用里重新选</span><span>取消</span></div><small style="margin-top:6px">云盘原因时副文案换成③；点主按钮后保留设备列表，标题改为“选好电视后，从相册重新选择”，点电视 → P03。</small></div></div>
+            <div class="failc"><svg class="ic s18" style="color:var(--error)"><use href="#i-file"/></svg><div>⑧ 手机空间不足<small>6 个文件需要约 3.2 GB，当前可用 1.1 GB</small><div class="acts"><span class="p">只推送前 2 项（0.9 GB）</span><span>改用屏幕镜像</span><span>取消</span></div></div></div>
+            <div class="failc"><svg class="ic s18" style="color:var(--error)"><use href="#i-file"/></svg><div>⑨ 手机空间不足<small>这个视频需要约 4.1 GB，当前可用 1.1 GB。清理空间后再分享，或者改用屏幕镜像</small><div class="acts"><span class="p">改用屏幕镜像</span><span>取消</span></div></div></div>
+            <div class="failc"><svg class="ic s18" style="color:var(--error)"><use href="#i-link"/></svg><div>⑩ 没有找到网址<small>可以分享视频文件，或者以 .mp4、.m3u8 结尾的视频地址</small><div class="acts"><span class="p">知道了</span></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.2 C / D</span><span class="tagref">用户拍板：空间 / 云盘 / 无权限 / 类型</span><span class="tagref">P13 组件</span></div><dl>
+        <dt>分级</dt><dd>按“还能不能推”分两级：<b>还能推</b> → 摘要下方信息条（surfaceContainer 中性底，粗体一句结果 + 一句原因），设备列表照常，用户什么都不用做；<b>一项都推不了</b> → 面板内容换成结果卡（failc，与 P13 同一组件：发生了什么 → 原因 → 下一步），不显示设备列表（列出电视却点不了更糟）。</dd>
+        <dt>时机</dt><dd>到达即检查（≤2 s），检查期间设备照常搜索；空间按“待复制总大小 + 预留”在复制<b>之前</b>判断（预留值交开发，本稿假设 500 MB，见 Q15-C）。大小未知的流边复制边检查，可用空间低于预留时停止该项 → 按⑤“读取中断”处理或⑨。</dd>
+        <dt>读不到的原因</dt><dd>只写两类人话原因：“分享它的应用没有允许读取”（无授权、file:// 地址）与“在云盘里，还没下载到手机”（云盘提供方打不开）。<b>判断不出是哪类时用通用文案“读不到这个文件”</b>，不猜。原因只影响文案，不记录文件名。</dd>
+        <dt>空间不足</dt><dd>能放下一部分 → 主按钮“只推送前 n 项（大小）”（按分享顺序累加到放得下为止，不跳着挑）；一项都放不下 → 主按钮 [改用屏幕镜像]——镜像不需要复制，是唯一不用清理空间就能看的路。不提供“去清理空间”跳转（系统存储页因 ROM 而异，跳过去用户也很难回来）。</dd>
+        <dt>颜色</dt><dd>信息条一律中性（结果已经被处理，不需要用户警觉）；结果卡只在 18 dp 图标上用 error 色，卡片本身中性（同 P13：失败是结果，不是危险）。</dd>
+        <dt>读屏</dt><dd>信息条在摘要之后、设备列表之前，按顺序朗读“已忽略 1 个文件，只能推送视频、照片和音乐”；结果卡出现时焦点移到卡片标题并 assertive 播报。</dd>
+        <dt>200%</dt><dd>信息条与结果卡文字可多行；结果卡按钮放不下时纵向排列，主按钮在上。</dd>
+      </dl></div>
+    </article>
+
+    <!-- S06 没发现设备 -->
+    <article class="board">
+      <div class="bh"><span class="id">S06</span><b>没有发现可以推送的电视 · 10 秒</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="没有发现可以推送的电视"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>21:14</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">相册 · 海边</span></div>
+        <div class="gal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle" style="margin-bottom:10px"></div>
+          <div class="row"><span class="t-tl" style="flex:1">推送到电视</span><span class="ib" style="margin-right:-12px"><svg class="ic"><use href="#i-close"/></svg></span></div>
+          <div class="row gap12 mt4"><div class="thumbs s"><i class="vid"></i><i></i></div><div class="t-bs mv">1 个视频 · 1 张照片 · 文件已准备好</div></div>
+          <div class="ctr mt24"><span class="iconTile" style="margin:0 auto;background:var(--surface-container-high);color:var(--on-surface-variant)"><svg class="ic s28"><use href="#i-search"/></svg></span></div>
+          <div class="t-tl ctr mt16">没有发现可以推送的电视</div>
+          <div class="t-bm mv ctr mt8">请确认电视已开机，并且和手机连的是同一个路由器。电视自带投屏还需要路由器允许设备互相发现。</div>
+          <div class="mt20"><span class="btn fill blk"><svg class="ic s18"><use href="#i-refresh"/></svg>重新搜索</span></div>
+          <div class="mt8"><span class="btn ton blk"><svg class="ic s18"><use href="#i-router"/></svg>网络诊断</span></div>
+          <div class="ctr mt4"><span class="btn txt sm">电视上没有投屏功能？</span></div>
+          <div style="height:8px"></div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.2 F 状态</span><span class="tagref">04 诊断</span><span class="tagref">F26</span></div><dl>
+        <dt>触发</dt><dd>10 s 内一台可推送设备都没有（置灰行不算）。摘要保留在顶部：用户确认“我分享的东西还在”，<b>文件准备照常继续</b>（找到电视后立即可推）。</dd>
+        <dt>动作</dt><dd><ul><li>[重新搜索]：回到 S01 的骨架态重新计时。期间后台搜索一直在跑，<b>任何时候发现设备，空态自动换回列表</b>（不要求用户先点重新搜索）。</li><li>[网络诊断]：在分享自己的任务里打开 04 诊断页，返回后回到本面板，分享内容和准备进度都在。</li><li>[电视上没有投屏功能？] → F26 安装帮助（同一任务内打开，返回同上）。</li><li>取消 = ✕ / 下滑（同 S01 关闭规则），不另放“取消”按钮：每页最多 3 个动作。</li></ul></dd>
+        <dt>没有 Wi‑Fi</dt><dd>手机没有局域网时<b>不等 10 s</b>，立即显示下方状态；连上后自动重新搜索，无需操作。</dd>
+        <dt>读屏</dt><dd>空态出现时 assertive 播报标题；发现设备自动切回列表时 polite 播报“找到 1 台电视”。</dd>
+        <dt>深色</dt><dd>插画块 surfaceContainerHigh + onSurfaceVariant 图标；不用 error：没找到是状态，不是失败。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">手机没有连接 Wi‑Fi（内容示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="row gap12"><span class="iconTile" style="width:40px;height:40px;border-radius:12px;background:var(--surface-container-high);color:var(--on-surface-variant)"><svg class="ic s20"><use href="#i-wifi"/></svg></span><div class="t-tm" style="flex:1">手机没有连接 Wi‑Fi</div></div><div class="t-bs mv mt8">连上和电视同一个路由器后，会自动重新搜索。</div><div class="mt12"><span class="btn fill blk">打开 Wi‑Fi 设置</span></div></div>
+      </div>
+    </article>
+
+    <!-- S07 冲突 -->
+    <article class="board">
+      <div class="bh"><span class="id">S07</span><b>冲突 · 正在镜像 / 正在推送（同一台只能替换）</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="正在镜像时分享，点电视后确认结束镜像"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>21:20</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">相册 · 海边</span></div>
+        <div class="gal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="handle" style="margin-bottom:10px"></div>
+          <div class="t-tl">推送到电视</div>
+          <div class="pbanner mt12"><svg class="ic"><use href="#i-mirror"/></svg><div style="flex:1;min-width:0"><div class="t-ll">正在镜像到 客厅电视</div><div class="t-bs">镜像和推送不能同时进行</div></div></div>
+          <div class="lbl" style="padding-top:12px">最近推送过</div>
+          <div class="li" style="min-height:64px"><span class="av p"><svg class="ic"><use href="#i-dlna"/></svg></span><div class="tx"><div class="t1">卧室电视</div><div class="t2"><span class="proto">DLNA</span> 上次 昨天</div></div></div>
+          <div class="li" style="min-height:64px"><span class="av p"><svg class="ic"><use href="#i-mirror"/></svg></span><div class="tx"><div class="t1">客厅电视 <span class="tag pr">正在镜像</span></div><div class="t2"><span class="proto">WSC</span> 可以接收推送</div></div></div>
+          <div style="height:120px"></div>
+          <div class="gb"></div>
+        </div>
+        <div class="scrim" style="z-index:5"></div>
+        <div class="dlg" style="z-index:6">
+          <div class="t-hs" style="font-size:22px;line-height:30px">结束镜像，改为推送到 卧室电视？</div>
+          <div class="t-bm mv mt12">客厅电视会停止显示手机画面。</div>
+          <div class="row gap8 mt24" style="justify-content:flex-end"><span class="btn txt">取消</span><span class="btn txt" style="font-weight:600">结束镜像并推送</span></div>
+        </div>
+        <div class="sp"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.2 G</span><span class="tagref">D14-3 = A（只替换）</span><span class="tagref">P15 同一语言</span></div><dl>
+        <dt>横幅</dt><dd>分享进来时已有任务：面板顶部 primaryContainer 横幅说明当前在做什么（“正在镜像到 客厅电视”/“正在推送到 卧室电视 · 播放中”），<b>先告诉用户现状，再让他选</b>。横幅只是陈述，不可点（分享面板里不提供跳回镜像页，避免出口过多）。</dd>
+        <dt>正在镜像</dt><dd>点任一设备 → 本对话框（图示）。镜像对象本身开着 DLNA 接收时排在最前并标“正在镜像”，点它同样确认（推送会结束镜像）。连接中 / 等 PIN / 等电视确认时文案为“取消正在进行的连接，改为推送到 卧室电视？”[取消][改为推送]。</dd>
+        <dt>同一台</dt><dd>正在推送到卧室电视时点卧室电视 → “替换”对话框（下方示意）：<b>只有替换</b>（拍板 D14-3 = A，不提供“加到列表末尾”）。正文写清会失去什么：当前在放的内容与原播放列表不保留。确认后复用 F13“换内容”，不断开重连，直接进入 S02 的准备 / 加载。</dd>
+        <dt>另一台</dt><dd>沿用 P15 第三种：“停止推送到 卧室电视，改为推送到 次卧电视？”[取消][改为推送到 次卧电视]。转换进行中（含 P10 / 失败卡等用户选择的状态）追加一句“正在进行的视频转换也会取消”。</dd>
+        <dt>再次分享</dt><dd>分享面板已打开时又来了一次分享：用新内容替换旧内容（旧的复制停止并删除），Snackbar“已换成新分享的内容”（面板仍在，可以用 Snackbar）。</dd>
+        <dt>默认焦点</dt><dd>所有破坏性对话框默认焦点在标题，“取消”在左、确认在右且写出两个动作（“结束镜像并推送”“替换”不写“确定”）。</dd>
+        <dt>不拦截</dt><dd>本机正在当接收端播放时不提示（两套服务互不影响）。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">推送中分享到同一台（内容示意）</div>
+      <div class="mini mt8" style="max-width:328px;background:var(--surface-container-high);border:0;border-radius:24px"><div class="t-tl">替换 卧室电视 上正在播放的内容？</div><div class="t-bm mv mt8">正在播放“家庭旅行_海边.mp4”（3 / 12）。替换后改为播放刚分享的 2 个视频，原来的播放列表不会保留。</div><div class="row gap8 mt16" style="justify-content:flex-end"><span class="btn txt sm">取消</span><span class="btn txt sm" style="font-weight:600">替换</span></div></div>
+      <div class="t-ls mv" style="margin-top:12px">推送中的面板顶部与该行（内容示意）</div>
+      <div class="pbanner mt8" style="max-width:328px"><svg class="ic"><use href="#i-dlna"/></svg><div style="flex:1;min-width:0"><div class="t-ll">正在推送到 卧室电视</div><div class="t-bs">播放中 · 3 / 12 · 点它可以替换内容</div></div></div>
+      </div>
+    </article>
+
+    <!-- S08 Direct Share -->
+    <article class="board">
+      <div class="bh"><span class="id">S08</span><b>Direct Share · 分享面板里直接点电视名</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="系统分享面板中显示最近推送过的三台电视"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>21:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">相册 · 海边</span></div>
+        <div class="gal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="scrim"></div>
+        <div class="sheet anno" style="padding-bottom:0"><span class="anno-b">系统界面 · 样式由系统决定</span>
+          <div class="handle"></div>
+          <div class="row gap12"><div class="thumbs s"><i class="vid"></i><i></i></div><div><div class="t-ll">分享 2 项</div><div class="t-bs mv">1 个视频 · 1 张照片</div></div></div>
+          <div class="dsrow mt20">
+            <div class="dst"><span class="a"><svg class="ic"><use href="#i-dlna"/></svg><span class="bdg"><svg class="ic" style="width:14px;height:14px"><use href="#i-mark"/></svg></span></span>卧室电视</div>
+            <div class="dst"><span class="a"><svg class="ic"><use href="#i-mirror"/></svg><span class="bdg"><svg class="ic" style="width:14px;height:14px"><use href="#i-mark"/></svg></span></span>书房盒子</div>
+            <div class="dst"><span class="a"><svg class="ic"><use href="#i-dlna"/></svg><span class="bdg"><svg class="ic" style="width:14px;height:14px"><use href="#i-mark"/></svg></span></span>次卧电视</div>
+            <div class="dst"><span class="a g"><svg class="ic"><use href="#i-nouser"/></svg></span><span class="mv">其他应用的联系人</span></div>
+          </div>
+          <div class="hr" style="margin:16px 0"></div>
+          <div class="dsrow">
+            <div class="dst"><span class="a" style="border-radius:16px"><svg class="ic"><use href="#i-mark"/></svg></span>推送到电视</div>
+            <div class="dst"><span class="a g" style="border-radius:16px"></span><span class="mv">其他应用</span></div>
+            <div class="dst"><span class="a g" style="border-radius:16px"></span><span class="mv">其他应用</span></div>
+            <div class="dst"><span class="a g" style="border-radius:16px"></span><span class="mv">其他应用</span></div>
+          </div>
+          <div style="height:20px"></div>
+          <div class="gb"></div>
+        </div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">D14-2 = A（用户拍板）</span><span class="tagref">PRD 8.1.2 H</span><span class="tagref">androidx.core 快捷方式</span></div><dl>
+        <dt>放哪些</dt><dd>最多 3 个：30 天内推送成功过、按最近一次推送时间排序的设备（都已通过 P02 确认）。短标签 = 设备名（与“可信设备 → 推送过的电视”一致）；长标签“推送到 卧室电视”；图标区分电视（i-dlna / 本应用接收端 i-mirror）与音箱（i-music），应用角标由系统画。</dd>
+        <dt>匹配</dt><dd>电视匹配视频 / 照片 / 音乐 / 文字；音箱只匹配音乐（分享照片时不出现）。</dd>
+        <dt>点了之后</dt><dd>跳过 S01 的列表，但<b>不跳过内容检查</b>：面板以紧凑形态出现“正在找 卧室电视…”（下方示意，最长 5 s），同时检查并复制文件；阻断类结果（S05 ⑥–⑩）照常出现；视频可能放不了照常 P10。找到 → S02（返回箭头可回 S01 换一台）→ S03。找不到 → 落到 S01，顶部信息条“没有找到 卧室电视。请确认电视已开机、和手机连的是同一个路由器”。</dd>
+        <dt>冲突</dt><dd>正在镜像 / 正在推送时点快捷方式：不直接开始，先给 S07 对应确认（推错台的代价大于多一次点击）。</dd>
+        <dt>关闭</dt><dd>设置 09A“投屏”分组新增开关“在分享菜单显示最近推送的电视”（默认开，下方示意）；关闭时立即移除全部快捷方式。在“可信设备 → 推送过的电视”里忘记某台，立即移除它。</dd>
+        <dt>桌面</dt><dd>系统同时把它们放进桌面图标长按菜单时：点击 = 打开本应用并为该设备打开 P03 内容面板。</dd>
+        <dt>兼容</dt><dd>部分国产 ROM 自绘分享面板，可能不显示 Direct Share；普通“推送到电视”入口不受影响。</dd>
+        <dt>读屏</dt><dd>系统按长标签朗读“推送到 卧室电视，局域投屏”；紧凑面板的“正在找”为 polite liveRegion，找到时播报“已找到卧室电视”。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">点快捷方式后 · 正在找（紧凑面板）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="row gap12"><span class="spin l pc"></span><div style="flex:1"><div class="t-tm">正在找 卧室电视…</div><div class="t-bs mv">最多 5 秒 · 文件同时在准备</div></div></div><div class="lin mt12" style="color:var(--primary)"><i style="width:40%"></i></div><div class="row gap8 mt12"><span class="btn ton sm" style="flex:1">选其他电视</span><span class="btn txt sm">取消</span></div></div>
+      <div class="t-ls mv" style="margin-top:12px">设置 09A · 投屏分组新增（内容示意）</div>
+      <div class="mini mt8" style="max-width:328px;padding:4px 0"><div class="sli"><div class="tx"><div class="t1">在分享菜单显示最近推送的电视</div><div class="t2">分享照片和视频时，可以直接点电视的名字</div></div><span class="sw on"></span></div></div>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="grid2 mt32">
+    <div class="panel"><h4>TalkBack 要点</h4><ul>
+      <li><b>面板</b>：打开时焦点在标题；✕ 是下滑的可见替代，读作“关闭，不推送”；面板为 <code>paneTitle</code>“推送到电视”，打开 / 关闭时系统播报。</li>
+      <li><b>进度</b>：准备进度每 25% 播报一次，完成播报一次；步骤变化（准备 → 连接 → 加载 → 播放）各播报一次；秒数与字节数不播报。</li>
+      <li><b>设备行</b>：与 P01 一致；置灰行可聚焦并读出原因；“正在推送”的行读作“卧室电视，正在推送，双击替换内容”。</li>
+      <li><b>结果卡 / 对话框</b>：出现时焦点移到标题，assertive 播报；破坏性对话框默认焦点不在确认按钮。</li>
+    </ul></div>
+    <div class="panel"><h4>200% 字号要点</h4><ul>
+      <li>面板最高到状态栏下 64 dp，内容滚动；S02 / S03 的主按钮（取消推送 / 完成 / 打开遥控）固定在面板底部，不随内容滚走。</li>
+      <li>摘要行：缩略图固定 48 dp，文字可两行；字号 ≥150% 时缩略图减为 2 个 +“+n”。</li>
+      <li>信息条、结果卡、置灰行副标题全部可换行，不截断；结果卡按钮纵向排列。</li>
+      <li>Direct Share 的标签由系统截断，长标签不依赖完整显示。</li>
+    </ul></div>
+    <div class="panel"><h4>深色 / 浅色（遵循 v1.0.1 深色规则）</h4><ul>
+      <li>只用已有 token：面板 surfaceContainerLow、信息条 surfaceContainer、横幅 / “正在镜像”标签 primaryContainer、成功图标块 successContainer、失败只在图标上用 error。</li>
+      <li>身后的来源 App、缩略图是“内容”，两种主题一致；遮罩只压暗 32%，因为面板上的文字不在遮罩上。</li>
+      <li>不加密说明、读不到、已忽略都是事实说明，用中性色；warning 留给真正需要用户行动、且会自行变化的状态。</li>
+    </ul></div>
+    <div class="panel"><h4>与其他章节的关系</h4><ul>
+      <li><b>P02 / P10 / P13</b> 在分享面板里原样出现（对话框盖在面板上；P10 作为面板内容替换；P13 紧凑版替换 S02 步骤卡）。</li>
+      <li><b>P06–P09 / P12 / P14</b>：推送开始后的一切以第 13 章为准；P14 [再推一个] 打开 P03（本应用内）。</li>
+      <li><b>P11 转换</b>：转换的输入是缓存里的副本；推送结束时副本与转换文件一起删除。</li>
+      <li><b>09A</b>：投屏分组新增“在分享菜单显示最近推送的电视”。</li>
+      <li><b>长辈模式</b>：分享面板用大字版，家人设置的电视排最前（见第 16 章 E 系列“与其他章节的关系”）。</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<!-- ==================== 15 游戏模式（F18，v1.0.6） ==================== -->
+<section class="sec" id="game"><div class="wrap">
+  <div class="sec-h"><span class="no">15</span><h2>游戏模式（F18 · 低延迟镜像 · 双端）</h2><p>本质：游戏模式不是“更好的画质”，而是<b>一次明确的取舍——用清晰度、音画同步和电量换延迟</b>。由此三条公理：① 取舍在用户做选择的那一刻说清一次（首次说明卡），之后由档位说明文字被动常驻，不反复打扰；② 开着游戏模式时，用户的眼睛在游戏和电视上，<b>不在本应用</b>——提示绝不弹出打断游戏，只在用户回到本应用时出现，或在电视角落 3 秒告知“系统替你改了什么”；③ 延迟是估算，一律写“约 xx ms”；做不到就如实说（“低延迟将在下次投屏生效”），不让用户以为开了没用。</p>
+  <p><b>用户拍板（2026-11-15，以此为准）</b>：入口保留画质档位里的“游戏”一档（D18-1 = A）；会话中切换<b>即时全部生效</b>，允许 ≤1.5 秒停顿，需要切换中的过渡提示（D18-2 = A）；做不到即时生效时显示“低延迟将在下次投屏生效”；电视端 / 手机端延迟显示为“约 xx ms”（估算）；声音略晚、发热耗电提示的位置与时机由本稿设计。只用于 WSC 镜像；长辈模式不提供。页面编号 <b>G01–G06</b>（G = Game）。</p></div>
+
+  <h3 class="sub">档位切换状态 <small>发送端 07、通知、接收端共用</small></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:16%">状态</th><th style="width:32%">发送端（07 投屏中）</th><th style="width:26%">接收端（TV / 手机 / 平板）</th><th>进入 → 退出</th></tr></thead>
+    <tbody>
+      <tr><td><b>切换中</b><br><small>目标 ≤1.5 s，上限 5 s</small></td><td>G02：分段按钮“游戏”位显示转圈 + 其余档位不可点；说明行“正在切换到游戏模式，电视画面会停一下”；胶囊延迟段“切换中”</td><td>保留最后一帧；超过 300 ms 才在画面中央显示小卡“正在切换到游戏模式…”（切出：“正在切换画质…”）</td><td>画面恢复 → 游戏；5 s 未恢复 → 回到原档位 + 提示“切换没有成功，已保持‘均衡’”；切档不允许结束会话</td></tr>
+      <tr><td><b>游戏 · 全部生效</b></td><td>G03：“游戏”选中；说明“720p · 60 帧 · 延迟优先”+ 实测值；胶囊“约 72 ms”；自动调节副标题改为“只降码率和清晰度，不切档”</td><td>右上“游戏模式”标签 3 s 后消失；统计浮层第一行“延迟约 85 ms（估算）· 目标 100 ms”</td><td>切到其他档 → 切换中 → 该档；断线重连保持游戏</td></tr>
+      <tr><td><b>游戏 · 下次生效</b><br><small>做不到即时</small></td><td>“游戏”选中；已改为 720p · 60 帧；提示位中性卡“低延迟将在下次投屏生效”</td><td><b>不显示</b>“游戏模式”标签（低延迟没有真正生效，标签会误导）</td><td>下次会话开始即按游戏模式完整协商</td></tr>
+      <tr><td><b>游戏 · 已降为 30 帧</b></td><td>“游戏”仍选中；说明改“720p · 30 帧（已自动降低）”；提示位 warningContainer 卡</td><td>右上 3 s 标签“已降为 30 帧”（本稿新增，Q15-D）</td><td>原因：60 帧跟不上 / 手机温度“严重”。用户再点一次“游戏”= 重新尝试 60 帧</td></tr>
+      <tr><td><b>对方版本旧</b></td><td>“游戏”可选，只提供 720p · 60 帧；提示位中性卡说明并给更新路径</td><td>无变化（旧版不认识游戏模式）</td><td>N-1 兼容，不崩溃、不断开</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub mt32">提示放在哪里、何时出现 <small>本稿的设计结论：每个信息只在“它对用户有用的那一刻”出现一次</small></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:18%">层级</th><th style="width:22%">位置</th><th style="width:28%">内容</th><th>频率与理由</th></tr></thead>
+    <tbody>
+      <tr><td><b>① 决策时</b></td><td>G01 首次说明卡（07 或设置里第一次选“游戏”）</td><td>三条取舍：清晰度降到 720p；声音可能稍晚；发热耗电增加，建议接充电器</td><td><b>本机一生一次</b>（点“开启”后不再出现）。在做决定的地方讲代价，用户的确认才有意义</td></tr>
+      <tr><td><b>② 常驻、零打扰</b></td><td>07 分段按钮下的档位说明文字</td><td>“720p · 60 帧 · 延迟优先。声音可能比画面稍晚，看视频建议用‘均衡’”+“这台电视上实测约 85 ms（估算）”</td><td>一直在，但只在用户看画质时被读到（被动信息不消耗注意力）</td></tr>
+      <tr><td><b>③ 情境触发</b></td><td>07 档位说明下方的“提示位”卡片（G04），一次只显示一张</td><td>声音晚 &gt;150 ms、电量 &lt;20% 未充电、延迟达不到、网络差、降帧、过热、切换失败、版本旧、下次生效</td><td><b>每类每次投屏最多一次</b>；只在条件真实测到时出现；常驻直到 [知道了] 或条件消失（不用自动消失的 Snackbar）</td></tr>
+      <tr><td><b>④ 用户在游戏里</b></td><td>通知副标题（静默更新）+ 电视右上 3 s 标签</td><td>只有“系统替你改了设置”的事（降为 30 帧）</td><td><b>不发悬浮通知、不弹窗</b>：打断游戏的代价远高于晚一点知道；画面变卡时用户会看电视，电视角落正好给出原因</td></tr>
+      <tr><td><b>⑤ 记住结果</b></td><td>下次档位说明</td><td>“这台电视上实测约 140 ms”/“这台电视下次直接用 30 帧”</td><td>按接收端记在本机；把一次性的测量变成下次选择时的依据</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="sub mt32">发送端（手机）</h3>
+  <div class="boards">
+
+    <!-- G01 首次说明卡 -->
+    <article class="board">
+      <div class="bh"><span class="id">G01</span><b>第一次选“游戏” · 一次性说明卡</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="第一次选择游戏档时的说明对话框"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:40</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏中</span></div>
+        <div class="bd"><div class="card" style="border-radius:24px;padding:20px"><div class="row gap12"><span class="iconTile" style="width:48px;height:48px;border-radius:14px"><svg class="ic"><use href="#i-tv"/></svg></span><div class="t-tm" style="flex:1">客厅电视</div></div></div><div class="lbl" style="padding-top:22px">画质</div><div class="seg"><span>流畅</span><span class="on">均衡</span><span>高清</span><span><svg class="ic s16"><use href="#i-game"/></svg>游戏</span></div></div>
+        <div class="scrim"></div>
+        <div class="dlg">
+          <div class="ctr" style="color:var(--secondary)"><svg class="ic" style="margin:0 auto"><use href="#i-game"/></svg></div>
+          <div class="t-hs ctr mt16" style="font-size:22px;line-height:30px">开启游戏模式？</div>
+          <div class="mt16">
+            <div class="promise"><span class="pt" style="color:var(--on-surface-variant);background:var(--surface-container-highest)"><svg class="ic s20"><use href="#i-gauge"/></svg></span><div><b>延迟更低，画面更流畅</b><span>清晰度降到 720p，每秒 60 帧</span></div></div>
+            <div class="promise"><span class="pt" style="color:var(--on-surface-variant);background:var(--surface-container-highest)"><svg class="ic s20"><use href="#i-vol"/></svg></span><div><b>声音可能比画面稍晚</b><span>看视频建议用“均衡”</span></div></div>
+            <div class="promise"><span class="pt" style="color:var(--on-surface-variant);background:var(--surface-container-highest)"><svg class="ic s20"><use href="#i-thermo"/></svg></span><div><b>手机发热和耗电会增加</b><span>长时间玩，建议接上充电器</span></div></div>
+          </div>
+          <div class="row gap8 mt16" style="justify-content:flex-end"><span class="btn txt">取消</span><span class="btn txt" style="font-weight:600">开启</span></div>
+        </div>
+        <div class="sp"></div><div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.3 C 第一次选择</span><span class="tagref">H 温度与耗电</span><span class="tagref">G 音画</span></div><dl>
+        <dt>触发</dt><dd>本机<b>第一次</b>选“游戏”：07 分段按钮、设置 09A 把默认档设为“游戏”（G06）都算。点“开启”后永不再出现；点“取消”/ 点遮罩 = 档位不变，下次选“游戏”还会出现（用户没有确认过代价）。</dd>
+        <dt>内容</dt><dd>三行“得到什么 / 失去什么 / 要注意什么”，与 PRD C ①②③ 一一对应；每行 = 粗体结论 + 一句建议（不写“可能导致…”式恐吓）。图标用 onSurfaceVariant 中性色：这是知情说明，不是警告。不写“≤100 ms”等具体承诺（D18-3 条件）。</dd>
+        <dt>开启</dt><dd>关闭对话框并立即进入切换（G02）；从设置进来时只保存默认档，不切换当前会话。</dd>
+        <dt>读屏</dt><dd>标题 heading，打开时焦点在标题；三行各为一个焦点（“延迟更低，画面更流畅，清晰度降到 720p，每秒 60 帧”）；“开启”在“取消”之后。</dd>
+        <dt>深色</dt><dd>对话框 surfaceContainerHigh；图标底块用 surfaceContainerHighest（与对话框同阶会看不出块），图标 onSurfaceVariant；块本身装饰性，不要求 3:1。</dd>
+      </dl></div>
+    </article>
+
+    <!-- G02 切换中 -->
+    <article class="board">
+      <div class="bh"><span class="id">G02</span><b>切换中 · ≤1.5 秒停顿的过渡</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="正在切换到游戏模式"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:41</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏中</span></div>
+        <div class="bd">
+          <div class="card" style="border-radius:24px;padding:20px">
+            <div class="row gap12"><span class="iconTile" style="width:48px;height:48px;border-radius:14px"><svg class="ic"><use href="#i-tv"/></svg></span><div style="flex:1;min-width:0"><div class="t-tm">客厅电视</div><div class="row gap4 t-bs mv"><svg class="ic" style="width:14px;height:14px;color:var(--tertiary)"><use href="#i-lock"/></svg>已加密 · <span class="proto">WSC</span></div></div><span class="row gap6 t-ls" style="color:var(--success)"><span class="breath" style="width:8px;height:8px"></span>投屏中</span></div>
+            <div class="num mt16" style="font-size:40px;line-height:48px;font-weight:500">00:14:02</div>
+            <div class="capsule mt12" style="color:var(--on-surface-variant)"><span><span class="spin" style="width:12px;height:12px;border-width:1.5px"></span>切换中</span><span>均衡 → 游戏</span></div>
+          </div>
+          <div class="lbl" style="padding-top:22px">画质</div>
+          <div class="seg anno"><span class="anno-b">切换完成前不能再切</span><span class="na">流畅</span><span class="na">均衡</span><span class="na">高清</span><span class="ld"><span class="spin" style="width:14px;height:14px;border-width:2px"></span>游戏</span></div>
+          <div class="t-bs mt8" style="color:var(--on-surface)">正在切换到游戏模式，电视画面会停一下</div>
+          <div class="row gap12 mt16"><div style="flex:1"><div class="t-bm">自动调节</div><div class="t-bs mv">网络变差时自动降为“流畅”</div></div><span class="sw on"></span></div>
+          <div class="row gap12 mt16"><div style="flex:1"><div class="t-bm">声音</div><div class="t-bs mv">在电视上播放手机的声音</div></div><span class="sw on"></span></div>
+        </div>
+        <div class="ft"><span class="btn stop blk"><svg class="ic s20"><use href="#i-stop"/></svg>停止投屏</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">D18-2 = A（用户拍板）</span><span class="tagref">PRD 8.1.3 D</span></div><dl>
+        <dt>反馈</dt><dd>点下的 100 ms 内就进入本状态（动作要有即时回应，0.1 s 是“直接操作感”的阈值），哪怕电视那边还没开始停顿。被点的“游戏”位：secondaryContainer 底 + 16 dp 转圈代替勾；其他三档 outline 色、不可点（切换完成前不能再切，防止连点造成多次重建）。</dd>
+        <dt>说明行</dt><dd>“正在切换到游戏模式，电视画面会停一下”用 onSurface（用户此刻最需要读的一句）；<b>预告停顿</b>，用户看到电视定格时不会以为断线。不写秒数（停顿时长由设备决定，写了做不到更糟）。</dd>
+        <dt>胶囊</dt><dd>延迟段换成转圈“切换中”+“均衡 → 游戏”，码率 / 分辨率段隐藏（切换中的数值无意义）。</dd>
+        <dt>完成</dt><dd>画面恢复 → G03，分段按钮 200 ms 过渡到选中态，胶囊恢复数值；读屏 polite 播报“已切换到游戏模式”。</dd>
+        <dt>失败</dt><dd>5 s 未恢复 → 自动回到原档位，提示位出现中性卡“切换没有成功，已保持‘均衡’”[知道了]。<b>不会因切档结束会话</b>。</dd>
+        <dt>下次生效</dt><dd>技术上做不到即时（如接收链路无法重建）：仍切到 720p · 60 帧，提示位中性卡“已切到 720p · 60 帧。低延迟将在下次投屏生效”。用户得到的是真实状态，而不是一个“开了却没变”的按钮。</dd>
+        <dt>其他控件</dt><dd>自动调节、声音、停止投屏在切换中照常可用：停止永远不能被锁住。</dd>
+        <dt>读屏</dt><dd>“游戏”按钮状态描述“正在切换”；其余档位读“不可用，正在切换”；说明行为 polite liveRegion。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">切换没有成功 / 做不到即时生效（提示位，内容示意）</div>
+      <div class="hintc mt8" style="max-width:328px"><svg class="ic s18 mv" style="flex:none;margin-top:1px"><use href="#i-info"/></svg><div style="flex:1">切换没有成功，已保持“均衡”<small>电视上的画面没有受影响</small><div class="acts"><span>知道了</span></div></div></div>
+      <div class="hintc mt8" style="max-width:328px"><svg class="ic s18 mv" style="flex:none;margin-top:1px"><use href="#i-game"/></svg><div style="flex:1">已切到 720p · 60 帧<small>低延迟将在下次投屏生效</small><div class="acts"><span>知道了</span></div></div></div>
+      </div>
+    </article>
+
+    <!-- G03 游戏模式生效 -->
+    <article class="board">
+      <div class="bh"><span class="id">G03</span><b>游戏模式已生效 · 约 xx ms</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="游戏模式投屏中"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:42</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏中</span></div>
+        <div class="bd">
+          <div class="card" style="border-radius:24px;padding:20px">
+            <div class="row gap12"><span class="iconTile" style="width:48px;height:48px;border-radius:14px"><svg class="ic"><use href="#i-tv"/></svg></span><div style="flex:1;min-width:0"><div class="t-tm">客厅电视</div><div class="row gap4 t-bs mv"><svg class="ic" style="width:14px;height:14px;color:var(--tertiary)"><use href="#i-lock"/></svg>已加密 · <span class="proto">WSC</span></div></div><span class="row gap6 t-ls" style="color:var(--success)"><span class="breath" style="width:8px;height:8px"></span>投屏中</span></div>
+            <div class="num mt16" style="font-size:40px;line-height:48px;font-weight:500">00:14:20</div>
+            <div class="capsule mt12"><span><i class="d" style="background:var(--lat-1)"></i>约 72 ms<b style="color:var(--lat-1);font-weight:500">极佳</b></span><span>6.1 Mbps</span><span>720p60</span></div>
+          </div>
+          <div class="lbl" style="padding-top:22px">画质</div>
+          <div class="seg"><span>流畅</span><span>均衡</span><span>高清</span><span class="on"><svg class="ic s16"><use href="#i-check"/></svg>游戏</span></div>
+          <div class="t-bs mv mt8">720p · 60 帧 · 延迟优先。声音可能比画面稍晚，看视频建议用“均衡”</div>
+          <div class="row gap6 t-bs mt4" style="color:var(--on-surface)"><svg class="ic s16 mv"><use href="#i-history"/></svg>这台电视上实测约 85 ms（估算）</div>
+          <div class="row gap12 mt16"><div style="flex:1"><div class="t-bm">自动调节</div><div class="t-bs mv">游戏模式下只降码率和清晰度，不切档</div></div><span class="sw on"></span></div>
+          <div class="row gap12 mt16"><div style="flex:1"><div class="t-bm">声音</div><div class="t-bs mv">在电视上播放手机的声音</div></div><span class="sw on"></span></div>
+        </div>
+        <div class="ft"><span class="btn stop blk"><svg class="ic s20"><use href="#i-stop"/></svg>停止投屏</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.3 C / E 发送端</span><span class="tagref">用户拍板：约 xx ms</span><span class="tagref">03 延迟色阶</span></div><dl>
+        <dt>胶囊</dt><dd>延迟写“约 72 ms”（v1.0.6 起所有档位、通知、TV 浮层统一加“约”：估算值写成精确值是不实承诺）。色阶阈值不变（&lt;100 极佳），游戏模式的目标就是 100 ms。等级文字照旧只在跨档时变化（1 s 滞后）。</dd>
+        <dt>档位说明</dt><dd>被动常驻的取舍说明（层级 ②）：PRD C 原文。下面一行“这台电视上实测约 85 ms（估算）”只在这台接收端以前测过时出现（history 图标 + onSurface：这是用户做决定要用的数字，不是次要信息）；下次投屏时也出现在选“游戏”之前，帮助用户预判值不值得开。</dd>
+        <dt>自动调节</dt><dd>副标题随档位变化：游戏模式下“只降码率和清晰度，不切档”（PRD F：不再把游戏降成“流畅”）。开关语义不变，避免“游戏模式下开关不可用”的困惑。</dd>
+        <dt>通知</dt><dd>副标题“延迟约 72 ms · 6.1 Mbps · 游戏”；不加“游戏模式”按钮（PRD C）。降为 30 帧时静默改为“已降为 30 帧 · 手机温度较高”（不悬浮、不响铃）。</dd>
+        <dt>声音关闭</dt><dd>声音开关关闭或没有录音权限时，档位说明去掉“声音可能比画面稍晚”，声音晚提示也不出现（没有声音就没有不同步）。</dd>
+        <dt>读屏</dt><dd>胶囊读作“延迟约 72 毫秒，估算，极佳；6.1 兆比特每秒；720p 60 帧”；分段按钮“游戏，已选中”。</dd>
+        <dt>深色</dt><dd>延迟数字随色阶的是圆点和等级字（latency.* 深色值），数值本身用 onSurface（同 07）。</dd>
+      </dl>
+      <div class="notif mt16" aria-label="游戏模式通知示意"><div class="h"><i><svg class="ic" style="width:12px;height:12px"><use href="#i-mark"/></svg></i>局域投屏 · 现在</div><div class="t-ll mt8" style="color:var(--on-surface)">正在投屏到 客厅电视</div><div class="t-bs mv num">延迟约 72 ms · 6.1 Mbps · 游戏</div><div class="acts"><span>停止</span><span>切换为流畅</span></div></div>
+      </div>
+    </article>
+
+    <!-- G04 达不到 / 降级提示 -->
+    <article class="board wide">
+      <div>
+        <div class="bh"><span class="id">G04</span><b>提示位 · 达不到目标、降级、声音晚、发热耗电（图示：延迟达不到）</b></div>
+        <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+          <div class="fit" style="flex:0 1 380px;min-width:0"><div class="phone" role="img" aria-label="游戏模式下延迟达不到目标的提示卡"><span class="cam"></span><div class="scr">
+            <div class="sb"><span>20:55</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+            <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">投屏中</span></div>
+            <div class="bd">
+              <div class="card" style="border-radius:24px;padding:20px">
+                <div class="row gap12"><span class="iconTile" style="width:48px;height:48px;border-radius:14px"><svg class="ic"><use href="#i-tv"/></svg></span><div style="flex:1;min-width:0"><div class="t-tm">书房盒子</div><div class="row gap4 t-bs mv"><svg class="ic" style="width:14px;height:14px;color:var(--tertiary)"><use href="#i-lock"/></svg>已加密 · <span class="proto">WSC</span></div></div><span class="row gap6 t-ls" style="color:var(--success)"><span class="breath" style="width:8px;height:8px"></span>投屏中</span></div>
+                <div class="capsule mt16"><span><i class="d" style="background:var(--lat-2)"></i>约 140 ms<b style="color:var(--lat-2);font-weight:500">良好</b></span><span>5.4 Mbps</span><span>720p60</span></div>
+              </div>
+              <div class="lbl" style="padding-top:20px">画质</div>
+              <div class="seg"><span>流畅</span><span>均衡</span><span>高清</span><span class="on"><svg class="ic s16"><use href="#i-check"/></svg>游戏</span></div>
+              <div class="t-bs mv mt8">720p · 60 帧 · 延迟优先。声音可能比画面稍晚，看视频建议用“均衡”</div>
+              <div class="hintc mt12 anno"><span class="anno-b">提示位</span><svg class="ic s18 mv" style="flex:none;margin-top:1px"><use href="#i-gauge"/></svg><div style="flex:1">这台电视上延迟约 140 ms，达不到游戏模式的 100 ms<small>电视解码较慢，常见于老款电视或入门盒子</small><div class="acts"><span>知道了</span></div></div></div>
+              <div class="row gap12 mt16"><div style="flex:1"><div class="t-bm">自动调节</div><div class="t-bs mv">游戏模式下只降码率和清晰度，不切档</div></div><span class="sw on"></span></div>
+            </div>
+            <div class="ft"><span class="btn stop blk"><svg class="ic s20"><use href="#i-stop"/></svg>停止投屏</span></div>
+            <div class="gb"></div>
+          </div></div></div>
+          <div style="flex:1;min-width:280px;max-width:420px;display:flex;flex-direction:column;gap:8px">
+            <div class="t-ls mv">按优先级排列；同时成立时只显示最高的一张，关掉后显示下一张</div>
+            <div class="hintc"><svg class="ic s18 mv" style="flex:none"><use href="#i-info"/></svg><div>① 切换没有成功，已保持“均衡”<small>见 G02</small></div></div>
+            <div class="hintc w"><svg class="ic s18" style="flex:none"><use href="#i-thermo"/></svg><div>② 手机温度较高，已降为 30 帧<small>温度恢复后，可以再选一次“游戏”</small><div class="acts"><span>知道了</span></div></div></div>
+            <div class="hintc w"><svg class="ic s18" style="flex:none"><use href="#i-game"/></svg><div>③ 这台电视跟不上 60 帧，已改为 30 帧<small>下次投到这台电视时直接用 30 帧（发送端原因时：“手机性能不足，已改为 30 帧”）</small><div class="acts"><span>知道了</span></div></div></div>
+            <div class="hintc"><svg class="ic s18 mv" style="flex:none"><use href="#i-game"/></svg><div>④ 已切到 720p · 60 帧<small>低延迟将在下次投屏生效</small><div class="acts"><span>知道了</span></div></div></div>
+            <div class="hintc"><svg class="ic s18 mv" style="flex:none"><use href="#i-info"/></svg><div>⑤ 对方的局域投屏版本较旧<small>只能提供 720p · 60 帧，延迟不会明显降低。可以在“设置 → 把接收端安装到电视”给它更新</small><div class="acts"><span>去更新</span><span>知道了</span></div></div></div>
+            <div class="hintc"><svg class="ic s18 mv" style="flex:none"><use href="#i-gauge"/></svg><div>⑥ 这台电视上延迟约 140 ms，达不到游戏模式的 100 ms<small>原因二选一：“电视解码较慢，常见于老款电视或入门盒子”/“Wi‑Fi 不够稳定。建议手机和电视都连 5GHz，并靠近路由器”</small><div class="acts"><span>知道了</span></div></div></div>
+            <div class="hintc"><svg class="ic s18 mv" style="flex:none"><use href="#i-wifi"/></svg><div>⑦ 网络较差，画面可能卡顿或变模糊<div class="acts"><span>切到流畅</span><span>知道了</span></div></div></div>
+            <div class="hintc"><svg class="ic s18 mv" style="flex:none"><use href="#i-vol"/></svg><div>⑧ 声音比画面晚约 200 ms<small>看视频建议切回“均衡”</small><div class="acts"><span>切到均衡</span><span>知道了</span></div></div></div>
+            <div class="hintc"><svg class="ic s18 mv" style="flex:none"><use href="#i-battery"/></svg><div>⑨ 电量 18%，游戏模式耗电更快<small>接上充电器可以玩得更久</small><div class="acts"><span>知道了</span></div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.3 F / G / H</span><span class="tagref">层级 ③ 情境触发</span></div><dl>
+        <dt>位置</dt><dd>07 档位说明的正下方：提示讲的都是“这个档位的效果”，放在档位旁边，因果一眼可见（格式塔接近原则）。不放 Snackbar（自动消失，用户回到 App 时早没了）、不放对话框（阻断）、不放悬浮通知（打断游戏）。</dd>
+        <dt>频率</dt><dd><b>每类每次投屏最多一次</b>，只在条件真实测到时出现：⑥ 稳定 10 s 后中位数连续 10 s &gt;120 ms；⑧ 估算声音晚 &gt;150 ms 持续 10 s（测不出来就不提示，不显示猜测的数字；声音关闭时不提示）；⑨ <b>进入</b>游戏模式时电量 &lt;20% 且未充电（之后电量继续下降不再提示）；② 系统温度“严重”；③ 帧率连续 10 s &lt;45。</dd>
+        <dt>何时可见</dt><dd>触发时 App 在后台（用户在玩）→ 卡片排队；用户回到本应用时显示<b>仍然成立</b>的那张（网络已恢复的 ⑦ 直接丢弃）。② ③ 另外静默更新通知副标题，并在电视右上显示 3 s 标签（G05）——这两类是“系统替你改了设置”，用户会感到画面变化，需要在他正看着的地方给原因。</dd>
+        <dt>颜色</dt><dd>warningContainer 只给 ② ③（<b>系统已经替用户改了设置</b>）；其余为 surfaceContainerHigh 中性卡——它们是事实与建议，不需要用户警觉。卡内动作为文字按钮，高 36 dp、触控区扩到 48 dp；“切到流畅 / 切到均衡 / 去更新”是唯一可选的出路，[知道了] = 关闭本类到本次投屏结束。</dd>
+        <dt>不做</dt><dd>不自动切档（② ③ 降帧除外，PRD F 原则）；不在长辈模式出现（没有游戏档）。</dd>
+        <dt>读屏</dt><dd>卡片出现时 polite 播报标题（不抢焦点：用户可能正在操作别处）；卡片为一个分组，动作按钮独立可聚焦。</dd>
+        <dt>深色</dt><dd>warningContainer 深色 #5C4300 + #FFDEA3（≈7:1）；中性卡 surfaceContainerHigh 在深色下与 surface 区分靠色阶（#272A2F vs #111418），不用阴影。</dd>
+      </dl></div>
+    </article>
+
+    <!-- G06 设置默认档 -->
+    <article class="board">
+      <div class="bh"><span class="id">G06</span><b>设置 · 把“游戏”设为默认画质</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="设置页画质档位单选对话框，选中游戏"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">设置</span></div>
+        <div class="gl2">投屏</div>
+        <div class="sli"><div class="tx"><div class="t1">画质档位</div><div class="t2">自动 · 网络变差时自动降档</div></div><span class="val">自动</span></div>
+        <div class="sli"><div class="tx"><div class="t1">声音</div><div class="t2">只捕获手机播放的声音</div></div><span class="sw on"></span></div>
+        <div class="scrim"></div>
+        <div class="dlg" style="padding:24px 16px 16px">
+          <div class="t-hs" style="font-size:22px;line-height:30px;padding:0 8px">默认画质</div>
+          <div class="t-bs mv mt4" style="padding:0 8px">下次投屏开始时使用</div>
+          <div class="mt12" style="display:flex;flex-direction:column;gap:2px">
+            <div class="opt"><span class="radio"></span><div><div class="t-ll">自动</div><div class="t-bs mv">按网络情况自动选择</div></div></div>
+            <div class="opt"><span class="radio"></span><div><div class="t-ll">流畅</div><div class="t-bs mv">网络较差时更稳</div></div></div>
+            <div class="opt"><span class="radio"></span><div><div class="t-ll">均衡</div><div class="t-bs mv">适合日常镜像</div></div></div>
+            <div class="opt"><span class="radio"></span><div><div class="t-ll">高清</div><div class="t-bs mv">画面更清楚，需要好的网络</div></div></div>
+            <div class="opt on"><span class="radio"></span><div><div class="t-ll row gap4"><svg class="ic s16"><use href="#i-game"/></svg>游戏</div><div class="t-bs">720p · 60 帧 · 延迟优先，声音可能稍晚</div></div></div>
+          </div>
+          <div class="row gap8 mt12" style="justify-content:flex-end"><span class="btn txt">取消</span><span class="btn txt" style="font-weight:600">确定</span></div>
+        </div>
+        <div class="sp"></div><div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.3 C 设置 / D 开始前</span><span class="tagref">09A</span><span class="tagref">10 报告</span></div><dl>
+        <dt>规则</dt><dd><ul><li>“游戏”设为默认 → 下次投屏一开始就按游戏模式协商（音视频分组、接收端缓冲、解码器一次到位，不经过切换停顿）。</li><li>本机还没确认过 G01 时，点“确定”先弹 G01，“开启”后才保存。</li><li>选中项 primaryContainer 底 + 实心单选点（不只靠底色）；每项一句用途说明，“游戏”的说明含代价。各档参数以 PRD 8.6 为准，本图只示意结构。</li><li>长辈模式不显示本设置（画质固定“均衡”+ 自动调节）。</li></ul></dd>
+        <dt>报告</dt><dd>10 投屏报告：镜像延迟按档位分开统计，新增一行“游戏模式延迟（中位数）约 82 ms · 共 3 小时”（下方示意）；最近投屏行第二行在游戏档会话写“游戏 · 约 82 ms”。</dd>
+        <dt>读屏</dt><dd>单选组标题“默认画质”；每项“游戏，720p 60 帧，延迟优先，声音可能稍晚，已选中”。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">10 投屏报告新增行（内容示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="row gap12"><svg class="ic mv"><use href="#i-game"/></svg><div style="flex:1"><div class="t-bm">游戏模式延迟（中位数）</div><div class="t-bs mv">最近 30 天 · 共 3 小时</div></div><span class="num t-tm">约 82 ms</span></div></div>
+      </div>
+    </article>
+
+  </div>
+
+  <h3 class="sub mt32">接收端 · TV <small>深色固定；虚线外为过扫描区；焦点规范沿用 07。手机 / 平板接收端点按画面打开同一内容的统计面板</small></h3>
+  <div class="boards">
+    <!-- G05 TV -->
+    <article class="board wide">
+      <div><div class="bh"><span class="id">G05</span><b>TV · 切换过渡 · “游戏模式”标签 · 统计浮层（约 xx ms）· 一直显示延迟</b></div>
+      <div class="fit"><div class="tv theme-dark" role="img" aria-label="TV 游戏模式统计浮层与角落延迟数字"><div class="scr" style="background:#000">
+        <svg class="scene" viewBox="0 0 960 432" style="top:54px;height:432px"><use href="#scene" width="960" height="432"/></svg>
+        <div class="gtag" style="top:27px;left:48px;height:32px;padding:0 14px"><i style="width:8px;height:8px;border-radius:50%;background:var(--lat-1)"></i><span class="num">约 85 ms</span></div>
+        <div class="statpanel" style="padding:20px 22px">
+          <div class="row"><span style="font-size:20px;font-weight:600">投屏统计</span><span class="sp"></span><span class="row gap6" style="font-size:13px;color:var(--on-surface-variant)"><svg class="ic s16"><use href="#i-back"/></svg>返回键收起</span></div>
+          <div class="row gap8" style="margin-top:12px"><i style="width:10px;height:10px;border-radius:50%;background:var(--lat-1)"></i><span class="num" style="font-size:24px;line-height:32px;font-weight:600">延迟约 85 ms</span></div>
+          <div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">估算 · 游戏模式目标 100 ms</div>
+          <div class="lseg" style="margin-top:12px"><i style="width:21%;background:var(--primary)"></i><i style="width:26%;background:var(--tertiary)"></i><i style="width:33%;background:var(--secondary)"></i><i style="width:20%;background:var(--outline)"></i></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px;font-size:14px;line-height:20px" class="num">
+            <span><span style="color:var(--on-surface-variant)">网络</span><br>18 ms</span><span><span style="color:var(--on-surface-variant)">缓冲</span><br>22 ms</span><span><span style="color:var(--on-surface-variant)">解码</span><br>28 ms</span><span><span style="color:var(--on-surface-variant)">显示</span><br>17 ms</span>
+          </div>
+          <div style="margin-top:8px">
+            <div class="kv" style="padding:4px 0"><span>帧率</span><span>58 帧/秒</span></div>
+            <div class="kv" style="padding:4px 0"><span>画质</span><span>720p · 游戏模式</span></div>
+            <div class="kv" style="padding:4px 0"><span>解码</span><span>硬件 · 低延迟</span></div>
+          </div>
+          <div class="row" style="margin-top:8px;min-height:44px;font-size:15px"><span style="flex:1">一直显示延迟</span><span class="sw on"></span></div>
+          <div class="row gap12" style="margin-top:10px"><span class="tbtn" style="flex:1;justify-content:center;height:44px;font-size:15px">断开投屏</span><span class="tbtn f" style="flex:1;justify-content:center;height:44px;font-size:15px">关闭</span></div>
+        </div>
+      </div></div></div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:28px">
+        <div><div class="t-ls mv" style="margin-bottom:10px">切换中 · 保留最后一帧（画面截取，未缩放）</div>
+          <div class="tvmini theme-dark"><svg class="scene" viewBox="0 0 960 432" preserveAspectRatio="xMidYMid slice"><use href="#scene" width="960" height="432"/></svg>
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(39,42,47,.92);border-radius:20px;padding:14px 22px;display:flex;gap:12px;align-items:center;color:var(--on-surface);font-size:18px;white-space:nowrap;box-shadow:0 0 0 1px rgba(255,255,255,.06)"><span class="spin l" style="color:var(--primary)"></span>正在切换到游戏模式…</div></div></div>
+        <div><div class="t-ls mv" style="margin-bottom:10px">进入游戏模式 / 自动降帧 · 右上 3 秒标签</div>
+          <div class="tvmini theme-dark"><svg class="scene" viewBox="0 0 960 432" preserveAspectRatio="xMidYMid slice"><use href="#scene" width="960" height="432"/></svg>
+            <div class="gtag" style="top:16px;right:24px"><svg class="ic s20"><use href="#i-game"/></svg>游戏模式</div>
+            <div class="gtag" style="top:64px;right:24px"><svg class="ic s20"><use href="#i-thermo"/></svg>已降为 30 帧</div></div></div>
+      </div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.3 E 接收端</span><span class="tagref">13 统计浮层</span><span class="tagref">用户拍板：约 xx ms（估算）</span></div><dl>
+        <dt>切换中</dt><dd>保留最后一帧（不变黑、不变灰：变黑像断线）；<b>超过 300 ms</b> 才在中央显示小卡（多数切换在 1.5 s 内完成，300 ms 内结束的不打扰）；小卡 surfaceContainerHigh 92% + onSurface 18 sp + primary 转圈，不抢焦点、不响应按键。切出游戏时文案“正在切换画质…”。</dd>
+        <dt>标签</dt><dd>进入游戏模式（全部生效）时右上安全区显示“游戏模式”3 s 后淡出：scrim 60% + onScrim 16 sp + 手柄图标；“下次生效”状态不显示（低延迟没生效，标签会误导）。自动降帧时同位置显示“已降为 30 帧”3 s（本稿新增，原因留在手机端卡片里讲，电视上只说结果）。两者都不可聚焦，统计浮层打开时不显示。</dd>
+        <dt>浮层</dt><dd>第一行是本模式唯一关心的数：<b>“延迟约 85 ms”</b> 24 sp + 色阶圆点，下一行“估算 · 游戏模式目标 100 ms”（非游戏档时第二行只写“估算”）。四段耗时用一条分段条 + 数值（颜色只用 primary / tertiary / secondary / outline 区分顺序，<b>每段都写了名称和数值</b>，不靠颜色读数）；随后帧率（“58 帧/秒”）、画质、解码是否低延迟。其余行（来源、协议、码率、丢帧）在游戏档时折叠到浮层下半（滚动），保证第一屏不超过 1/3 画面。</dd>
+        <dt>一直显示</dt><dd>浮层内开关“一直显示延迟”（TV 焦点规范；默认关）；打开后左上安全区常驻小号“约 85 ms”（scrim 60% + onScrim 16 sp 等宽 + 色阶圆点），每 1 s 更新；<b>只在本次会话有效</b>，结束即关（不让“调试信息”变成永久遮挡）。左上而非右上：避开“游戏模式”标签与浮层的位置。</dd>
+        <dt>手机接收端</dt><dd>点按画面打开同样内容的统计面板（R06 规则：控制中改由控制条“连接信息”打开）；角落数字同规则，位置避开 R06 右边缘把手。</dd>
+        <dt>焦点</dt><dd>浮层默认焦点仍是“关闭”；“一直显示延迟”在按钮上方，方向键上移可达；8 s 无操作自动收起规则不变。</dd>
+        <dt>读屏</dt><dd>标签不抢焦点，以 polite 公告“已切换到游戏模式”“已降为 30 帧”；浮层第一行读作“延迟约 85 毫秒，估算，游戏模式目标 100 毫秒”。</dd>
+      </dl></div>
+    </article>
+  </div>
+
+  <div class="grid2 mt32">
+    <div class="panel"><h4>TalkBack 要点</h4><ul>
+      <li><b>分段按钮</b>：切换中“游戏”读“正在切换”，其余“不可用，正在切换”；完成 polite 播报“已切换到游戏模式”，失败播报卡片标题。</li>
+      <li><b>延迟</b>：一律读“约 xx 毫秒，估算”；胶囊数值每秒变化不播报（无 liveRegion），等级跨档时也不播报（避免游戏中读屏不停说话）。</li>
+      <li><b>提示位</b>：出现时 polite 播报一次标题，不移动焦点；卡片内动作独立可聚焦。</li>
+      <li><b>G01</b>：标题 heading，三行各为一个焦点，默认焦点在标题。</li>
+    </ul></div>
+    <div class="panel"><h4>200% 字号要点</h4><ul>
+      <li>分段按钮四档在 ≥150% 时改为 2×2 网格（每格 ≥48 dp），“游戏”图标保留；切换中转圈替换图标位置，不改变宽度。</li>
+      <li>档位说明与“实测约 xx ms”可换行；提示位卡片文字多行，按钮放不下时换行。</li>
+      <li>胶囊在 ≥150% 时只保留延迟段，其余并入通知 / 统计浮层（同 07 规则）。</li>
+    </ul></div>
+    <div class="panel"><h4>深色 / 浅色（遵循 v1.0.1 深色规则）</h4><ul>
+      <li>只用已有 token：切换中 secondaryContainer + onSecondaryContainer；不可用档位 outline；降帧卡 warningContainer；其余提示 surfaceContainerHigh；延迟只在圆点和等级字上用 latency.*。</li>
+      <li>TV 固定深色；叠在画面上的标签 / 角落数字用 scrim 60% + onScrim，任何画面都可读。</li>
+      <li>分段条四段用 primary / tertiary / secondary / outline：只区分顺序，数值与名称文字同时给出。</li>
+    </ul></div>
+    <div class="panel"><h4>与其他章节的关系</h4><ul>
+      <li><b>07 / 13</b>（v1.0.6 已改）：胶囊“约 68 ms”、通知“延迟约 68 ms”、13 浮层“延迟（估算）· 约 68 ms”。</li>
+      <li><b>07 自动调节</b>：游戏档副标题“只降码率和清晰度，不切档”；07 的“网络较差，已切换为‘流畅’”Snackbar 在游戏档不再出现（改为提示位 ⑦）。</li>
+      <li><b>09A / 10</b>：默认画质可选“游戏”（G06）；报告单列游戏模式延迟。</li>
+      <li><b>Q5</b>：由 D18-1 / D18-3 取代——“游戏”档在 MVP 照常显示，说明文字不承诺具体延迟。</li>
+      <li><b>长辈模式</b>：不提供游戏档（第 16 章）。</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<!-- ==================== 16 长辈模式（F24，v1.0.6） ==================== -->
+<section class="sec" id="elder"><div class="wrap">
+  <div class="sec-h"><span class="no">16</span><h2>长辈模式（F24 · 发送端 · 家人设置好，长辈按一个按钮）</h2><p>本质：长辈要的不是“功能少一点的 App”，而是<b>一个按钮对应一件事；按了就知道发生了什么；出错了知道下一步找谁</b>。由此四条公理：① <b>把决定前移给家人</b>——向导里固定电视、改好叫法、预先授权，长辈只剩“按按钮”和“认出系统提示”两件事；② <b>不替长辈按按钮</b>——打开 App 不自动投屏；系统录屏提示省不掉，就每次提前预演；③ 每页一个主操作，字大、键大，不靠颜色、不靠手势、不会自己消失；④ <b>出口安全不对称</b>——“停止”永远最大、最近、一按就停；“退出长辈模式”最难误触。</p>
+  <p><b>用户拍板（2026-11-15，以此为准）</b>：首页两个大按钮“投屏到 客厅电视”（镜像）与“把照片和视频放到电视”（走 F13 推送），另有较小的“选其他设备”；家人在向导里固定 1~2 台电视并可改名，未设置时用上次成功投屏的设备；退出 = 按住 3 秒 + 确认；打开 App 不自动发起投屏，必须点按钮，系统录屏授权前给“下一步会出现系统提示，点「立即开始」”引导；大字 = 一套放大约 1.25–1.3 倍的字号（不改系统 Density，系统字体放大照常叠加），触控区 ≥64 dp；投屏中、PIN / 电视确认、连不上、已结束有长辈版样式。开关入口由本稿设计（见 E02）。页面编号 <b>E01–E12</b>（E = Elder），向导 E03 给家人用，保持普通字号。</p></div>
+
+  <div class="pathsum">
+    <span class="node k">首页 E01<small>不自动投屏</small></span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node k">提示预演 E05<small>[好的]</small></span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node">系统提示「立即开始」</span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node">连接 E06<small>必要时电视允许 / 4 个数字</small></span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node k">投屏中 E07</span><span class="arr"><svg class="ic s18"><use href="#i-chev"/></svg></span>
+    <span class="node">已经停止 E09</span>
+    <span class="node">照片：系统照片选择器 → E10 · 失败：E08 → 请家人帮忙 E12</span>
+  </div>
+
+  <h3 class="sub">长辈字号与触控 <small>独立的一套 Typography（ElderTypography），只在长辈页面使用；不改 Density，系统字体倍数照常叠加</small></h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th style="width:18%">层级</th><th style="width:16%">普通（sp）</th><th style="width:16%">长辈（sp）</th><th style="width:10%">倍数</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td>elderHeadline</td><td>headlineSmall 24 / 32 · 600</td><td><b>32 / 40 · 600</b></td><td>×1.33</td><td>页面状态标题：“正在投到 客厅电视”“没找到 客厅电视”“已经停止”</td></tr>
+      <tr><td>elderTitle</td><td>titleLarge 20 / 28 · 500</td><td><b>26 / 34 · 500</b></td><td>×1.3</td><td>首页主按钮主文字（PRD：主按钮 26）</td></tr>
+      <tr><td>elderLabel</td><td>labelLarge 14 / 20 · 500</td><td><b>22 / 30 · 500</b></td><td>下限</td><td>所有按钮文字（PRD 下限 22 高于 ×1.3，取下限）</td></tr>
+      <tr><td>elderBody</td><td>bodyLarge 16 / 24 · 400</td><td><b>20 / 30 · 400</b></td><td>×1.25</td><td>正文（PRD 下限 20）</td></tr>
+      <tr><td>elderBodySmall</td><td>bodyMedium 14 / 22 · 400</td><td><b>18 / 26 · 400</b></td><td>×1.3</td><td>只用于按钮副文字、说明第二行；不用于独立正文</td></tr>
+      <tr><td>elderDigit</td><td>PIN 28 mono</td><td><b>36（格）/ 32（键）mono</b></td><td>×1.3</td><td>4 个数字与数字键盘</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid2 mt20">
+    <div class="panel"><h4>放大规则（交开发）</h4><ul>
+      <li>长辈字号 = 普通字号 × <code>m</code>，<code>m = clamp(2.0 / fontScale, 1.0, 1.3)</code>，仍以 sp 计算：系统 100% → ×1.3；130% → ×1.3（合计 1.69 倍）；160% → ×1.25；200% → ×1.0。<b>最终不超过普通字号的 2 倍</b>，系统已开 200% 时不再额外放大。</li>
+      <li>不改 <code>LocalDensity</code>（改 Density 会连图标、间距、系统组件一起放大并破坏布局计算）；通过 CompositionLocal 提供 ElderTypography，长辈页面的组件只从它取字号。Android 14+ 的非线性字体放大会让大字号放大得更少，按 fontScale 算出的上限偏保守、不会超出 2 倍。</li>
+      <li>PRD 下限优先于倍数：正文 ≥20、按钮 ≥22、主按钮 26（系统 100% 时）。</li>
+    </ul></div>
+    <div class="panel"><h4>触控、对比度、交互约束</h4><ul>
+      <li><b>触控</b>：所有可点元素 ≥64 dp；首页主按钮满宽、高 112 dp（两台电视时各 96 dp），次按钮 88 dp；“停止”72 dp；数字键 72 dp；相邻可点元素间距 ≥16 dp。</li>
+      <li><b>对比度 ≥7:1</b>：长辈页面文字只用 onSurface / onSurfaceVariant / onPrimary / on*Container。<b>不用 primary、success、warning、error 作文字色</b>（浅色 primary 在 surface 上 6.9:1、success 6.1:1，达不到 7:1）；状态 = 色点 + onSurface 文字。实测：onPrimary / primary 7.2:1，onSecondaryContainer 7.2:1，onErrorContainer 7.2:1，onWarningContainer 7.2:1（浅深一致）。</li>
+      <li><b>图标一律带文字</b>（返回键也写“返回”）；所有操作单击完成（退出保护的按住有读屏替代）；不用自动消失的 Toast / Snackbar，改为常驻卡片；每页一个主操作、最多 3 个按钮；不出现 DLNA、IP、延迟、码率等词，PIN 说成“4 个数字”。</li>
+    </ul></div>
+  </div>
+
+  <h3 class="sub mt32">发送端（手机）</h3>
+  <div class="boards">
+
+    <!-- E01 长辈首页 -->
+    <article class="board">
+      <div class="bh"><span class="id">E01</span><b>长辈首页 · 两个大按钮 + 选其他设备</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="长辈模式首页：投屏到客厅电视、把照片和视频放到电视、选其他设备"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="e-bt" style="padding-left:8px">局域投屏</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="estat anno"><span class="anno-b">状态行</span><i class="d" style="background:var(--success)"></i><span>客厅电视 已找到</span></div>
+          <div class="ebig mt12"><svg class="ic"><use href="#i-mirror"/></svg><div><div class="e-tl">投屏到 客厅电视</div><div class="e-bs">把手机画面放到电视上</div></div></div>
+          <div class="ebig sec mt16"><svg class="ic"><use href="#i-image"/></svg><div class="e-bt">把照片和视频放到电视</div></div>
+          <div class="mt16"><span class="ebtn out"><svg class="ic"><use href="#i-tv"/></svg>选其他设备</span></div>
+          <div class="sp"></div>
+          <div class="ctr" style="padding-bottom:8px"><span class="ebtn" style="width:auto;display:inline-flex;color:var(--on-surface)"><svg class="ic"><use href="#i-tune"/></svg>设置</span></div>
+        </div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 C</span><span class="tagref">D24-1 / D24-3</span><span class="tagref">用户拍板：选其他设备</span></div><dl>
+        <dt>层级</dt><dd>三级视觉重量对应三级使用频率：<b>投屏</b>（primary 实心 112 dp）&gt; <b>放照片和视频</b>（secondaryContainer 88 dp）&gt; <b>选其他设备</b>（Outlined 64 dp）&gt; 设置（无边框文字按钮）。主按钮在拇指可及的屏幕中上部，不放到最底（长辈常双手持机、用食指点，屏幕中部最稳）。</dd>
+        <dt>状态行</dt><dd>进入即开始找（最近地址直连 + mDNS + SSDP），三态：转圈“正在找 客厅电视…”→ 绿点“客厅电视 已找到”→ warning 三角“没找到 客厅电视，点按钮会再找一次”。<b>文字一律 onSurface</b>，色点 / 图标只做冗余提示。没找到也<b>不禁用按钮</b>：点了再找并给引导（E08）——禁用按钮对长辈是“坏了”。</dd>
+        <dt>不自动投屏</dt><dd>打开 App（含冷启动、从通知 / 图块以外的入口）只找电视、不发起连接。找到电视后也不弹任何东西。理由：误开 App 就把手机画面放上电视，是长辈最难收拾的局面。</dd>
+        <dt>按钮叫法</dt><dd>“投屏到 + 家人起的名字”（≤8 个汉字，E03）；家人没设置时用<b>上次成功投屏的设备</b>名，状态行写“上次用过的 客厅电视 已找到”；连一次成功记录都没有 → 主按钮改为“选一台电视”→ E04。</dd>
+        <dt>放照片</dt><dd>→ 系统照片选择器（不需要权限）→ 推到第一台能推送的电视（两台时先问 E10 示意）→ E10。只走照片选择器，不提供文件 / 网址（PRD D）。</dd>
+        <dt>选其他设备</dt><dd>→ E04。频率低但必须有（孙辈来访要投到别的屏幕）；Outlined + 较小，降低误点“主路径以外”的概率。选了其他设备<b>不改变</b>首页按钮（D24-3：按钮稳定比“智能”重要）。</dd>
+        <dt>变体</dt><dd>见下方示意：两台电视 = 两个等大 96 dp 主按钮；只能推送的电视 = 只显示“放照片和视频到 客厅电视”+ 一行说明；正在投屏 / 推送时回到首页 = 顶部大卡片 + [停止]。</dd>
+        <dt>读屏</dt><dd>焦点顺序：状态行 → 主按钮 → 次按钮 → 选其他设备 → 设置。主按钮合并状态读作“投屏到客厅电视，按钮。电视已找到”；状态变化 polite 播报“已找到客厅电视”。</dd>
+        <dt>深色</dt><dd>主按钮 primary（深色 #A2C9F0 + #0A3050，7.8:1）是整页唯一高亮大面积色块，深色下更突出——正好是要被找到的那一个；次按钮 secondaryContainer（深色 #3B4856 + #D7E3F4，7.2:1）。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">两台电视（按钮区示意）</div>
+      <div class="mini mt8" style="max-width:328px;display:flex;flex-direction:column;gap:16px"><div class="ebig m" style="min-height:96px"><svg class="ic"><use href="#i-mirror"/></svg><div class="e-tl">投屏到 客厅电视</div></div><div class="ebig m" style="min-height:96px"><svg class="ic"><use href="#i-mirror"/></svg><div class="e-tl">投屏到 卧室电视</div></div><div class="ebig sec"><svg class="ic"><use href="#i-image"/></svg><div class="e-bt">把照片和视频放到电视</div></div></div>
+      <div class="t-ls mv" style="margin-top:12px">电视只能放照片和视频（没装本应用）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="ebig"><svg class="ic"><use href="#i-image"/></svg><div class="e-tl">放照片和视频到 客厅电视</div></div><div class="e-bs mv mt8">这台电视只能放照片和视频</div></div>
+      <div class="t-ls mv" style="margin-top:12px">正在投屏时回到首页（顶部卡片）</div>
+      <div class="mini mt8" style="max-width:328px;background:var(--primary-container);color:var(--on-primary-container);border:0;border-radius:24px"><div class="e-bt">正在投到 客厅电视</div><div class="e-bs">点这里回到投屏页面</div><div class="mt12"><span class="ebtn stop"><svg class="ic"><use href="#i-stop"/></svg>停止</span></div></div>
+      </div>
+    </article>
+
+    <!-- E02 开关入口 -->
+    <article class="board">
+      <div class="bh"><span class="id">E02</span><b>开关入口 · 设置分组 + 条件推荐卡（首次引导不询问）</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="设置页新增长辈模式分组"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:30</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">设置</span></div>
+        <div class="gl2">本机</div>
+        <div class="sli"><div class="tx"><div class="t1">设备名</div><div class="t2">妈妈的 Redmi Note 12</div></div><svg class="ic s20 mv"><use href="#i-edit"/></svg></div>
+        <div class="sli"><div class="tx"><div class="t1">默认模式</div><div class="t2">发送端（投屏到别处）</div></div><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="hr"></div>
+        <div class="gl2">长辈模式</div>
+        <div class="sli anno" style="margin:0 8px"><span class="anno-b">E02</span><span class="lead"><svg class="ic"><use href="#i-text"/></svg></span><div class="tx"><div class="t1">长辈模式</div><div class="t2">大字大按钮，一键投到家里的电视。由家人先设置好</div></div><span class="val">关闭</span><svg class="ic s20 mv"><use href="#i-chev"/></svg></div>
+        <div class="hr"></div>
+        <div class="gl2">投屏</div>
+        <div class="sli"><div class="tx"><div class="t1">画质档位</div><div class="t2">自动 · 网络变差时自动降档</div></div><span class="val">自动</span></div>
+        <div class="sli"><div class="tx"><div class="t1">在分享菜单显示最近推送的电视</div><div class="t2">分享照片和视频时，可以直接点电视的名字</div></div><span class="sw on"></span></div>
+        <div class="sli"><div class="tx"><div class="t1">声音</div><div class="t2">只捕获手机播放的声音</div></div><span class="sw on"></span></div>
+        <div class="sp"></div><div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 B</span><span class="tagref">本稿决策：首次引导不询问</span></div><dl>
+        <dt>设置</dt><dd>09A 新增独立分组“长辈模式”（在“本机”与“投屏”之间，只在发送端模式显示）：导航行（状态值 + chevron，同 v1.0.2“反向控制”的理由——开启前必须走向导，行内开关会造成“拨了却跳页”）。副标题写清“由家人先设置好”，让找到它的人知道这是给家人操作的。点 → E03。</dd>
+        <dt>推荐卡</dt><dd>系统字体 ≥130% 或显示大小为最大档时，在设备列表（03 / P01）顶部出现一次可关闭的卡片（下方示意）；<b>只在本机第一次成功投屏之后</b>出现（向导第 ① 步需要有电视可选，否则推荐了也走不通）。[去看看] → E03；✕ 或 [不用了] 后永不再出现。</dd>
+        <dt>首次引导</dt><dd><b>不在 01 首次引导里询问</b>：① 首次时还没有成功投屏过的电视，向导无法完成；② 给每个新用户多加一道选择（席克定律），而需要它的是少数；③ 真正操作向导的通常是家人，他们会去设置里找，推荐卡则覆盖“长辈自己装、字已经调大”的情况。</dd>
+        <dt>开启后</dt><dd>冷启动直接进入 E01，跳过模式选择与设备列表；普通设置页不可达（长辈设置见 E11）；快捷设置图块连第一台电视（点图块同样先出 E05）；分享菜单（F14）用大字版。</dd>
+        <dt>读屏</dt><dd>“长辈模式，关闭，大字大按钮，一键投到家里的电视，由家人先设置好”。推荐卡为一个分组，✕ 读作“不用了，不再提示”。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">设备列表顶部推荐卡（一次性，示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="row gap12" style="align-items:flex-start"><span class="iconTile" style="width:40px;height:40px;border-radius:12px"><svg class="ic s20"><use href="#i-text"/></svg></span><div style="flex:1"><div class="t-tm">字太小？可以打开长辈模式</div><div class="t-bs mv">大字大按钮，一键投到家里的电视</div></div><span class="ib" style="width:40px;height:40px;margin:-8px -8px 0 0"><svg class="ic s20"><use href="#i-close"/></svg></span></div><div class="row gap8 mt8" style="justify-content:flex-end"><span class="btn txt sm">不用了</span><span class="btn ton sm">去看看</span></div></div>
+      </div>
+    </article>
+
+    <!-- E03 开启向导 -->
+    <article class="board">
+      <div class="bh"><span class="id">E03</span><b>开启向导（给家人用，普通字号）· ① 选电视并改叫法</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="长辈模式开启向导第 1 步，选电视并改按钮叫法"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>20:31</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ab"><span class="ib"><svg class="ic"><use href="#i-back"/></svg></span><span class="t">设置长辈模式</span></div>
+        <div class="bd">
+          <div class="row gap4"><span style="flex:1;height:4px;border-radius:2px;background:var(--primary)"></span><span style="flex:1;height:4px;border-radius:2px;background:var(--surface-variant)"></span><span style="flex:1;height:4px;border-radius:2px;background:var(--surface-variant)"></span><span style="flex:1;height:4px;border-radius:2px;background:var(--surface-variant)"></span></div>
+          <div class="t-bs mv mt8">第 1 步，共 4 步</div>
+          <div class="t-hs mt8">长辈要投到哪台电视？</div>
+          <div class="t-bm mv mt4">最多选 2 台。它们会成为首页上的大按钮，可以改成家里习惯的叫法。</div>
+          <div class="mt12" style="border:1px solid var(--outline-variant);border-radius:16px;padding:6px">
+            <div class="opt on" style="flex-wrap:wrap"><span class="cb on"><svg class="ic" style="width:14px;height:14px;stroke-width:2.4"><use href="#i-check"/></svg></span><div style="flex:1;min-width:0"><div class="t-ll">小米电视 4A</div><div class="t-bs">已信任 · 可以投屏，也能放照片</div>
+              <div class="tf mt8" style="min-height:0;padding:8px 12px;background:var(--surface-container-lowest);color:var(--on-surface)"><div class="t-bs mv" style="font-size:11px;line-height:14px">按钮上的叫法</div>客厅电视<span class="caret"></span></div>
+              <div class="t-bs ctr" style="text-align:right">4 / 8</div></div></div>
+            <div class="opt"><span class="cb"></span><div><div class="t-ll">卧室电视</div><div class="t-bs mv">推送过 · 只能放照片和视频</div></div></div>
+            <div class="opt"><span class="cb"></span><div><div class="t-ll">书房盒子</div><div class="t-bs mv">已信任 · 可以投屏，也能放照片</div></div></div>
+          </div>
+          <div class="ctr mt8"><span class="btn txt sm">先跳过，用上次投屏的电视</span></div>
+        </div>
+        <div class="ft"><span class="btn fill blk">下一步</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 B 向导</span><span class="tagref">D24-3 = B</span></div><dl>
+        <dt>对象</dt><dd>给家人用，<b>普通字号</b>、普通组件；可以返回；任何一步退出 = 不开启（不留半成品状态）。</dd>
+        <dt>① 选电视</dt><dd>来源：最近使用 + 可信设备 + 推送过的电视（只列不需要再配对就能用的设备）。复选框最多 2 台，第 3 台点击时 Snackbar“最多选 2 台，先取消一台”。选中后行内展开“按钮上的叫法”输入框（默认设备名，≤8 个汉字，计数器 “4 / 8”；超出时不能再输入，不报错）。选中顺序 = 首页按钮顺序。只能推送的电视可选，副标题提前说明“只能放照片和视频”。</dd>
+        <dt>跳过</dt><dd>“先跳过，用上次投屏的电视” = 不固定，首页跟随上次成功投屏的设备（PRD 回退规则）。一台可选设备都没有：本步换成“请先在普通模式下成功投屏一次，再回来设置”[去投屏]。</dd>
+        <dt>② ~ ④</dt><dd>见下方示意：② 预先授权通知与声音（拒绝也能继续，会只投画面）；③ 陪长辈试一次（可跳过）；④ 记住两件事 + [完成] → E01。</dd>
+        <dt>读屏</dt><dd>步骤读作“第 1 步，共 4 步，长辈要投到哪台电视”；复选框“小米电视 4A，已选中，已信任，可以投屏，也能放照片”；叫法输入框标签“按钮上的叫法，最多 8 个字”。</dd>
+        <dt>深色</dt><dd>已选行 primaryContainer + onPrimaryContainer；输入框在已选行内用 surfaceContainerLowest 底，深色下仍与行底区分。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">② 先把权限准备好</div>
+      <div class="mini mt8" style="max-width:328px"><div class="t-tm">先把权限准备好</div><div class="t-bs mv mt4">现在允许，长辈以后就不会看到这些系统弹窗。</div><div class="row gap8 mt8 t-bs" style="color:var(--on-surface)"><svg class="ic s16 mv"><use href="#i-info"/></svg>通知：投屏时在通知栏显示“停止”</div><div class="row gap8 mt4 t-bs" style="color:var(--on-surface)"><svg class="ic s16 mv"><use href="#i-vol"/></svg>声音：在电视上播放手机的声音</div><div class="mt12"><span class="btn fill blk sm">允许</span></div><div class="t-bs mv ctr mt4">不允许也能继续，只是不投声音</div></div>
+      <div class="t-ls mv" style="margin-top:12px">③ 陪长辈试一次（可跳过）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="t-tm">陪长辈试一次</div><div class="t-bs mv mt4">请长辈自己按一次“投屏到 客厅电视”，认识一下会弹出的系统提示。</div><div class="row gap8 mt12"><span class="btn ton sm" style="flex:1">现在试一次</span><span class="btn txt sm">跳过</span></div></div>
+      <div class="t-ls mv" style="margin-top:12px">④ 最后，记住两件事</div>
+      <div class="mini mt8" style="max-width:328px"><div class="t-tm">最后，记住两件事</div><div class="t-bs mt8" style="color:var(--on-surface)">1. 电视上要打开“局域投屏”才能连上。建议在电视的设置里打开“开机自启”。</div><div class="t-bs mt4" style="color:var(--on-surface)">2. 要退出长辈模式：在长辈首页点“设置”，按住“退出长辈模式”3 秒。</div><div class="mt12"><span class="btn fill blk sm">完成</span></div></div>
+      </div>
+    </article>
+
+    <!-- E04 选其他设备 -->
+    <article class="board">
+      <div class="bh"><span class="id">E04</span><b>选其他设备 · 大字列表（只列不用再配对的设备）</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="长辈模式选其他设备列表"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:32</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback"><svg class="ic" style="width:28px;height:28px"><use href="#i-back"/></svg>返回</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="e-hl">选一台电视</div>
+          <div class="mt16" style="display:flex;flex-direction:column;gap:16px">
+            <div class="erow"><svg class="ic mv"><use href="#i-mirror"/></svg><div style="flex:1;min-width:0"><div class="e-bt">书房盒子</div><div class="e-bs mv">可以投屏，也能放照片</div></div></div>
+            <div class="erow"><svg class="ic mv"><use href="#i-dlna"/></svg><div style="flex:1;min-width:0"><div class="e-bt">卧室电视</div><div class="e-bs mv">只能放照片和视频</div></div></div>
+            <div class="erow"><svg class="ic mv"><use href="#i-tablet"/></svg><div style="flex:1;min-width:0"><div class="e-bt">孙子的平板</div><div class="e-bs mv">可以投屏，也能放照片</div></div></div>
+          </div>
+          <div class="ecard mt20" style="padding:16px 18px;background:var(--surface-container)"><div class="e-bs" style="color:var(--on-surface)">要连新的电视，请让家人帮忙设置</div></div>
+        </div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">用户拍板：选其他设备</span><span class="tagref">PRD 8.1.4 A：长辈模式不配对新设备</span></div><dl>
+        <dt>列表</dt><dd>只列此刻在线、且<b>不需要再配对</b>的设备（可信设备 + 推送过的电视），不含首页已有的电视；每行 88 dp，名称 22 sp + 一句能做什么（不写协议名）。不在线的设备不显示（长辈分不清“灰色”是什么意思）。</dd>
+        <dt>点一行</dt><dd>两种能力都有 → 同一页换成两个大按钮“投屏到 书房盒子”/“把照片和视频放到 书房盒子”；只能推送 → 直接打开照片选择器。之后流程与首页按钮相同（E05 / E10）。不改首页按钮。</dd>
+        <dt>新设备</dt><dd>不显示陌生设备（长辈模式不配对新设备）；底部常驻一句“要连新的电视，请让家人帮忙设置”。一台都没有 → 只显示这句 + [请家人帮忙]（E12）。</dd>
+        <dt>返回</dt><dd>返回按钮带文字“返回”（图标一律带文字），高 64 dp。</dd>
+        <dt>读屏</dt><dd>标题 heading；每行一个焦点“书房盒子，可以投屏，也能放照片，按钮”。</dd>
+        <dt>深色</dt><dd>行底 surfaceContainerLow，与 surface 的区分在深色下靠色阶；图标 onSurfaceVariant，文字 onSurface / onSurfaceVariant（深色 13:1 以上）。</dd>
+      </dl></div>
+    </article>
+
+    <!-- E05 录屏提示预演 -->
+    <article class="board">
+      <div class="bh"><span class="id">E05</span><b>“下一步会出现系统提示，请点「立即开始」”· 每次都显示</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="提示长辈下一步会出现系统提示并点立即开始"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:33</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback"><svg class="ic" style="width:28px;height:28px"><use href="#i-back"/></svg>返回</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="e-hl">下一步，手机会弹出一个提示</div>
+          <div class="e-bl mt8">请点「立即开始」</div>
+          <div class="sysdlg mt20 anno"><span class="anno-b">按系统版本绘制</span>
+            <div style="font-size:15px;line-height:22px;font-weight:500">要开始使用“局域投屏”录制或投放内容吗？</div>
+            <div class="t-bs mv mt8">“局域投屏”将可获取您屏幕上显示或设备播放的所有信息…</div>
+            <div class="row gap8 mt16" style="justify-content:flex-end"><span class="btn txt sm">取消</span><span class="btn txt sm hl" style="font-weight:600">立即开始</span></div>
+          </div>
+          <div class="row gap8 mt12 e-bs" style="justify-content:flex-end;color:var(--on-surface)"><svg class="ic" style="transform:rotate(-90deg)"><use href="#i-back"/></svg>点这里</div>
+          <div class="sp"></div>
+        </div>
+        <div class="ft" style="padding:12px 20px 8px"><span class="ebtn fill">好的</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 D 录屏前说明卡</span><span class="tagref">用户拍板：系统提示省不掉要引导</span><span class="tagref">06 预演原则</span></div><dl>
+        <dt>何时</dt><dd>每次点“投屏到 …”都显示（含快捷设置图块、E09 [再投一次]、E08 [再试一次]），<b>没有“不再显示”</b>：长辈每次见到系统提示都可能忘记该点哪个，预演的成本只是一次点击（PRD K3：主按钮 → [好的] → 系统「立即开始」= 3 次点击）。</dd>
+        <dt>预演</dt><dd>同 06“再认 &lt; 回忆”：画出与本机系统<b>同样文字、同样位置</b>的提示，按钮用 primary 双环圈出，旁边“点这里”。长辈到真提示时只需“认出来”。示意图跟随当前主题（系统提示也跟随系统主题），不画手机外框（避免被当成真按钮去点）。</dd>
+        <dt>按版本</dt><dd><ul><li>Android 10–13：标题“下一步，手机会弹出一个提示”/“请点「立即开始」”。</li><li>Android 14+：先要选范围，正文改为两行“如果让你选，请选「整个屏幕」”“再点「开始」”（按钮名以真机为准），示意图画出下拉框与按钮两处圈。</li><li>主流 ROM 文案不同（如“允许”“开始”），按厂商 + 版本维护一张对照表（见 Q15-G）；查不到时用通用说法“请点同意开始的那个按钮”。</li></ul></dd>
+        <dt>按钮</dt><dd>只有一个 [好的]（Filled 64 dp，固定在页脚），点后立即调起系统提示。返回 = 不投屏，回 E01。用户在系统提示里点了取消 → E08“手机需要你同意才能投屏”卡。</dd>
+        <dt>读屏</dt><dd>打开时焦点在标题，合并朗读“下一步，手机会弹出一个提示，请点立即开始”；示意图为一张图片，内容描述“示意图：系统提示，右下角是立即开始按钮”，<b>不可聚焦到示意按钮</b>。</dd>
+        <dt>深色</dt><dd>示意提示 surfaceContainerHighest + e3；高亮环 primary（深色 #A2C9F0）外再隔一圈底色，任何主题下都能看出“圈住”而不像描边按钮。</dd>
+      </dl></div>
+    </article>
+
+    <!-- E06 连接 / 电视确认 / 4 个数字 -->
+    <article class="board">
+      <div class="bh"><span class="id">E06</span><b>连接中 · 电视要确认 · 输入电视上的 4 个数字</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="电视需要重新确认，输入电视上的 4 个数字"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:34</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback">取消</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="e-hl">电视需要重新确认</div>
+          <div class="e-bl mt8">请看电视屏幕上的 4 个数字，在下面输入</div>
+          <div class="epin mt24"><span>4</span><span>7</span><span class="cur"></span><span></span></div>
+          <div class="e-bs mv ctr mt16">输错了可以按「删除」</div>
+        </div>
+        <div class="ekp"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="fn"></span><span>0</span><span class="fn">删除</span></div>
+        <div class="gb" style="background:var(--surface-container)"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 D 配对 PIN / F</span><span class="tagref">05A 规则</span></div><dl>
+        <dt>连接中</dt><dd>点 [好的] 并同意系统提示后：大转圈 + “正在连接 客厅电视…”+ [取消]（下方示意）；最多 8 秒找电视，超时 → E08。0–1 s 不显示（多数情况直接进 E07）。</dd>
+        <dt>电视确认</dt><dd>电视设为“每次都确认”：“请用电视遥控器，在电视上点「允许」”+ 遥控器图标 +“等待中…”，只有 [取消]。电视拒绝 → E08 卡“电视上点了拒绝”[再试一次]。</dd>
+        <dt>4 个数字</dt><dd>只在信任丢失时出现（家人已配好，正常不出现）。标题说结论“电视需要重新确认”，正文说动作；数字格 64×76 dp、36 sp 等宽；键盘每键 72 dp、32 sp。输满 4 位自动提交（少一次“确定”点击）。“删除”写字不画图标。输错：格子清空，上方常驻错误卡“数字不对，请再看一下电视”（errorContainer + onErrorContainer，7.2:1），直到重新输入；次数限制同 05A。</dd>
+        <dt>取消</dt><dd>左上“取消”文字按钮（64 dp）= 不投屏，回 E01，同时停止录屏会话。</dd>
+        <dt>读屏</dt><dd>每个键朗读数字；输入后播报“已输入 2 个，共 4 个”（不读出数字本身，同 05A）；输错 assertive 播报“数字不对，请再看一下电视”。</dd>
+        <dt>深色</dt><dd>键盘区 surfaceContainer、键 surfaceContainerLowest（深色 #0C0E12，比面板更深，形成“凹下去的键”）；当前格 primary 3 dp 边框。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">连接中 / 电视要确认（内容示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="row gap16"><span class="spin" style="width:36px;height:36px;border-width:3.5px;color:var(--on-surface-variant)"></span><div class="e-bt" style="flex:1">正在连接 客厅电视…</div></div><div class="mt16"><span class="ebtn out">取消</span></div></div>
+      <div class="mini mt8" style="max-width:328px"><div class="row gap16" style="align-items:flex-start"><svg class="ic mv" style="width:40px;height:40px"><use href="#i-remote"/></svg><div class="e-bt" style="flex:1">请用电视遥控器，在电视上点「允许」</div></div><div class="e-bs mv mt8">等待中…</div><div class="mt16"><span class="ebtn out">取消</span></div></div>
+      </div>
+    </article>
+
+    <!-- E07 投屏中 -->
+    <article class="board">
+      <div class="bh"><span class="id">E07</span><b>投屏中 · 一句话状态 + 大号停止</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="长辈模式投屏中"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:40</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-mirror"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback"><svg class="ic" style="width:28px;height:28px"><use href="#i-back"/></svg>首页</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="ecard">
+            <svg class="ic" style="width:40px;height:40px;color:var(--on-surface-variant)"><use href="#i-tv"/></svg>
+            <div class="e-hl mt12">正在投到 客厅电视</div>
+            <div class="estat mt8"><i class="d" style="background:var(--success)"></i><span>画面正常</span></div>
+            <div class="e-bs mv">已经投了 12 分钟</div>
+          </div>
+          <div class="e-bl mt24" style="color:var(--on-surface)">现在打开照片、视频或其他 App，电视上就能看到。</div>
+          <div class="sp"></div>
+        </div>
+        <div class="ft" style="padding:12px 20px 8px"><span class="ebtn stop"><svg class="ic"><use href="#i-stop"/></svg>停止投屏</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 D 投屏中页</span><span class="tagref">F 重连中</span><span class="tagref">F23 自动拒绝</span></div><dl>
+        <dt>内容</dt><dd>三样东西：<b>投到哪</b>（32 sp 标题）、<b>好不好</b>（一句话状态）、<b>怎么停</b>（72 dp errorContainer 大按钮，固定在页脚拇指区）。下面一句“现在打开照片、视频或其他 App…”回答长辈最常问的“然后呢”。不显示延迟、码率、画质、开关。</dd>
+        <dt>状态</dt><dd>三档：绿点“画面正常”；warning 点“网络不太好，可能会卡”（延迟较差或自动降档时）；重连 → 整卡换成 warningContainer“网络不稳定，正在重新连接…”（下方示意，[停止投屏] 仍在）。30 s 未恢复 → E08“和电视断开了”。文字一律 onSurface / onWarningContainer。</dd>
+        <dt>停止</dt><dd>一点即停（不确认：停止是安全方向，确认只会让长辈慌）→ E09。通知栏同样有“停止投屏”，锁屏停投（决策 #17）→ E09 锁屏变体。</dd>
+        <dt>反向控制</dt><dd>长辈模式下 F23 请求自动拒绝，本页不出现任何控制相关元素；接收端提示“对方手机开着长辈模式，不能远程操作”。</dd>
+        <dt>返回</dt><dd>“首页”（带文字）= 回 E01，投屏继续，E01 顶部出现“正在投到 客厅电视”卡片。</dd>
+        <dt>读屏</dt><dd>打开时焦点在标题；状态变化 polite 播报（“网络不太好，可能会卡”“正在重新连接”“已恢复”）；计时不播报。</dd>
+        <dt>深色</dt><dd>停止按钮 errorContainer（深色 #93000A + #FFDAD6，7.2:1）；状态卡 surfaceContainerHigh。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">重新连接中（卡片示意）</div>
+      <div class="mini mt8" style="max-width:328px;background:var(--warning-container);color:var(--on-warning-container);border:0;border-radius:24px"><div class="row gap12"><span class="spin" style="width:28px;height:28px;border-width:3px"></span><div class="e-bt" style="flex:1">网络不稳定，正在重新连接…</div></div><div class="e-bs mt8">不用做什么，连上后会自动继续</div></div>
+      </div>
+    </article>
+
+    <!-- E08 连不上 -->
+    <article class="board">
+      <div class="bh"><span class="id">E08</span><b>连不上 · 只说最可能的一条原因（图示：没找到电视）</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="没找到客厅电视的引导页"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:35</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback"><svg class="ic" style="width:28px;height:28px"><use href="#i-back"/></svg>返回</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="e-hl">没找到 客厅电视</div>
+          <div class="e-bl mt8">请看看：</div>
+          <div class="ecard mt12" style="padding:16px 18px">
+            <div class="e-bl"><b style="font-weight:600">①</b> 电视开着吗？</div>
+            <div class="e-bl mt8"><b style="font-weight:600">②</b> 电视上打开「局域投屏」了吗？</div>
+            <div class="theme-dark mt12" style="border-radius:10px;background:var(--surface);color:var(--on-surface);padding:12px 14px;border:4px solid #0B0C0E">
+              <div style="font-size:14px;font-weight:600">局域投屏</div><div style="font-size:12px;color:var(--on-surface-variant)">等待投屏 · 客厅电视</div>
+            </div>
+            <div class="e-bs mv mt4">电视上应该是这个画面</div>
+          </div>
+          <div class="sp"></div>
+        </div>
+        <div class="ft" style="padding:12px 20px 8px"><span class="ebtn fill"><svg class="ic"><use href="#i-refresh"/></svg>再试一次</span><div style="height:16px"></div><span class="ebtn out">请家人帮忙</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 F</span><span class="tagref">用户拍板：电视要打开本应用接收页</span></div><dl>
+        <dt>原则</dt><dd><b>只显示最可能的一条原因</b>（同时列 5 条，长辈一条都做不了）；标题 = 发生了什么，正文 = 一两件长辈自己能检查的事，按钮 = 再试一次 / 请家人帮忙。</dd>
+        <dt>接收页</dt><dd>“电视上打开「局域投屏」”配一张电视待机页（11）的缩略示意（固定深色，和真电视一致），写“电视上应该是这个画面”——长辈不知道“接收页”是什么，但能比对画面。</dd>
+        <dt>其他原因</dt><dd>见下方示意（按判定优先级）：手机没连 Wi‑Fi（[打开 Wi‑Fi 设置][再试一次]，连上后自动重试）→ 找不到电视（图示）→ 电视上点了拒绝 → 录屏提示点了取消（“手机需要你同意才能投屏。再试一次时，请点「立即开始」”[再试一次] → E05）→ 和电视断开了（重连 30 s 失败，[重新投屏][请家人帮忙]）。电视要求确认 / 重新确认见 E06。</dd>
+        <dt>常驻</dt><dd>不自动关闭、不自动重试（除 Wi‑Fi 连上后）；用户点 [再试一次] 才再找 8 秒，期间按钮变为转圈“正在找…”。</dd>
+        <dt>读屏</dt><dd>打开时焦点在标题并 assertive 播报“没找到客厅电视”；检查项各为一个焦点；示意图读作“电视上应该显示：局域投屏，等待投屏”。</dd>
+        <dt>深色</dt><dd>不用整页红、不用 error 色标题：连不上多半是电视没开，不是“出错”；电视示意固定深色（theme-dark），两种主题一致。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">其他原因（卡片示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="e-bt">手机没有连上家里的 Wi‑Fi</div><div class="mt12"><span class="ebtn fill">打开 Wi‑Fi 设置</span></div></div>
+      <div class="mini mt8" style="max-width:328px"><div class="e-bt">手机需要你同意才能投屏</div><div class="e-bs mv mt4">再试一次时，请点「立即开始」</div><div class="mt12"><span class="ebtn fill">再试一次</span></div></div>
+      <div class="mini mt8" style="max-width:328px"><div class="e-bt">和电视断开了</div><div class="e-bs mv mt4">可能是电视关了，或者网络断了一下</div><div class="mt12"><span class="ebtn fill">重新投屏</span></div><div class="mt16"><span class="ebtn out">请家人帮忙</span></div></div>
+      </div>
+    </article>
+
+    <!-- E09 已经停止 -->
+    <article class="board">
+      <div class="bh"><span class="id">E09</span><b>已经停止 · [再投一次] [回首页]</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="长辈模式投屏已经停止"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:52</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"></div>
+        <div class="bd" style="padding:0 20px;align-items:center">
+          <div class="iconTile mt32" style="width:72px;height:72px;border-radius:24px;background:var(--surface-container-high);color:var(--on-surface-variant)"><svg class="ic s40"><use href="#i-tv"/></svg></div>
+          <div class="e-hl ctr mt24">已经停止</div>
+          <div class="e-bl mv ctr mt8">电视上不再显示手机画面</div>
+          <div class="sp"></div>
+        </div>
+        <div class="ft" style="padding:12px 20px 8px"><span class="ebtn fill"><svg class="ic"><use href="#i-refresh"/></svg>再投一次</span><div style="height:16px"></div><span class="ebtn ton">回首页</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 D 结束 / 锁屏停投</span><span class="tagref">决策 #17</span></div><dl>
+        <dt>内容</dt><dd>标题只说结果“已经停止”，副文案说电视上的变化（长辈关心的是电视）。不显示时长、原因代码、报告。</dd>
+        <dt>按钮</dt><dd>[再投一次]（Filled）→ E05（预演照常出现）→ 系统提示；[回首页]（Tonal）。两个按钮 64 dp，间距 16 dp，固定在页脚。</dd>
+        <dt>锁屏停投</dt><dd>手机锁屏导致结束（决策 #17）：标题“手机锁屏后，投屏停止了”，主按钮 [重新投屏]（下方示意）——直接说原因，长辈下次就知道“别锁屏”。</dd>
+        <dt>照片</dt><dd>推送结束：标题“已经停止放照片”，[再放一次][回首页]；“再放一次”打开照片选择器。</dd>
+        <dt>何时不显示</dt><dd>从通知栏停止且 App 在后台：不弹本页，下次打开直接 E01（与 P14 规则一致）。</dd>
+        <dt>读屏</dt><dd>打开时焦点在标题并 polite 播报“投屏已停止”。</dd>
+        <dt>深色</dt><dd>图标块 surfaceContainerHigh（中性：停止是用户主动的正常结果）。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">锁屏后停止（示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="e-bt">手机锁屏后，投屏停止了</div><div class="e-bs mv mt4">投屏时请不要锁屏</div><div class="mt12"><span class="ebtn fill">重新投屏</span></div></div>
+      </div>
+    </article>
+
+    <!-- E10 照片遥控大字版 -->
+    <article class="board">
+      <div class="bh"><span class="id">E10</span><b>放照片和视频 · 遥控页大字版</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="长辈模式放照片到电视的遥控页"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:45</span><span class="r"><svg class="ic s16" style="color:var(--primary)"><use href="#i-dlna"/></svg><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback"><svg class="ic" style="width:28px;height:28px"><use href="#i-back"/></svg>首页</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="e-hl">正在放到 客厅电视</div>
+          <div class="media mt16" style="aspect-ratio:4/3"><svg class="scene" viewBox="0 0 960 432" preserveAspectRatio="xMidYMid slice"><use href="#scene" width="960" height="432"/></svg><span class="mbadge" style="font-size:16px;height:32px;padding:0 12px;border-radius:16px">第 8 张，共 36 张</span></div>
+          <div class="row gap16 mt16"><span class="ebtn ton half" style="min-height:72px"><svg class="ic"><use href="#i-prev"/></svg>上一张</span><span class="ebtn ton half" style="min-height:72px">下一张<svg class="ic"><use href="#i-next"/></svg></span></div>
+          <div class="sp"></div>
+        </div>
+        <div class="ft" style="padding:12px 20px 8px"><span class="ebtn stop"><svg class="ic"><use href="#i-stop"/></svg>停止</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 D 推送内容 / 转换</span><span class="tagref">D24-1 = A</span><span class="tagref">P09 / P06 简化</span></div><dl>
+        <dt>照片</dt><dd>大图 + “第 8 张，共 36 张”（写成完整句，不用“8 / 36”）；[上一张][下一张] 各半宽 72 dp、带文字；不依赖左右滑动（滑动仍可用，但不是唯一方式）；去掉胶片条、列表、换内容、音量滑块（音量用手机音量键或电视遥控器，F13 已支持）。首张“上一张”不可用：outline 文字 + 读屏“没有上一张了”。</dd>
+        <dt>视频</dt><dd>翻到视频时，两个翻页按钮上方多一个整宽 [暂停] / [继续]（72 dp Tonal，文字随状态）；不显示进度条（拖动对长辈难度高，且多数电视遥控器也能快进）。</dd>
+        <dt>选哪台</dt><dd>家人设置了两台能推送的电视：点“把照片和视频放到电视”后先问“放到哪台电视？”+ 两个 96 dp 大按钮（下方示意），然后才打开照片选择器（先定去处再选内容，与 F13 一致）。</dd>
+        <dt>转换</dt><dd>视频电视可能放不了：面板文字简化（下方示意）“电视可能放不了这个视频。手机可以先转换一下（大约 12 分钟，手机会发热），要转换吗？”[转换后播放][不放这个了]；转换中大字“正在转换 43%，大约还要 7 分钟”+ [不放这个了]。</dd>
+        <dt>失败</dt><dd>沿用 P13 的判断，文案换成长辈版一句话 + [再试一次][请家人帮忙]（如“电视放不了这个视频”）。</dd>
+        <dt>读屏</dt><dd>大图读作“第 8 张，共 36 张”，另提供自定义操作“上一张 / 下一张”；翻页后 polite 播报新的序号。</dd>
+        <dt>深色</dt><dd>大图区两种主题都是黑底；序号角标 scrim 60% + onScrim 16 sp。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">两台电视时先问放到哪台（示意）</div>
+      <div class="mini mt8" style="max-width:328px;display:flex;flex-direction:column;gap:16px"><div class="e-bt">放到哪台电视？</div><div class="ebig m" style="min-height:96px"><svg class="ic"><use href="#i-tv"/></svg><div class="e-tl">客厅电视</div></div><div class="ebig m" style="min-height:96px"><svg class="ic"><use href="#i-tv"/></svg><div class="e-tl">卧室电视</div></div></div>
+      <div class="t-ls mv" style="margin-top:12px">转换提议 · 长辈版（示意）</div>
+      <div class="mini mt8" style="max-width:328px"><div class="e-bl" style="color:var(--on-surface)">电视可能放不了这个视频。手机可以先转换一下（大约 12 分钟，手机会发热），要转换吗？</div><div class="mt16"><span class="ebtn fill">转换后播放</span></div><div class="mt16"><span class="ebtn out">不放这个了</span></div></div>
+      </div>
+    </article>
+
+    <!-- E11 长辈设置 + 退出保护 -->
+    <article class="board">
+      <div class="bh"><span class="id">E11</span><b>长辈设置 · 按住 3 秒 + 确认才能退出</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="长辈设置页，正在按住退出长辈模式按钮"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:50</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback"><svg class="ic" style="width:28px;height:28px"><use href="#i-back"/></svg>返回</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="e-hl">设置</div>
+          <div class="mt16" style="display:flex;flex-direction:column;gap:16px">
+            <div class="erow"><svg class="ic mv"><use href="#i-edit"/></svg><div style="flex:1;min-width:0"><div class="e-bt">换电视 / 改叫法</div><div class="e-bs mv">按住 3 秒，给家人用</div></div></div>
+            <div class="erow anno" style="background:var(--surface-container-high)"><span class="anno-b">按住中 · 2 / 3 秒</span><svg class="holdring" viewBox="0 0 36 36" style="color:var(--on-surface)"><circle cx="18" cy="18" r="15" fill="none" stroke="var(--outline-variant)" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="62.8 94.3" transform="rotate(-90 18 18)"/></svg><div style="flex:1;min-width:0"><div class="e-bt">退出长辈模式</div><div class="e-bs" style="color:var(--on-surface)">继续按住… 还剩 1 秒</div></div></div>
+            <div class="erow"><svg class="ic mv"><use href="#i-info"/></svg><div style="flex:1;min-width:0"><div class="e-bt">关于</div><div class="e-bs mv">版本 1.0.0 · 不连接互联网</div></div></div>
+          </div>
+          <div class="e-bs mv mt16">退出和换电视需要按住 3 秒，防止不小心按到。</div>
+        </div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">D24-2 = A（用户拍板）</span><span class="tagref">PRD 8.1.4 G</span></div><dl>
+        <dt>结构</dt><dd>只有三项：换电视 / 改叫法、退出长辈模式、关于（PRD G）。前两项是给家人的“危险操作”，都受按住保护，副文案写明“按住 3 秒”——规则写在按钮上，而不是按错了才告诉你。</dd>
+        <dt>按住</dt><dd><ul><li>按下：行底由 surfaceContainerLow 变为 surfaceContainerHigh，左侧 36 dp 进度环从 0 线性走满 3 s（onSurface 进度 + outlineVariant 轨道），副文案实时变为“继续按住… 还剩 n 秒”；按下与走满各一次触觉反馈。</li><li>松手早于 3 s：环 200 ms 退回，副文案改为常驻“要按住 3 秒才能退出”（不用 Toast），不累计。</li><li>走满：弹确认对话框（下方示意）。单击、连点都不能退出（PRD K7）。</li><li>系统关闭动画时环仍然显示（进度是信息，不是装饰），只去掉缓动。</li></ul></dd>
+        <dt>确认</dt><dd>“退出长辈模式？/ 退出后会回到普通界面。确定退出吗？”两个按钮纵向排列：[不退出]（Filled，在上，默认焦点）、[退出]（Outlined）。<b>安全选项做成最醒目的那个</b>：长辈误入这里时最可能按的就是最大的按钮。</dd>
+        <dt>退出后</dt><dd>回到普通设备列表（03 / P01），常驻提示条“已退出长辈模式，可以在设置里重新打开”[知道了]；家人设置的电视与叫法保留，重新开启时向导预填。</dd>
+        <dt>换电视</dt><dd>同样按住 3 秒 → 直接进入 E03 第 ① 步（无需再确认，向导本身可返回取消）。</dd>
+        <dt>读屏</dt><dd>按钮提供自定义操作“退出长辈模式”（TalkBack 操作菜单），触发后弹同一个确认对话框，<b>不要求按住</b>；行读作“退出长辈模式，按钮，需要按住 3 秒，或使用操作菜单”。外接键盘 / 开关控制同样可用该操作。</dd>
+        <dt>深色</dt><dd>进度环 onSurface（深色 #E6E8EE）在 surfaceContainerHigh（#272A2F）上对比充足；轨道 outlineVariant 只作装饰。不用 error 色：退出不是危险，只是“回到普通界面”。</dd>
+      </dl>
+      <div class="t-ls mv" style="margin-top:16px">按满 3 秒后的确认（示意）</div>
+      <div class="mini mt8" style="max-width:328px;background:var(--surface-container-high);border:0;border-radius:28px;padding:20px"><div class="e-bt">退出长辈模式？</div><div class="e-bl mv mt8">退出后会回到普通界面。确定退出吗？</div><div class="mt16"><span class="ebtn fill">不退出</span></div><div class="mt16"><span class="ebtn out">退出</span></div></div>
+      </div>
+    </article>
+
+    <!-- E12 请家人帮忙 -->
+    <article class="board">
+      <div class="bh"><span class="id">E12</span><b>请家人帮忙 · 把这页发给家人</b></div>
+      <div class="fit"><div class="phone" role="img" aria-label="请家人帮忙页面，含原因和给家人看的技术信息"><span class="cam"></span><div class="scr">
+        <div class="sb"><span>19:36</span><span class="r"><svg class="ic s16"><use href="#i-wifi"/></svg><span class="bat"></span></span></div>
+        <div class="ebar"><span class="eback"><svg class="ic" style="width:28px;height:28px"><use href="#i-back"/></svg>返回</span></div>
+        <div class="bd" style="padding:0 20px">
+          <div class="e-hl">请家人帮忙</div>
+          <div class="e-bl mt8">把这页发给家人，他们就知道哪里出了问题。</div>
+          <div class="ecard mt16" style="padding:16px 18px"><div class="e-bt">没找到 客厅电视</div><div class="e-bs mv mt4">电视可能没开，或者电视上没打开「局域投屏」</div></div>
+          <div class="t-ls mv mt16">给家人看的技术信息</div>
+          <div class="mt8 mono" style="border-radius:12px;background:var(--surface-container);padding:10px 12px;font-size:12px;line-height:19px;color:var(--on-surface)">手机：Redmi Note 12 · Android 14<br>电视：客厅电视（本应用接收端）<br>问题：找不到电视（8 秒无回应）<br>局域网：已连接 · 组播：无回应<br>电视地址：连不上<br>时间：11-15 19:35</div>
+          <div class="sp"></div>
+        </div>
+        <div class="ft" style="padding:12px 20px 8px"><span class="ebtn fill"><svg class="ic"><use href="#i-export"/></svg>发给家人</span></div>
+        <div class="gb"></div>
+      </div></div></div>
+      <div class="note"><div class="refs"><span class="tagref">PRD 8.1.4 F 请家人帮忙</span><span class="tagref">零外联</span><span class="tagref">F25 匿名化</span></div><dl>
+        <dt>结构</dt><dd>上半是给长辈的大字原因（与 E08 同一句），下半是给家人的技术摘要。<b>技术摘要刻意用普通字号</b>（bodySmall 等宽，仍随系统字体放大）：读者是家人，大字反而会把 6 行摘要撑成两屏；它也不是长辈要操作的内容（“页面里唯一的小字”有明确的读者，不违背大字原则）。</dd>
+        <dt>内容</dt><dd>本机型号与系统版本、电视名（家人起的叫法 + 类型）、失败原因、网络检测结果（有没有局域网、组播是否有回应、电视地址能否连通）、时间。<b>不含</b> Wi‑Fi 名称、IP 地址、文件名或其他个人信息。</dd>
+        <dt>发给家人</dt><dd>[发给家人] 调起系统分享（纯文本，内容 = 大字原因 + 技术摘要），由长辈自己选发给谁；App 不联网、不记录发给谁。</dd>
+        <dt>入口</dt><dd>E08 各卡、E04 无设备时、E10 推送失败时；不在首页常驻（不是日常操作）。</dd>
+        <dt>读屏</dt><dd>大字原因为一个焦点；技术摘要为一个焦点，按行朗读；“发给家人，按钮，会打开分享，由你选择发给谁”。</dd>
+        <dt>深色</dt><dd>摘要块 surfaceContainer + onSurface 等宽字；不使用代码块常见的深底亮字（与主题冲突）。</dd>
+      </dl></div>
+    </article>
+
+  </div>
+
+  <div class="grid2 mt32">
+    <div class="panel"><h4>TalkBack 要点</h4><ul>
+      <li><b>焦点顺序</b>：E01 状态行 → 主按钮 → 次按钮 → 选其他设备 → 设置；每页打开时焦点在标题。</li>
+      <li><b>合并朗读</b>：主按钮合并状态（“投屏到客厅电视，按钮。电视已找到”）；录屏预演读“下一步，请点立即开始”；示意图不可聚焦到假按钮。</li>
+      <li><b>实时播报</b>：“已找到客厅电视”“正在连接”“已投到客厅电视”“网络不太好，可能会卡”“投屏已停止”；输错数字 assertive。</li>
+      <li><b>按住替代</b>：退出 / 换电视提供自定义操作，不要求按住（PRD K7）。</li>
+      <li>所有按钮的读屏标签与可见文字一致（图标一律带文字，不存在只有图标的按钮）。</li>
+    </ul></div>
+    <div class="panel"><h4>系统字体 200% + 显示大小最大档</h4><ul>
+      <li>长辈倍数自动降到 ×1.0（总计不超过普通的 2 倍）；所有长辈页面内容区可滚动，<b>主操作按钮固定在页脚可见区</b>（E05 好的、E07 停止、E08 再试一次、E09 再投一次、E12 发给家人）。</li>
+      <li>E01：主按钮文字可两行（“投屏到 / 客厅电视”），按钮高度随内容增长（最小 112 dp）；次按钮、选其他设备同理；“设置”仍可见（页面滚动）。</li>
+      <li>E06：数字键盘固定 4 行 × 72 dp，数字格缩为 56×68 dp；标题与说明区滚动。</li>
+      <li>E10：[上一张][下一张] 放不下一行时改为上下两个整宽按钮。</li>
+    </ul></div>
+    <div class="panel"><h4>深色 / 浅色（遵循 v1.0.1 深色规则，跟随系统）</h4><ul>
+      <li>只用已有 token，未新增颜色。主按钮 primary / onPrimary，次按钮 secondaryContainer，停止 errorContainer，重连 warningContainer，卡片 surfaceContainerHigh——这些组合浅深两套都 ≥7:1。</li>
+      <li>状态 = 色点（success / warning）+ onSurface 文字；不用 primary / success / warning / error 作文字色（达不到 7:1）。</li>
+      <li>电视示意（E08）与照片画面（E10）是“内容”，两种主题一致。</li>
+    </ul></div>
+    <div class="panel"><h4>与其他章节的关系</h4><ul>
+      <li><b>F14 分享（S01）大字版</b>：家人设置的电视排最前；行 88 dp、名称 22 sp；隐藏“不加密”说明以外的协议信息；网页地址卡（S04）主按钮仍是 [改用屏幕镜像]，镜像走 E05 预演；结果卡与提示用长辈文案。</li>
+      <li><b>快捷设置图块</b>：连长辈模式第一台电视，点后先出 E05。</li>
+      <li><b>F18</b>：不提供游戏档；画质固定“均衡”+ 自动调节开。</li>
+      <li><b>F23</b>：请求自动拒绝，接收端提示“对方手机开着长辈模式，不能远程操作”（R08 新增一条原因）。</li>
+      <li><b>09A</b>：新增“长辈模式”分组（E02）；<b>P10 / P13</b>：长辈版文案见 E10。</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<!-- ==================== 17 待确认 ==================== -->
 <section class="sec" id="questions"><div class="wrap">
-  <div class="sec-h"><span class="no">14</span><h2>需要产品确认的问题</h2><p>以下为本稿基于假设给出方案、但需要产品负责人拍板的点。每条附带本稿的默认做法。</p></div>
+  <div class="sec-h"><span class="no">17</span><h2>需要产品确认的问题</h2><p>以下为本稿基于假设给出方案、但需要产品负责人拍板的点。每条附带本稿的默认做法。</p></div>
   <div class="grid2">
     <div class="panel"><ol class="qs">
       <li><b>Q1 悬浮状态胶囊与“不申请悬浮窗”冲突。</b>PRD 6.1 要求悬浮胶囊，8.5 明确不申请悬浮窗。本稿：胶囊放在 App 内 + 通知副标题实时显示延迟 / 码率，快捷图块副标题显示“投屏中”。</li>
@@ -2647,14 +3844,38 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
       <li><b>Q14-J 【已决】接受加密文案收窄，如实表述。</b>→ 01、03 / P01、09A。</li>
     </ol></div>
   </div>
+  <h3 class="sub mt32">F14 / F18 / F24（v1.0.6） <small>用户拍板的主体已写入第 14–16 章；以下是本稿补充的设计假设，请产品确认（每条附默认做法）</small></h3>
+  <div class="grid2">
+    <div class="panel"><ol class="qs">
+      <li><b>Q15-A [打开遥控] 后的返回去向。</b>本稿：遥控页在本应用自己的任务里，返回 = 本应用设备列表（推送横幅），不回来源 App（来源 App 在最近任务里）；分享页主按钮是 [完成]（直接回来源 App）。与 PRD 8.1.2 F-4“遥控页按返回回到来源 App”不同，因为拍板要求分享页不进本应用任务栈。→ S03。</li>
+      <li><b>Q15-B 第 1 项准备好就开始推送，其余边放边准备。</b>本稿默认如此（多项分享不必等全部复制完）；需开发确认推送引擎支持播放列表项逐步就绪。若不支持，S02 改为等全部准备好，进度按总量计。→ S02 / S03。</li>
+      <li><b>Q15-C 复制前的空间预留与“云盘未下载”判定。</b>本稿：可用空间 &lt; 待复制总大小 + 500 MB 即提示空间不足；云盘原因判断不出来时用通用文案“读不到这个文件”。预留值与判定方式交开发实测。→ S05。</li>
+      <li><b>Q15-D TV 端“已降为 30 帧”3 秒标签。</b>PRD 只要求“游戏模式”标签；本稿新增，理由：用户在玩游戏时看的是电视，画面变卡时需要在那里看到原因。→ G05。</li>
+    </ol></div>
+    <div class="panel"><ol class="qs" start="5">
+      <li><b>Q15-E “约 xx ms”是否覆盖所有档位。</b>本稿：是，07 胶囊、通知、13 统计浮层统一加“约”与“估算”（已改稿），不只游戏模式。→ G03 / 07 / 13。</li>
+      <li><b>Q15-F 首次引导（01）不询问长辈模式。</b>入口为设置分组 + 条件推荐卡（大字号 / 显示大小最大档，且本机已成功投屏过一次）。→ E02。</li>
+      <li><b>Q15-G 系统录屏提示的按钮文字。</b>预演图要和真提示一致，但各 Android 版本与 ROM 文案不同（“立即开始”/“开始”/“允许”）。需要测试同学按真机整理一张“厂商 + 版本 → 按钮文字 + 是否有范围选择”的对照表；查不到时用通用说法。→ E05。</li>
+      <li><b>Q15-H “选其他设备”的范围。</b>本稿：只列在线、不需要再配对的设备（可信 + 推送过），不显示陌生设备，底部写“要连新的电视，请让家人帮忙设置”。PRD 8.1.4 C 原文“不显示设备列表”，用户拍板新增了这个入口，按此收窄。→ E04。</li>
+    </ol></div>
+  </div>
 </div></section>
 
-<!-- ==================== 15 变更记录 ==================== -->
+<!-- ==================== 18 变更记录 ==================== -->
 <section class="sec" id="changelog"><div class="wrap">
-  <div class="sec-h"><span class="no">15</span><h2>变更记录</h2><p>文件名保持 v1.0；版本号以本表为准。Token 变更后须重新生成 <code>core/ui/.../theme/Color.kt</code>。</p></div>
+  <div class="sec-h"><span class="no">18</span><h2>变更记录</h2><p>文件名保持 v1.0；版本号以本表为准。Token 变更后须重新生成 <code>core/ui/.../theme/Color.kt</code>。</p></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th style="width:12%">版本</th><th style="width:14%">日期</th><th>变更</th></tr></thead>
     <tbody>
+      <tr><td>v1.0.6</td><td>2026-11-15</td><td><b>分享推送（F14）· 游戏模式（F18）· 长辈模式（F24）</b>（依据 PRD 8.1.2 / 8.1.3 / 8.1.4 与用户拍板：独立 ShareActivity、网页地址先说明再选镜像或推送、Direct Share V1 做、同一台只替换、分享文件先复制到缓存；游戏档保留在 4 档中、会话中即时生效 ≤1.5 s 停顿、做不到时“下次生效”、延迟写“约 xx ms”；长辈首页两大按钮 + 选其他设备、向导固定 1~2 台电视、按住 3 秒 + 确认退出、不自动投屏、每次预演系统录屏提示、×1.25–1.3 字号与 ≥64 dp 触控）：
+        <ul>
+          <li><b>新增第 14 章 系统分享推送</b>：分享页状态表；S01 选设备（盖在来源 App 上的面板、到达即复制、分组与置灰、首次说明）、S02 准备中 xx% → 连接 → 播放（只等第 1 项、取消推送、换一台）、S03 已开始（[完成] 回来源 App / [打开遥控]）、S04 网页地址（[改用屏幕镜像] / [仍然推送]、正在镜像变体）、S05 读不到 / 空间不足 / 不支持类型 / 没有网址等 10 种提示（不阻断信息条 vs 阻断结果卡）、S06 没发现设备 / 没有 Wi‑Fi、S07 冲突（正在镜像、同一台只替换、另一台、再次分享）、S08 Direct Share（最多 3 台、找设备 5 s、落回、设置开关）。</li>
+          <li><b>新增第 15 章 游戏模式</b>：档位切换状态表与“提示放在哪里”五层规则；G01 首次说明卡、G02 切换中（≤1.5 s 过渡、失败回退、下次生效）、G03 已生效（约 xx ms、实测值、自动调节不切档）、G04 提示位（9 类提示、优先级、每类每次投屏一次、游戏中不弹窗）、G05 TV 切换过渡 /“游戏模式”与“已降为 30 帧”标签 / 统计浮层（延迟约 xx ms · 四段耗时 · 帧率）/ 一直显示延迟、G06 默认画质与报告行。</li>
+          <li><b>新增第 16 章 长辈模式</b>：长辈字号表与放大规则（m = clamp(2.0 / fontScale, 1.0, 1.3)，不改 Density）、触控与 7:1 约束；E01 首页（含两台 / 只能推送 / 投屏中变体）、E02 开关入口（设置分组 + 条件推荐卡，首次引导不询问）、E03 开启向导 ①–④、E04 选其他设备、E05 系统录屏提示预演、E06 连接 / 电视确认 / 4 个数字、E07 投屏中、E08 连不上（5 类原因 + 电视画面示意）、E09 已经停止 / 锁屏停投、E10 照片遥控大字版 / 选哪台 / 转换简化、E11 长辈设置 + 按住 3 秒退出、E12 请家人帮忙。</li>
+          <li><b>改稿</b>：07 胶囊“约 68 ms”、07 通知“延迟约 68 ms”、13 统计浮层“延迟（估算）· 约 68 ms”；09A 新增“长辈模式”分组与“在分享菜单显示最近推送的电视”开关（见 E02 / S08）。</li>
+          <li><b>章节号</b>：待确认 14 → 17，变更记录 15 → 18；目录新增“分享推送 / 游戏模式 / 长辈模式”。第 17 章新增 Q15-A~H（本稿补充假设）。Q5 由 D18-1 / D18-3 取代。</li>
+          <li><b>图标</b>新增 2 个：thermo（手机温度）、text（长辈模式 / 大字）。<b>未新增颜色 token</b>；新增组件样式（面板缩略图、信息条、提示位卡、长辈字号与按钮、数字键盘、按住进度环）均引用现有 token。</li>
+        </ul></td></tr>
       <tr><td>v1.0.5</td><td>2026-11-15</td><td><b>DLNA 推送（F13）</b>（依据 PRD 8.1.1 v1.5 决策 #26~#32 与技术方案 3.13；用户决策：A+B 全量、本地音乐、首次确认卡、单独分组、本应用接收端可被推送、视频转换后推送、与镜像互斥、同时只推一台）：
         <ul>
           <li><b>新增第 13 章</b>：推送会话状态表；画板 P01 设备列表分组（最近使用 / 附近设备 / 电视自带投屏 · 只能推送，DLNA 行、音箱行、WSC 行“推送”入口、“不加密”说明、推送中横幅、长按详情）、P02 首次推送确认卡、P03 内容面板（照片和视频 / 文件 / 网址）、P04 网址粘贴、P05 连接与加载（三步 + 20 s 终点 + 10 s 电视确认提示）、P06 视频遥控页、P07 音乐页与能力降级（只读 / 隐藏 / 锚点不可用）、P08 播放列表（连播、失败项跳过）、P09 照片浏览（滑动、400 ms 防抖、胶片条）、P10 转换提议（三档判定、约 n 分钟 / 占用空间、最高 1080p、HDR→SDR 说明、电量 &lt;20% 标红、手机解不了 / 只转换画面（无声音）、空间不足）、P11 转换进度（转完自动推送、取消 1 s 内删除临时文件、过热自动暂停、列表一次转一项 + 跳过这一项、最多保留 2 个转换文件、推送结束删除）、P12 锁屏媒体控件 / 音量键 / 通知、P13 六类失败提示与下一步、P14 结束页（按原因）、P15 与镜像互斥；电视能力与界面对应表；TalkBack、200% 字号、深浅色要点。</li>
@@ -2934,7 +4155,7 @@ footer{padding:48px 0 64px;border-top:1px solid var(--outline-variant);font-size
   document.getElementById('elev-d').innerHTML = evHtml();
 
   /* ---------- 图标网格 ---------- */
-  var icons = [['mark','品牌标志（占位）'],['mirror','WSC 镜像设备'],['dlna','DLNA 设备'],['tv','电视'],['phone','手机'],['tablet','平板'],['devices','兼容 Apple 设备'],['shield','已信任'],['lock','已加密'],['wifi','Wi‑Fi'],['router','网络诊断'],['qr','扫码'],['code','投屏码'],['link','手动 IP'],['tune','设置'],['gauge','画质'],['game','游戏档'],['vol','声音'],['volx','无声音'],['refresh','重连 / 刷新'],['stop','停止'],['chart','投屏报告'],['export','导出日志'],['noad','无广告'],['nouser','无账号'],['offline','不联网'],['alert','警告'],['info','信息'],['help','需确认'],['menu','菜单键'],['touch','反向控制'],['handback','收回控制'],['cursor','光标模式'],['dpad','方向键模式'],['keyboard','键盘输入'],['mouse','鼠标'],['a11y','无障碍服务'],['pinch','双指缩放'],['play','播放 / 推送'],['pause','暂停'],['prev','上一个'],['next','下一个'],['image','照片和视频'],['file','文件'],['music','音乐 / 音箱'],['convert','转换格式'],['queue','播放列表'],['swap','换内容'],['battery','耗电提示']];
+  var icons = [['mark','品牌标志（占位）'],['mirror','WSC 镜像设备'],['dlna','DLNA 设备'],['tv','电视'],['phone','手机'],['tablet','平板'],['devices','兼容 Apple 设备'],['shield','已信任'],['lock','已加密'],['wifi','Wi‑Fi'],['router','网络诊断'],['qr','扫码'],['code','投屏码'],['link','手动 IP'],['tune','设置'],['gauge','画质'],['game','游戏档'],['vol','声音'],['volx','无声音'],['refresh','重连 / 刷新'],['stop','停止'],['chart','投屏报告'],['export','导出日志'],['noad','无广告'],['nouser','无账号'],['offline','不联网'],['alert','警告'],['info','信息'],['help','需确认'],['menu','菜单键'],['touch','反向控制'],['handback','收回控制'],['cursor','光标模式'],['dpad','方向键模式'],['keyboard','键盘输入'],['mouse','鼠标'],['a11y','无障碍服务'],['pinch','双指缩放'],['play','播放 / 推送'],['pause','暂停'],['prev','上一个'],['next','下一个'],['image','照片和视频'],['file','文件'],['music','音乐 / 音箱'],['convert','转换格式'],['queue','播放列表'],['swap','换内容'],['battery','耗电提示'],['thermo','手机温度'],['text','长辈模式 / 大字']];
   document.getElementById('icgrid').innerHTML = icons.map(function(i){ return '<div><svg class="ic"><use href="#i-'+i[0]+'"/></svg><span>'+i[1]+'</span></div>'; }).join('');
 
   /* ---------- 延迟直方图 ---------- */

@@ -17,6 +17,7 @@ import com.benchan.wireless.screencasting.core.net.NetworkMonitor
 import com.benchan.wireless.screencasting.core.protocol.WscProtocol
 import com.benchan.wireless.screencasting.core.protocol.pairing.CastCode
 import com.benchan.wireless.screencasting.core.protocol.pairing.QrPayload
+import com.benchan.wireless.screencasting.core.protocol.quality.GameHintType
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import com.benchan.wireless.screencasting.core.security.trust.TrustedDeviceStore
 import com.benchan.wireless.screencasting.feature.sender.session.CastTarget
@@ -136,9 +137,9 @@ class SenderViewModel @Inject constructor(
 
     val searchStartedAt: Long get() = discovery.startedAt
 
-    fun startDiscovery() = discovery.start(viewModelScope)
-    fun stopDiscovery() = discovery.stop()
-    fun restartDiscovery() = discovery.restart(viewModelScope)
+    fun startDiscovery() = discovery.start(this)
+    fun stopDiscovery() = discovery.stop(this)
+    fun restartDiscovery() = discovery.restart(this)
 
     fun connect(row: DeviceRow) {
         val d = row.device
@@ -155,7 +156,9 @@ class SenderViewModel @Inject constructor(
     /** Tile 一键投屏：直连最近使用的设备（PRD L14）。 */
     fun quickConnectRecent(): Boolean {
         val r = recentStore.devices.value.firstOrNull() ?: return false
-        controller.connect(CastTarget(r.deviceId, r.name, r.host, r.port, DiscoverySource.RECENT, fingerprintHex = r.fingerprint))
+        // 优先用发现结果中同 deviceId 的新地址（电视换了 IP 也能连上），没发现时退回旧地址（F24 一并修复）
+        val a = com.benchan.wireless.screencasting.feature.sender.elder.QuickConnect.address(r.deviceId, r, discovery.devices.value) ?: return false
+        controller.connect(CastTarget(r.deviceId, r.name, a.host, a.port, if (a.fresh) DiscoverySource.MDNS else DiscoverySource.RECENT, fingerprintHex = r.fingerprint))
         return true
     }
 
@@ -207,6 +210,11 @@ class SenderViewModel @Inject constructor(
     fun onCaptureDenied() = controller.onCaptureDenied()
     fun setQuality(q: QualityProfile) = controller.setQuality(q)
     fun undoAutoDowngrade() = controller.undoAutoDowngrade()
+
+    // F18 游戏模式（交互稿 15 G01 / G04）
+    fun answerGameIntro(enable: Boolean) = controller.answerGameIntro(enable)
+    fun dismissGameHint(type: GameHintType) = controller.dismissHint(type)
+    fun gameHintAction(type: GameHintType) = controller.hintAction(type)
     fun setAutoAdjust(enabled: Boolean) = controller.setAutoAdjust(enabled)
     fun setAudioEnabled(enabled: Boolean) = controller.setAudioEnabled(enabled)
     fun revokeControl() = control.revoke()
@@ -223,7 +231,7 @@ class SenderViewModel @Inject constructor(
     fun renameDevice(deviceId: String, name: String) = recentStore.rename(deviceId, name)
 
     override fun onCleared() {
-        discovery.stop()
+        discovery.stop(this)
         super.onCleared()
     }
 }

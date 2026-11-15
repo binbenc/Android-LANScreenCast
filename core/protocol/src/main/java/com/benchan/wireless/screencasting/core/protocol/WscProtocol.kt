@@ -47,6 +47,13 @@ object WscProtocol {
          * 接收端带上 = 能发起控制请求。旧版本忽略未知能力。
          */
         const val CTL = "ctl"
+
+        /**
+         * 游戏模式（PRD F18，PROTOCOL.md 4.3）。接收端带上 = 按 OFFER 的 `profile` 选择播放缓冲 / 解码器，并支持 `OFFER.rebuild`
+         * （会话中切进 / 切出游戏档时重建媒体连接）。发送端只有看到它才会发 `rebuild`；没有它时会话中只改分辨率和帧率，
+         * 并提示“对方版本较旧”。
+         */
+        const val GAME = "game"
     }
 }
 

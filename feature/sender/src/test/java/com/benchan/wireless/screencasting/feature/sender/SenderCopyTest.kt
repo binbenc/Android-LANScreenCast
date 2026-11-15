@@ -85,4 +85,34 @@ class SenderCopyTest {
         assertTrue(SenderCopy.isLongText(SenderCopy.endedSnackbar(EndReason.BUSY, "客厅电视")!!))
         assertFalse(SenderCopy.isLongText("已恢复"))
     }
+
+    @Test
+    fun gameModeCopyNeverPromisesNumbersAndHonoursAudio() {
+        val game = com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile.GAME
+        assertTrue(SenderCopy.qualityDescription(game).contains("声音可能比画面稍晚"))
+        // 声音关闭时不提声音晚
+        assertFalse(SenderCopy.qualityDescription(game, audioOn = false).contains("声音"))
+        assertTrue(SenderCopy.qualityDescription(game, fpsCapped = com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason.THERMAL).contains("30 帧"))
+        assertTrue(SenderCopy.qualityDescription(game, fpsCapped = com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason.REMEMBERED).contains("再点一次"))
+        // 界面不出现目标延迟数字（产品拍板）
+        assertFalse(SenderCopy.qualityDescription(game).contains("100"))
+        val unmet = SenderCopy.hint(com.benchan.wireless.screencasting.core.protocol.quality.GameHint.LatencyUnmet(140, null))
+        assertFalse(unmet.title.contains("100"))
+        assertNull(unmet.detail)
+        assertTrue(SenderCopy.measuredLatency(85, inGame = false).contains("游戏模式"))
+        assertEquals("正在切换到游戏模式，电视画面会停一下", SenderCopy.qualitySwitching(game))
+        assertTrue(SenderCopy.measuredLatency(85).startsWith("这台电视上实测约 85"))
+        val hints = listOf(
+            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.SwitchFailed(com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile.BALANCED),
+            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.PoorNetwork,
+            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.NextTime,
+            com.benchan.wireless.screencasting.core.protocol.quality.GameHint.LegacyReceiver,
+        )
+        assertEquals("切换没有成功，已保持“均衡”", SenderCopy.hint(hints[0]).title)
+        assertEquals("切到流畅", SenderCopy.hint(hints[1]).action)
+        assertTrue(SenderCopy.hint(hints[2]).detail!!.startsWith("低延迟将在下次投屏生效"))
+        assertEquals("去更新", SenderCopy.hint(hints[3]).action)
+        // 界面文字不出现 AirPlay
+        hints.forEach { assertFalse(SenderCopy.hint(it).title.contains("AirPlay")) }
+    }
 }

@@ -21,6 +21,10 @@ data class SenderStatsSnapshot(
     val bytesSent: Long,
     val framesEncoded: Long,
     val hostOnly: Boolean,
+    /** 每包平均排队发送耗时（`totalPacketSendDelay / packetsSent` 的增量，ms）；拿不到时为 null。 */
+    val pacerMs: Double? = null,
+    /** 采集侧内容帧率（不含保底重发，由会话填写）。 */
+    val captureFps: Int? = null,
 )
 
 /** 接收端每秒统计快照。 */
@@ -39,6 +43,10 @@ data class ReceiverStatsSnapshot(
     val rttMs: Int?,
     val bytesReceived: Long,
     val codec: String?,
+    /** 每帧从收到第一个包到解码完成的平均耗时（`totalProcessingDelay / framesDecoded` 的增量，ms）。 */
+    val processingMs: Double? = null,
+    /** 低延迟解码器是否生效（F18，由会话填写；null = 未使用低延迟解码器工厂 / 尚未配置）。 */
+    val lowLatencyDecoder: Boolean? = null,
 ) {
     val dropPercent: Double get() = if (framesReceived <= 0) 0.0 else framesDropped * 100.0 / framesReceived
 }
@@ -57,6 +65,10 @@ class StatsParser {
     private var lastJbEmitted = 0.0
     private var lastPacketsLost = 0.0
     private var lastPacketsTotal = 0.0
+    private var lastSendDelay = 0.0
+    private var lastPacketsSent = 0.0
+    private var lastProcessing = 0.0
+    private var lastProcessedFrames = 0L
 
     fun parseSender(entries: Collection<StatEntry>): SenderStatsSnapshot? {
         val out = entries.firstOrNull { it.type == "outbound-rtp" && it.str("kind") == "video" } ?: return null
@@ -68,6 +80,13 @@ class StatsParser {
         val encodeMs = if (framesEncoded > lastFramesEncoded) (totalEncode - lastEncodeTime) * 1000 / (framesEncoded - lastFramesEncoded) else null
         lastEncodeTime = totalEncode
         lastFramesEncoded = framesEncoded
+        val sendDelay = out.num("totalPacketSendDelay")
+        val packetsSent = out.num("packetsSent")
+        val pacerMs = if (sendDelay != null && packetsSent != null && packetsSent > lastPacketsSent && sendDelay >= lastSendDelay) {
+            (sendDelay - lastSendDelay) * 1000 / (packetsSent - lastPacketsSent)
+        } else null
+        if (sendDelay != null) lastSendDelay = sendDelay
+        if (packetsSent != null) lastPacketsSent = packetsSent
 
         val remoteIn = entries.firstOrNull { it.type == "remote-inbound-rtp" && it.str("kind") == "video" }
         val pair = selectedPair(entries)
@@ -86,6 +105,7 @@ class StatsParser {
             bytesSent = bytes,
             framesEncoded = framesEncoded,
             hostOnly = hostOnly(entries),
+            pacerMs = pacerMs,
         )
     }
 
@@ -98,6 +118,12 @@ class StatsParser {
         val decodeMs = if (framesDecoded > lastFramesDecoded) (totalDecode - lastDecodeTime) * 1000 / (framesDecoded - lastFramesDecoded) else null
         lastDecodeTime = totalDecode
         lastFramesDecoded = framesDecoded
+        val processing = inb.num("totalProcessingDelay")
+        val processingMs = if (processing != null && framesDecoded > lastProcessedFrames && processing >= lastProcessing) {
+            (processing - lastProcessing) * 1000 / (framesDecoded - lastProcessedFrames)
+        } else null
+        if (processing != null) lastProcessing = processing
+        lastProcessedFrames = framesDecoded
         val jb = inb.num("jitterBufferDelay") ?: 0.0
         val jbn = inb.num("jitterBufferEmittedCount") ?: 0.0
         val jitterMs = if (jbn > lastJbEmitted) (jb - lastJbDelay) * 1000 / (jbn - lastJbEmitted) else null
@@ -120,6 +146,7 @@ class StatsParser {
             rttMs = selectedPair(entries)?.num("currentRoundTripTime")?.let { (it * 1000).toInt() },
             bytesReceived = bytes,
             codec = codec,
+            processingMs = processingMs,
         )
     }
 
@@ -161,17 +188,95 @@ class StatsParser {
 }
 
 /**
- * 端到端延迟估算（技术方案 3.4 方法 M3 的分段相加，不含面板延迟）：
- * 采集合成（约 1 帧）+ 编码 + 单程网络（RTT/2）+ 接收缓冲 + 解码 + 渲染（约 1 帧）。
- * 只是估算值，真值以高速摄像（M1）校准，M0 后修正常数。
+ * 端到端延迟分段（技术方案 3.4 方法 M3；PRD 8.1.3 E 统计浮层的“网络、缓冲、解码、显示”四段）。
+ * [measured] 列出来自 WebRTC 实测统计的段，其余段为模型值（见 [LatencyEstimator]）。
+ */
+data class LatencyBreakdown(
+    /** 采集合成：VirtualDisplay 出帧等待（模型值）。 */
+    val captureMs: Double,
+    /** 编码 + 发送排队（实测：totalEncodeTime / totalPacketSendDelay）。 */
+    val encodeMs: Double,
+    /** 单程网络（实测：RTT / 2）。 */
+    val networkMs: Double,
+    /** 组帧 + 接收缓冲（实测：totalProcessingDelay − totalDecodeTime，或 jitterBufferDelay）。 */
+    val bufferMs: Double,
+    /** 解码（实测：totalDecodeTime / framesDecoded）。 */
+    val decodeMs: Double,
+    /** 渲染上屏（模型值）。 */
+    val displayMs: Double,
+    val measured: Set<Segment>,
+) {
+    enum class Segment { ENCODE, NETWORK, BUFFER, DECODE }
+
+    val totalMs: Int get() = (captureMs + encodeMs + networkMs + bufferMs + decodeMs + displayMs).toInt()
+}
+
+/**
+ * 端到端延迟估算（不含面板自身的响应时间）：能拿到的段一律用 WebRTC 实测统计，拿不到时才用下面集中的回退常数。
+ * 只是估算值，界面显示为“约 xx ms（估算）”；真值以高速摄像（M1）校准后修改本对象里的模型常数。
+ *
+ * 实测来源：
+ * - 编码：发送端 outbound-rtp `totalEncodeTime / framesEncoded`；排队：`totalPacketSendDelay / packetsSent`；
+ * - 网络：candidate-pair `currentRoundTripTime / 2`（或 remote-inbound-rtp `roundTripTime`）；
+ * - 缓冲：inbound-rtp `totalProcessingDelay / framesDecoded − 解码`（含组帧与抖动缓冲）；没有时用 `jitterBufferDelay / jitterBufferEmittedCount`；
+ * - 解码：inbound-rtp `totalDecodeTime / framesDecoded`。
  */
 object LatencyEstimator {
-    fun estimate(fps: Int, encodeMs: Double?, rttMs: Int?, jitterBufferMs: Double?, decodeMs: Double?): Int? {
-        if (rttMs == null && jitterBufferMs == null) return null
-        val frameMs = 1000.0 / (if (fps in 1..120) fps else 30)
-        val captureMs = frameMs / 2 + 8
-        val renderMs = frameMs / 2 + 8
-        val total = captureMs + (encodeMs ?: 10.0) + (rttMs ?: 10) / 2.0 + (jitterBufferMs ?: 30.0) + (decodeMs ?: 10.0) + renderMs
-        return total.toInt()
+    /** VirtualDisplay 合成到出帧的固定开销（模型值，TODO(M0-T4) 高速摄像校准）。 */
+    const val COMPOSITION_MS = 8.0
+
+    /** 渲染到屏幕扫描输出的固定开销（模型值，TODO(M0-T4) 高速摄像校准）。 */
+    const val SCANOUT_MS = 8.0
+
+    /** 回退常数：对应统计拿不到时使用（旧版本对端不回传、首秒还没有增量）。 */
+    const val FALLBACK_ENCODE_MS = 10.0
+    const val FALLBACK_RTT_MS = 10.0
+    const val FALLBACK_BUFFER_MS = 30.0
+    const val FALLBACK_DECODE_MS = 10.0
+
+    /**
+     * @param fps **档位目标帧率**（含降帧后的上限），采集等待与渲染等待按它的半个帧间隔估算。不要传瞬时出帧率：
+     *   画面静止 / 低帧率内容时“等下一帧”不属于传输延迟，按瞬时帧率会把估算抬高几百毫秒（F18 走查 P0-3）。
+     * @return null 表示网络与缓冲都没有实测值，此时不显示数字（不猜）
+     */
+    fun breakdown(
+        fps: Int,
+        encodeMs: Double?,
+        rttMs: Int?,
+        jitterBufferMs: Double?,
+        decodeMs: Double?,
+        processingMs: Double? = null,
+        pacerMs: Double? = null,
+    ): LatencyBreakdown? {
+        if (rttMs == null && jitterBufferMs == null && processingMs == null) return null
+        val frameMs = 1000.0 / (if (fps in 1..240) fps else 30)
+        val measured = mutableSetOf<LatencyBreakdown.Segment>()
+        val encode = encodeMs?.also { measured += LatencyBreakdown.Segment.ENCODE } ?: FALLBACK_ENCODE_MS
+        val network = rttMs?.let { measured += LatencyBreakdown.Segment.NETWORK; it / 2.0 } ?: (FALLBACK_RTT_MS / 2)
+        val decode = decodeMs?.also { measured += LatencyBreakdown.Segment.DECODE } ?: FALLBACK_DECODE_MS
+        val buffer = when {
+            processingMs != null && decodeMs != null -> (processingMs - decodeMs).coerceAtLeast(0.0).also { measured += LatencyBreakdown.Segment.BUFFER }
+            jitterBufferMs != null -> jitterBufferMs.also { measured += LatencyBreakdown.Segment.BUFFER }
+            else -> FALLBACK_BUFFER_MS
+        }
+        return LatencyBreakdown(
+            captureMs = frameMs / 2 + COMPOSITION_MS,
+            encodeMs = encode + (pacerMs ?: 0.0),
+            networkMs = network,
+            bufferMs = buffer,
+            decodeMs = decode,
+            displayMs = frameMs / 2 + SCANOUT_MS,
+            measured = measured,
+        )
     }
+
+    fun estimate(
+        fps: Int,
+        encodeMs: Double?,
+        rttMs: Int?,
+        jitterBufferMs: Double?,
+        decodeMs: Double?,
+        processingMs: Double? = null,
+        pacerMs: Double? = null,
+    ): Int? = breakdown(fps, encodeMs, rttMs, jitterBufferMs, decodeMs, processingMs, pacerMs)?.totalMs
 }

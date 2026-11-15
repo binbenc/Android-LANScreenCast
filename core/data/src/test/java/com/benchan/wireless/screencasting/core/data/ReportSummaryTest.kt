@@ -51,4 +51,26 @@ class ReportSummaryTest {
         assertEquals(75, s.p95LatencyMs)
         assertNull(ReportSummary.from(emptyList()).successRatePercent)
     }
+
+    @Test
+    fun gameLatencySeparatedFromOtherProfiles() {
+        val acc = SessionStatsAccumulator()
+        List(20) { 82 }.forEach(acc::addLatency)
+        val game = com.benchan.wireless.screencasting.core.data.report.GameReport(
+            durationMs = 3 * 3_600_000L, enteredAtStart = false, switches = 2, latencyHistogram = acc.histogram.toList(),
+        )
+        val rs = listOf(
+            record("客厅电视", true, List(10) { 140 }).copy(game = game),
+            record("客厅电视", true, List(10) { 150 }, start = 2000),
+        )
+        val s = ReportSummary.from(rs)
+        assertEquals(85, s.gameLatencyP50Ms)
+        assertEquals(3 * 3_600_000L, s.gameDurationMs)
+        assertNull(ReportSummary.from(listOf(record("x", true, listOf(50)))).gameLatencyP50Ms)
+        // 总体延迟扣除游戏模式期间的样本（同一会话的总直方图包含游戏样本）
+        val all = SessionStatsAccumulator()
+        (List(10) { 150 } + List(20) { 82 }).forEach(all::addLatency)
+        val mixed = record("x", true, emptyList()).copy(latencyHistogram = all.histogram.toList(), game = game)
+        assertEquals(155, ReportSummary.from(listOf(mixed)).avgLatencyMs)
+    }
 }

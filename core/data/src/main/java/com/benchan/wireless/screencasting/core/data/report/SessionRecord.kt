@@ -44,6 +44,33 @@ data class SessionRecord(
     val controlledMs: Long? = null,
     /** DLNA 推送专属字段（PRD 8.1.1 G）；不含文件名、路径、标题、网址、令牌。 */
     val push: PushReport? = null,
+    /** 游戏模式（F18，PRD 8.1.3 I）：只在本次投屏用过游戏模式时出现。延迟与其他档位分开统计。 */
+    val game: GameReport? = null,
+)
+
+/** 游戏模式报告字段（PRD 8.1.3 I）。不记录游戏或 App 名称、画面内容。 */
+@Serializable
+data class GameReport(
+    /** 游戏模式累计时长（毫秒）。 */
+    val durationMs: Long,
+    /** 开始即游戏（true）/ 中途切换进入（false）。 */
+    val enteredAtStart: Boolean,
+    val switches: Int = 0,
+    val switchFailures: Int = 0,
+    /** 切换停顿（发出切换到新连接连通 / 接收端首帧）的最大值（毫秒）。 */
+    val maxSwitchPauseMs: Long? = null,
+    /** 游戏模式期间的延迟直方图（同 [SessionRecord.latencyHistogram] 的分桶）。 */
+    val latencyHistogram: List<Int> = emptyList(),
+    val latencyP50Ms: Int? = null,
+    val latencyP95Ms: Int? = null,
+    /** 接收端解码器是否开启了低延迟特性。 */
+    val lowLatencyDecoder: Boolean? = null,
+    /** 降为 30 帧的原因：THERMAL / RECEIVER / SENDER / REMEMBERED。 */
+    val fpsCapReason: String? = null,
+    /** 出现过的提示类型（GameHintType 名称）。 */
+    val hints: List<String> = emptyList(),
+    /** 接收端是否支持游戏模式（HELLO caps 含 game）。 */
+    val receiverSupportsGame: Boolean? = null,
 )
 
 /** DLNA 推送报告字段（PRD 8.1.1 G）。 */

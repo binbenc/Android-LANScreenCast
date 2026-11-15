@@ -29,6 +29,36 @@
             android:stopWithTask="false"
             android:foregroundServiceType="mediaPlayback|mediaProcessing" />
 
+        <!--
+          F14 系统分享菜单“推送到电视”（PRD 8.1.2 B）：独立任务（taskAffinity=""）、不进最近任务，盖在来源 App 上。
+          不注册 */*（避免出现在分享 PDF / 文档的面板里）；相册混选时系统可能写成 */*，仍会匹配到这里，逐项按真实类型过滤。
+        -->
+        <activity
+            android:name=".share.ShareActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/share_label"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/Theme.WscShare"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".tile.CastTileService"
             android:exported="true"

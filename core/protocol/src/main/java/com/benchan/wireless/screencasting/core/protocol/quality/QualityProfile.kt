@@ -7,7 +7,8 @@ enum class Degradation { MAINTAIN_FRAMERATE, MAINTAIN_RESOLUTION, BALANCED }
 
 /**
  * 画质档位（PRD 8.6、技术方案 3.4 帧率与码率策略表）。
- * GAME 在 MVP 只映射为 720p60 + 音视频不同步组，抖动缓冲专项优化在 V1（F18，交互稿 Q5）。
+ * GAME = F18 游戏模式（PRD 8.1.3）：720p60 + 音视频不同步组 + 接收端低延迟参数（[ReceiverTuning]）+ 自动调节不切档。
+ * 接收端播放缓冲等参数不再按档位逐个配置，而是按“是否低延迟”两类集中在 [ReceiverTuning]（M0-T4 扫参后只改那里）。
  */
 @Serializable
 enum class QualityProfile(
@@ -18,15 +19,16 @@ enum class QualityProfile(
     val maxBitrateBps: Int,
     val minBitrateBps: Int,
     val degradation: Degradation,
-    /** 接收端 WebRTC-ForcePlayoutDelay 的 max_ms（M0 实测后校准）。 */
-    val playoutDelayMaxMs: Int,
     /** 是否把音频与视频放进同一个 MediaStream 做唇音同步（游戏档关闭）。 */
     val avSync: Boolean,
 ) {
-    SMOOTH("流畅", 1280, 720, 30, 4_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, 150, true),
-    BALANCED("均衡", 1920, 1080, 30, 8_000_000, 1_000_000, Degradation.BALANCED, 120, true),
-    HD("高清", 1920, 1080, 60, 15_000_000, 2_000_000, Degradation.MAINTAIN_RESOLUTION, 150, true),
-    GAME("游戏", 1280, 720, 60, 8_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, 50, false);
+    SMOOTH("流畅", 1280, 720, 30, 4_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, true),
+    BALANCED("均衡", 1920, 1080, 30, 8_000_000, 1_000_000, Degradation.BALANCED, true),
+    HD("高清", 1920, 1080, 60, 15_000_000, 2_000_000, Degradation.MAINTAIN_RESOLUTION, true),
+    GAME("游戏", 1280, 720, 60, 8_000_000, 1_000_000, Degradation.MAINTAIN_FRAMERATE, false);
+
+    /** 游戏模式（F18）：接收端最低缓冲 + 低延迟解码 + 音画分组，“自动调节”不切出该档。 */
+    val lowLatency: Boolean get() = this == GAME
 
     /** 首帧起始码率 = 上限的 50%（技术方案 3.2：抬高 GCC 起始码率）。 */
     val startBitrateBps: Int get() = maxBitrateBps / 2
@@ -36,6 +38,17 @@ enum class QualityProfile(
 
     companion object {
         val DEFAULT = BALANCED
+
+        /** 线上字符串 → 档位；未知值（新版本加的档位）返回 null，调用方按普通档处理（PROTOCOL.md 2.2 / 4.3）。 */
+        fun fromWire(wire: String?): QualityProfile? = entries.firstOrNull { it.name == wire }
+
+        /**
+         * 会话中从 [from] 切到 [to] 是否要重建媒体连接（F18 会话中切换，PROTOCOL.md 4.3）：
+         * 接收端播放缓冲（字段试验）和解码器在建立 PeerConnectionFactory 时固定，音视频分组在 addTrack 时固定，
+         * 二者任一变化都只能新建 PeerConnection。其他切换（分辨率 / 帧率 / 码率）走 SET_QUALITY 即时生效。
+         */
+        fun needsMediaRebuild(from: QualityProfile, to: QualityProfile): Boolean =
+            ReceiverTuning.of(from) != ReceiverTuning.of(to) || from.avSync != to.avSync
     }
 }
 

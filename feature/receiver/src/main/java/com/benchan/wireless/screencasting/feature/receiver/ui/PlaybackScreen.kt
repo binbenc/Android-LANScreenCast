@@ -1,6 +1,18 @@
 package com.benchan.wireless.screencasting.feature.receiver.ui
 
 import com.benchan.wireless.screencasting.core.common.WscLog
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.Switch
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.ui.semantics.contentDescription
+import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
+import com.benchan.wireless.screencasting.core.rtc.stats.LatencyBreakdown
 import androidx.compose.foundation.focusGroup
 import androidx.compose.runtime.withFrameNanos
 import com.benchan.wireless.screencasting.feature.receiver.session.NoticeKind
@@ -74,6 +86,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.benchan.wireless.screencasting.core.protocol.datachannel.AudioState
 import com.benchan.wireless.screencasting.core.ui.components.LatencySparkline
@@ -114,6 +127,8 @@ internal fun PlaybackScreen(
 ) {
     val context = LocalContext.current
     var overlay by remember { mutableStateOf(false) }
+    // F18 G05：“一直显示延迟”只在本次投屏有效，结束即关
+    var pinLatency by remember(session.sessionId) { mutableStateOf(false) }
     var lastInteraction by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var hint by remember { mutableStateOf(true) }
     var lastBack by remember { mutableLongStateOf(0L) }
@@ -421,6 +436,77 @@ internal fun PlaybackScreen(
             }
         }
 
+        // F18：会话中切换档位（媒体重建，≤1.5 秒目标）：保留最后一帧，居中小胶囊提示，不压暗画面
+        // 超过 300 ms 才显示（多数切换很快结束，不打扰），不抢焦点、不响应按键
+        var switchCard by remember { mutableStateOf(false) }
+        LaunchedEffect(session.switching) {
+            switchCard = false
+            if (session.switching) {
+                kotlinx.coroutines.delay(SWITCH_CARD_DELAY_MS)
+                switchCard = true
+            }
+        }
+        if (switchCard && session.switching && session.firstFrame && !session.reconnecting) {
+            Row(
+                Modifier.align(Alignment.Center)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f), RoundedCornerShape(28.dp))
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                Text(
+                    PlaybackCopy.switching(session.gameMode), style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+        }
+
+        // F18：进入游戏模式时右上角“游戏模式”标签 3 秒，不遮挡画面中心、不可聚焦（不抢 TV 焦点）
+        var gameBadge by remember { mutableStateOf(false) }
+        val gameReady = session.gameMode && session.firstFrame && !session.switching
+        LaunchedEffect(gameReady) {
+            if (gameReady) {
+                gameBadge = true
+                kotlinx.coroutines.delay(GAME_BADGE_MS)
+            }
+            gameBadge = false
+        }
+        // 自动降帧：同位置 3 秒“已降为 30 帧”（原因留在手机端卡片里讲，电视上只说结果）
+        // 两者同时成立时先显示“游戏模式”，结束后再显示“已降为 30 帧”（UX 走查 P2-10）
+        var fpsBadge by remember { mutableStateOf(false) }
+        LaunchedEffect(session.fpsCapped) {
+            if (session.fpsCapped) {
+                while (gameBadge) kotlinx.coroutines.delay(100)
+                fpsBadge = true
+                kotlinx.coroutines.delay(GAME_BADGE_MS)
+            }
+            fpsBadge = false
+        }
+        val badgeText = when {
+            gameBadge -> PlaybackCopy.GAME_MODE_BADGE
+            fpsBadge -> PlaybackCopy.FPS_CAPPED_BADGE
+            else -> null
+        }
+        // TV 3 米外可读：16 sp（labelLarge 在 TV 字号体系里是 16 sp）、图标 20 dp（UX 走查 P1-5）
+        val badgeStyle = if (isTv) MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp) else MaterialTheme.typography.labelLarge
+        AnimatedVisibility(badgeText != null && !overlay, Modifier.align(Alignment.TopEnd), enter = fadeIn(), exit = fadeOut()) {
+            Row(
+                Modifier.windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(horizontal = if (isTv) 48.dp else 16.dp, vertical = if (isTv) 27.dp else 12.dp)
+                    .background(c.scrim.copy(alpha = ScrimAlpha.Text), RoundedCornerShape(8.dp))
+                    .padding(horizontal = if (isTv) 14.dp else 10.dp, vertical = 6.dp)
+                    // 读屏播报“已切换到游戏模式”“已降为 30 帧”（UX 走查 P2-11）
+                    .semantics(mergeDescendants = true) {
+                        liveRegion = LiveRegionMode.Polite
+                        contentDescription = PlaybackCopy.badgeA11y(badgeText)
+                    },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (badgeText == PlaybackCopy.GAME_MODE_BADGE) Icon(Icons.Rounded.SportsEsports, null, Modifier.size(20.dp), tint = c.onScrim)
+                Text(badgeText.orEmpty(), color = c.onScrim, style = badgeStyle)
+            }
+        }
+
         // S-02：单应用共享且该应用退到后台 → 占位画面而不是黑屏
         if (!session.appVisible && !session.reconnecting) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.Center) {
@@ -439,12 +525,27 @@ internal fun PlaybackScreen(
 
         // 左上角角标行：控制中角标与“无声音”角标并排，不重叠（UX 走查 G10）
         val noAudio = session.audio == AudioState.NO_PERMISSION || session.audio == AudioState.OFF
-        if (noAudio || controlling) {
+        val pinnedLatency = session.stats.latencyMs?.takeIf { pinLatency && !overlay && session.firstFrame }
+        if (noAudio || controlling || pinnedLatency != null) {
             Row(
                 Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(horizontal = if (isTv) 48.dp else 16.dp, vertical = if (isTv) 27.dp else 12.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // F18 G05：一直显示延迟（左上，避开“游戏模式”标签与浮层），每秒随统计更新
+                if (pinnedLatency != null) {
+                    Row(
+                        Modifier.background(c.scrim.copy(alpha = ScrimAlpha.Text), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(Modifier.size(8.dp).background(WscTheme.extended.latency(session.stats.grade), androidx.compose.foundation.shape.CircleShape))
+                        Text(
+                            "约 $pinnedLatency ms", color = c.onScrim,
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp, fontFeatureSettings = "tnum"),
+                            modifier = Modifier.semantics { contentDescription = "延迟约 $pinnedLatency 毫秒，估算" },
+                        )
+                    }
+                }
                 if (controlling) WscAppTheme(darkTheme = true) {
                     ControlBadge(ctl, modeLabel = if (isTv) (if (effectiveMode == TvControlMode.DPAD) "方向键" else "光标") else null, tv = isTv)
                 }
@@ -470,7 +571,7 @@ internal fun PlaybackScreen(
         }
 
         AnimatedVisibility(overlay, Modifier.align(Alignment.TopEnd), enter = fadeIn(), exit = fadeOut()) {
-            StatsOverlay(session, isTv, onDisconnect = onDisconnect, onClose = { overlay = false })
+            StatsOverlay(session, isTv, onDisconnect = onDisconnect, onClose = { overlay = false }, pinLatency = pinLatency, onPinLatency = { pinLatency = it })
         }
 
         // —— 反向控制：角标、边缘把手、控制条、提示（播放页固定深色方案，交互稿 R06）——
@@ -601,16 +702,26 @@ private fun VideoSurface(eglContext: EglBase.Context, attach: (VideoSink) -> Uni
     AndroidView({ renderer }, Modifier.fillMaxSize())
 }
 
+/**
+ * 交互稿 13 / 15 G05 统计浮层：第一行是唯一关心的数“延迟约 85 ms”（估算），随后四段耗时、帧率、画质、解码是否低延迟、
+ * “一直显示延迟”开关；其余行（来源、协议、码率、丢帧、折线）放在下半，可滚动，保证第一屏不超过 1/3 画面。
+ */
 @Composable
-private fun StatsOverlay(session: MirrorSession, isTv: Boolean, onDisconnect: () -> Unit, onClose: () -> Unit) {
+private fun StatsOverlay(
+    session: MirrorSession,
+    isTv: Boolean,
+    onDisconnect: () -> Unit,
+    onClose: () -> Unit,
+    pinLatency: Boolean = false,
+    onPinLatency: (Boolean) -> Unit = {},
+) {
     val c = MaterialTheme.colorScheme
     val ext = WscTheme.extended
     val s = session.stats
     val closeFocus = remember { FocusRequester() }
     val modalVisible = LocalModalOverlayVisible.current
     // 默认焦点“关闭”（交互稿 13）。从控制条“连接信息”打开时，控制条淡出与本浮层组合在同一帧发生，
-    // 系统会把焦点交给离原焦点最近的按钮（“断开投屏”），一按确定就断开。等两帧（控制条已移除、本浮层已布局）后再请求，
-    // 并把“关闭”放在第一个可聚焦位置
+    // 系统会把焦点交给离原焦点最近的按钮（“断开投屏”），一按确定就断开。等两帧（控制条已移除、本浮层已布局）后再请求
     LaunchedEffect(modalVisible) {
         if (!modalVisible) {
             withFrameNanos { }
@@ -618,9 +729,13 @@ private fun StatsOverlay(session: MirrorSession, isTv: Boolean, onDisconnect: ()
             runCatching { closeFocus.requestFocus() }
         }
     }
+    // 游戏档：第一屏高度不超过画面的 1/3（产品拍板按高度算），其余内容滚动可见（UX 走查 P2-12）
+    val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+    val maxH = if (session.gameMode) screenH / 3 else 520.dp
     Column(
-        Modifier.padding(horizontal = 48.dp, vertical = 27.dp).widthIn(max = 360.dp)
-            .background(c.surfaceContainerHigh.copy(alpha = 0.9f), RoundedCornerShape(16.dp)).padding(20.dp)
+        Modifier.padding(horizontal = 48.dp, vertical = 27.dp).widthIn(max = 380.dp)
+            .background(c.surfaceContainerHigh.copy(alpha = 0.92f), RoundedCornerShape(16.dp))
+            .heightIn(max = maxH).verticalScroll(rememberScrollState()).padding(20.dp)
             // 焦点留在浮层内（方向键不跑到画面 / 控制条残影上）
             .focusGroup(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -629,6 +744,43 @@ private fun StatsOverlay(session: MirrorSession, isTv: Boolean, onDisconnect: ()
             Text("投屏统计", style = MaterialTheme.typography.titleMedium)
             Text(PlaybackCopy.overlayCloseHint(isTv), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
+        // 第一行：延迟约 xx ms（24 sp + 色阶圆点），下一行“估算”（不显示目标值）
+        Column(Modifier.semantics(mergeDescendants = true) { contentDescription = PlaybackCopy.latencyA11y(s.latencyMs, session.gameMode) }) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.size(10.dp).background(ext.latency(s.grade), androidx.compose.foundation.shape.CircleShape))
+                Text(
+                    PlaybackCopy.latencyHeadline(s.latencyMs),
+                    style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum"), color = c.onSurface,
+                )
+                s.grade?.let { Text(it.label, style = MaterialTheme.typography.bodyMedium, color = ext.latency(s.grade)) }
+            }
+            Text(PlaybackCopy.latencySubline(session.gameMode), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        }
+        s.breakdown?.let { b -> LatencySegments(b) }
+        StatRow("帧率", if (s.fps > 0) "${s.fps} 帧/秒" else "—")
+        StatRow("画质", PlaybackCopy.quality(s.height, session.profile, session.gameMode, session.senderLegacy))
+        StatRow(
+            "解码",
+            listOfNotNull(
+                s.hardwareDecoder?.let { if (it) "硬件" else "软件" },
+                s.lowLatencyDecoder?.let { if (it) "低延迟" else "不支持低延迟" },
+            ).joinToString(" · ").ifBlank { s.codec ?: s.decoder ?: "—" },
+        )
+        // “一直显示延迟”（默认关，只在本次投屏有效）；方向键上移可达
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp).tvFocusRing(12.dp)
+                .toggleable(value = pinLatency, role = Role.Switch, onValueChange = onPinLatency)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("一直显示延迟", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+            Switch(checked = pinLatency, onCheckedChange = null)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            TvButton("关闭", onClose, Modifier.focusRequester(closeFocus))
+            TvButton("断开投屏", onDisconnect)
+        }
+        // —— 下半：其余信息 ——
         StatRow("来源", session.peerName)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("协议", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
@@ -637,22 +789,40 @@ private fun StatsOverlay(session: MirrorSession, isTv: Boolean, onDisconnect: ()
                 Text("屏幕镜像 · 已加密", style = MaterialTheme.typography.bodyMedium)
             }
         }
-        StatRow("分辨率", if (s.width > 0) "${s.width} × ${s.height} · ${s.fps} fps" else "—")
+        StatRow("分辨率", if (s.width > 0) "${s.width} × ${s.height}" else "—")
         StatRow("码率", if (s.bitrateKbps > 0) formatMbps(s.bitrateKbps) else "—")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("端到端延迟（估算）", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
-            Text(
-                (s.latencyMs?.let { "$it ms " } ?: "— ") + (s.grade?.label ?: ""),
-                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"), color = ext.latency(s.grade),
-            )
-        }
         StatRow("丢帧", String.format(Locale.US, "%.1f %%", s.dropPercent))
-        StatRow("解码", listOfNotNull(s.hardwareDecoder?.let { if (it) "硬件" else "软件" }, s.codec ?: s.decoder).joinToString(" · ").ifBlank { "—" })
+        StatRow("编解码器", s.codec ?: s.decoder ?: "—")
         LatencySparkline(s.latencyHistory, Modifier.fillMaxWidth().height(56.dp))
-        Text("最近 60 秒 · 虚线 = 100 ms", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            TvButton("关闭", onClose, Modifier.focusRequester(closeFocus))
-            TvButton("断开投屏", onDisconnect)
+        Text("最近 60 秒 · 虚线 = “极佳”与“良好”的分界", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+    }
+}
+
+/** 四段耗时：一条分段条 + 名称与数值（颜色只区分顺序，不靠颜色读数，交互稿 G05）。 */
+@Composable
+private fun LatencySegments(b: LatencyBreakdown) {
+    val c = MaterialTheme.colorScheme
+    val parts = listOf(
+        "网络" to (b.networkMs to c.primary),
+        "缓冲" to (b.bufferMs to c.tertiary),
+        "解码" to (b.decodeMs to c.secondary),
+        "显示" to (b.displayMs to c.outline),
+    )
+    val total = parts.sumOf { it.second.first }.coerceAtLeast(1.0)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))) {
+            parts.forEach { (_, v) ->
+                val w = (v.first / total).toFloat().coerceAtLeast(0.02f)
+                Box(Modifier.weight(w).fillMaxHeight().background(v.second))
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            parts.forEach { (name, v) ->
+                Column {
+                    Text(name, style = MaterialTheme.typography.labelSmall, color = c.onSurfaceVariant)
+                    Text("${v.first.toInt()} ms", style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"))
+                }
+            }
         }
     }
 }
@@ -700,6 +870,41 @@ internal object PlaybackCopy {
     }
 
     fun overlayCloseHint(isTv: Boolean): String = if (isTv) "按返回键收起" else "轻点画面收起"
+
+    // —— F18 游戏模式（交互稿 G 章节完成前的最小可用文案）——
+    const val GAME_MODE_BADGE = "游戏模式"
+    const val FPS_CAPPED_BADGE = "已降为 30 帧"
+
+    fun latencyHeadline(ms: Int?): String = ms?.let { "延迟约 $it ms" } ?: "延迟 —"
+
+    /** 界面不显示目标延迟数字（产品拍板），只写“估算”。 */
+    @Suppress("UNUSED_PARAMETER")
+    fun latencySubline(game: Boolean): String = "估算"
+
+    @Suppress("UNUSED_PARAMETER")
+    fun latencyA11y(ms: Int?, game: Boolean): String = ms?.let { "延迟约 $it 毫秒，估算" } ?: "延迟未知"
+
+    fun badgeA11y(badge: String?): String = when (badge) {
+        GAME_MODE_BADGE -> "已切换到游戏模式"
+        FPS_CAPPED_BADGE -> "已降为 30 帧"
+        else -> ""
+    }
+
+    /**
+     * “720p · 游戏模式”/“1080p · 均衡”。发送端选了游戏档但本机接收链路没有按游戏模式建立时如实标注（PM 走查 P1-8）：
+     * 新版发送端（做不到即时）→“低延迟缓冲：下次投屏生效”；旧版发送端 →“低延迟未开启”。
+     */
+    fun quality(height: Int, profile: com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile?, game: Boolean, senderLegacy: Boolean = false): String {
+        val name = when {
+            game -> "游戏模式"
+            profile?.lowLatency == true -> profile.label + if (senderLegacy) "（低延迟未开启）" else "（低延迟缓冲：下次投屏生效）"
+            else -> profile?.label
+        }
+        return listOfNotNull(height.takeIf { it > 0 }?.let { "${it}p" }, name).joinToString(" · ").ifBlank { "—" }
+    }
+
+    fun switching(toGame: Boolean): String = if (toGame) "正在切换到游戏模式…" else "正在切换画质…"
+
 }
 
 /**
@@ -787,6 +992,12 @@ private fun handleControlKey(
 }
 
 private const val CURSOR_TAG = "TvCursor"
+
+/** F18：“游戏模式”标签显示时长（PRD 8.1.3 E：3 秒）。 */
+private const val GAME_BADGE_MS = 3_000L
+
+/** F18：切换过渡小卡的出现延迟（交互稿 G05：超过 300 ms 才显示）。 */
+private const val SWITCH_CARD_DELAY_MS = 300L
 
 /** 方向键模式“看不到焦点？”的触发次数（5 s 内）。 */
 private const val DPAD_HINT_PRESSES = 6

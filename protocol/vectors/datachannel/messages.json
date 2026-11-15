@@ -81,6 +81,23 @@
     {"name": "pointer-history-after-latest", "channel": "wsc-input", "valid": false, "json": "{\"t\":\"P\",\"s\":1,\"g\":3,\"a\":\"m\",\"x\":0.2,\"y\":0.5,\"dt\":20,\"h\":[[0.1,0.2,30]]}"},
     {"name": "pointer-id-too-large", "channel": "wsc-input", "valid": false, "json": "{\"t\":\"P\",\"s\":1,\"g\":3,\"a\":\"d\",\"x\":0.2,\"y\":0.5,\"dt\":0,\"i\":10}"},
     {"name": "seq-exceeds-uint32", "channel": "wsc-input", "valid": false, "json": "{\"t\":\"K\",\"s\":4294967296,\"k\":\"HOME\"}"},
-    {"name": "not-json", "channel": "wsc-input", "valid": false, "json": "P,1,2"}
+    {"name": "not-json", "channel": "wsc-input", "valid": false, "json": "P,1,2"},
+    {"name": "stats-game-with-pacer", "channel": "wsc", "valid": true, "type": "STATS",
+     "json": "{\"t\":\"STATS\",\"bitrateKbps\":6100,\"fps\":59,\"width\":1280,\"height\":576,\"rttMs\":6,\"encodeMs\":7.5,\"latencyMs\":62,\"lossPercent\":0.0,\"profile\":\"GAME\",\"pacerMs\":1.2}",
+     "canonical": "{\"t\":\"STATS\",\"bitrateKbps\":6100,\"fps\":59,\"width\":1280,\"height\":576,\"rttMs\":6,\"encodeMs\":7.5,\"latencyMs\":62,\"profile\":\"GAME\",\"pacerMs\":1.2}"},
+    {"name": "stats-game-fps-capped", "channel": "wsc", "valid": true, "type": "STATS",
+     "json": "{\"t\":\"STATS\",\"bitrateKbps\":5200,\"fps\":30,\"width\":1280,\"height\":576,\"profile\":\"GAME\",\"capFps\":30}"},
+    {"name": "rebuilt-first-frame", "channel": "wsc", "valid": true, "type": "REBUILT",
+     "json": "{\"t\":\"REBUILT\",\"pauseMs\":640}"},
+    {"name": "rebuilt-missing-pause-ignored", "channel": "wsc", "valid": false,
+     "json": "{\"t\":\"REBUILT\"}"},
+    {"name": "rstats-low-latency-decoder", "channel": "wsc", "valid": true, "type": "RSTATS",
+     "json": "{\"t\":\"RSTATS\",\"jitterBufferMs\":4.0,\"decodeMs\":6.5,\"framesDecoded\":3600,\"fps\":58,\"decoder\":\"c2.qti.avc.decoder\",\"hardwareDecoder\":true,\"procMs\":14.2,\"lowLatency\":true}"},
+    {"name": "rstats-legacy-without-new-fields", "channel": "wsc", "valid": true, "type": "RSTATS",
+     "json": "{\"t\":\"RSTATS\",\"jitterBufferMs\":40.0,\"decodeMs\":6.5,\"framesDecoded\":100,\"fps\":30}"},
+    {"name": "set-quality-game", "channel": "wsc", "valid": true, "type": "SET_QUALITY",
+     "json": "{\"t\":\"SET_QUALITY\",\"profile\":\"GAME\"}"},
+    {"name": "set-quality-unknown-profile-ignored", "channel": "wsc", "valid": false,
+     "json": "{\"t\":\"SET_QUALITY\",\"profile\":\"ULTRA\"}"}
   ]
 }

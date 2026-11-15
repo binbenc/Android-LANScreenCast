@@ -40,6 +40,18 @@ data class AppSettings(
     val pinchHintShown: Boolean = false,
     /** TV 首次进入控制的操作提示卡已看过（交互稿 R10）。 */
     val tvControlHintShown: Boolean = false,
+    /** F14 Direct Share：在系统分享菜单显示最近推送成功的电视（默认开，决策 #34）。 */
+    val directShareEnabled: Boolean = true,
+    /** F14 分享页“第一次使用”说明已关闭（交互稿 S01）。 */
+    val shareIntroDismissed: Boolean = false,
+    /** F24 长辈模式（只在发送端模式生效，PRD 8.1.4）。 */
+    val elderModeEnabled: Boolean = false,
+    /** F24 家人固定的 1~2 台电视（决策 #41）；空 = 用上次成功投屏的设备。退出长辈模式时保留，重新开启时向导预填。 */
+    val elderTargets: List<ElderTarget> = emptyList(),
+    /** F24 设备列表顶部“字太小？可以打开长辈模式”推荐卡已关闭（交互稿 E02，永不再出现）。 */
+    val elderRecommendDismissed: Boolean = false,
+    /** F24 刚退出长辈模式：设备列表顶部常驻提示，点“知道了”清除（交互稿 E11）。 */
+    val elderExitNotice: Boolean = false,
 )
 
 /** 实际生效的模式：未手动选择时按设备类型（TV → 接收端，其余 → 发送端）。 */

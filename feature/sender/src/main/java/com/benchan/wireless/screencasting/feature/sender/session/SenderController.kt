@@ -13,7 +13,9 @@ import com.benchan.wireless.screencasting.core.common.SessionEndGuard
 import com.benchan.wireless.screencasting.core.common.WscLog
 import com.benchan.wireless.screencasting.core.data.devices.RecentDevice
 import com.benchan.wireless.screencasting.core.data.devices.RecentDevicesStore
+import com.benchan.wireless.screencasting.core.data.game.GameModeStore
 import com.benchan.wireless.screencasting.core.data.report.CastProtocol
+import com.benchan.wireless.screencasting.core.data.report.GameReport
 import com.benchan.wireless.screencasting.core.data.report.SessionRecord
 import com.benchan.wireless.screencasting.core.data.report.SessionReportStore
 import com.benchan.wireless.screencasting.core.data.report.SessionStatsAccumulator
@@ -43,10 +45,20 @@ import com.benchan.wireless.screencasting.core.protocol.message.Role
 import com.benchan.wireless.screencasting.core.protocol.message.WscMessage
 import com.benchan.wireless.screencasting.core.protocol.message.WscPayload
 import com.benchan.wireless.screencasting.core.protocol.pairing.QrProof
+import com.benchan.wireless.screencasting.core.protocol.quality.AutoQualityDecision
 import com.benchan.wireless.screencasting.core.protocol.quality.AutoQualityPolicy
+import com.benchan.wireless.screencasting.core.protocol.quality.FpsCapReason
+import com.benchan.wireless.screencasting.core.protocol.quality.GameHint
+import com.benchan.wireless.screencasting.core.protocol.quality.GameHintQueue
+import com.benchan.wireless.screencasting.core.protocol.quality.GameHintType
+import com.benchan.wireless.screencasting.core.protocol.quality.GameModeMonitor
+import com.benchan.wireless.screencasting.core.protocol.quality.GameSample
 import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGradeTracker
 import com.benchan.wireless.screencasting.core.protocol.quality.NetworkSample
+import com.benchan.wireless.screencasting.core.protocol.quality.QualityChange
 import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
+import com.benchan.wireless.screencasting.core.protocol.quality.QualitySwitchPolicy
+import com.benchan.wireless.screencasting.core.protocol.quality.SwitchTimeoutAction
 import com.benchan.wireless.screencasting.core.protocol.session.ReconnectBackoff
 import com.benchan.wireless.screencasting.core.protocol.session.SessionEvent
 import com.benchan.wireless.screencasting.core.protocol.session.SessionStateMachine
@@ -101,6 +113,7 @@ class SenderController @Inject constructor(
     private val reports: SessionReportStore,
     private val rtcEngine: RtcEngine,
     private val control: SenderControlCoordinator,
+    private val gameStore: GameModeStore,
 ) {
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val dispatcher = Dispatchers.Default.limitedParallelism(1)
@@ -142,6 +155,37 @@ class SenderController @Inject constructor(
 
     /** 首帧前（从未连通过）ICE 失败后已做的 ICE restart 次数（E3）。 */
     private var preMediaIceRestarts = 0
+
+    /** 接收端 HELLO 里的能力（F18 据此决定能否会话中重建媒体连接）。 */
+    private var receiverCaps: List<String> = emptyList()
+
+    /** 进行中的档位切换（F18 媒体重建）；null = 没有。 */
+    private var qualitySwitch: QualitySwitch? = null
+    private var switchTimeout: Job? = null
+
+    /** 断线重连期间选了需要重建的档位：编码参数已即时生效，媒体恢复后再重建（记录切换前的档位，用于失败回退）。 */
+    private var pendingRebuildFrom: QualityProfile? = null
+
+    /** F18 提示位（交互稿 G04）：每类每次投屏最多一次，按优先级一次一张。 */
+    private val hints = GameHintQueue()
+
+    /** F18 “达不到目标”判定（延迟 / 60 帧）。 */
+    private val gameMonitor = GameModeMonitor()
+
+    /** F18 游戏模式降为 30 帧的原因（null = 没降）。 */
+    private var fpsCap: FpsCapReason? = null
+    private val capFps: Int? get() = if (fpsCap != null && profile.lowLatency) CAPPED_FPS else null
+
+    private var game = GameTracker()
+
+    /** 当前音频是否和视频在不同的 stream（只在开局 / 重建时按档位决定；旧版接收端中途切游戏不变，PM 走查 P2-13）。 */
+    private var audioSplit = false
+    private var statsTicks = 0
+    private var thermalListener: android.os.PowerManager.OnThermalStatusChangedListener? = null
+
+    private data class QualitySwitch(val from: QualityProfile, val to: QualityProfile, val startedAt: Long, val rollback: Boolean)
+
+    private val receiverSupportsRebuild: Boolean get() = WscProtocol.Caps.GAME in receiverCaps
 
     /** 用户选中一台设备（列表 / 扫码 / 投屏码 / 手动 IP / Tile）。 */
     fun connect(newTarget: CastTarget) = scope.launch {
@@ -267,7 +311,14 @@ class SenderController @Inject constructor(
                 reconnectJob = null
                 // 同一会话 30 秒内重连成功：反向控制自动续上，不再确认（决策 #16 细化）
                 control.setPaused(ControlReason.RECONNECTING, false)
-                rtc?.restartIce()
+                if (qualitySwitch != null) {
+                    // 档位切换途中信令断开：接收端可能还停在旧连接或只收到一半，直接按当前档位再重建一次（任何状态下都安全）
+                    clearSwitch()
+                    audioSplit = profile.lowLatency
+                    rtc?.rebuildMedia(profile, capFps)
+                } else {
+                    rtc?.restartIce()
+                }
                 watchMedia()
             } else {
                 end(EndReason.RECONNECT_FAILED, sendBye = null)
@@ -276,6 +327,7 @@ class SenderController @Inject constructor(
         }
         receiverId = h.deviceId
         receiverName = h.name
+        receiverCaps = h.caps
         val t = target ?: return
         val named = t.copy(name = h.name.ifBlank { t.name }, deviceId = h.deviceId)
         target = named
@@ -439,6 +491,14 @@ class SenderController @Inject constructor(
             override fun sendInput(message: InputMessage) = session.sendInput(message)
         })
         session.start()
+        // F18：这台接收端以前跟不上 60 帧 → 开始就用 30 帧（交互稿 15 层级 ⑤）
+        audioSplit = profile.lowLatency
+        if (profile.lowLatency && gameStore.receiver(receiverId)?.prefer30Fps == true) {
+            fpsCap = FpsCapReason.REMEMBERED
+            // 记住的 30 帧开局即生效，不算“降帧”：不让电视显示“已降为 30 帧”
+            session.setFrameRateCap(CAPPED_FPS, announce = false)
+        }
+        registerThermalListener()
         // 首帧超时：60 秒还没有连上媒体就判定失败（交互稿 10 统计口径）
         armTimeout(FIRST_MEDIA_TIMEOUT_MS) { end(EndReason.CONNECT_FAILED, ByeReason.USER_STOP, failure = ConnectFailure.FIRST_FRAME_TIMEOUT) }
     }
@@ -452,8 +512,9 @@ class SenderController @Inject constructor(
             scope.launch { if (endGuard.isCurrent(gen)) block() }
         }
 
-        override fun onLocalOffer(sdp: String, iceRestart: Boolean) {
-            onCurrent { send(Offer(sdp, iceRestart)) }
+        override fun onLocalOffer(sdp: String, iceRestart: Boolean, rebuild: Boolean) {
+            // profile：接收端据此选择播放缓冲 / 解码器（F18，PROTOCOL.md 4.3）；旧版接收端忽略未知字段
+            onCurrent { send(Offer(sdp, iceRestart, profile = profile.name, rebuild = rebuild)) }
         }
 
         override fun onLocalIceCandidate(candidate: String, sdpMid: String?, sdpMLineIndex: Int) {
@@ -478,8 +539,16 @@ class SenderController @Inject constructor(
             }
         }
 
-        override fun onStats(stats: SenderStatsSnapshot, latencyMs: Int?) {
-            onCurrent { onRtcStats(stats, latencyMs) }
+        override fun onStats(stats: SenderStatsSnapshot, latencyMs: Int?, receiver: DcMessage.ReceiverStats?) {
+            onCurrent { onRtcStats(stats, latencyMs, receiver) }
+        }
+
+        override fun onRebuildUnavailable(profile: QualityProfile) {
+            onCurrent { onRebuildUnavailable(profile) }
+        }
+
+        override fun onRebuilt(pauseMs: Long) {
+            onCurrent { onRebuiltConfirmed(pauseMs) }
         }
 
         override fun onQualityChanged(profile: QualityProfile, byRemote: Boolean) {
@@ -540,24 +609,46 @@ class SenderController @Inject constructor(
                 mediaWatchdog?.cancel()
                 reconnectShowJob?.cancel()
                 reconnectShowJob = null
+                // 档位切换中新连接 ICE 连通还不算成功：要等接收端回 REBUILT（首帧已上屏，PM 走查 P0-1）
+                qualitySwitch?.let { sw ->
+                    WscLog.i(TAG, "quality switch ${sw.from} -> ${sw.to}: media connected after ${System.currentTimeMillis() - sw.startedAt}ms, waiting for first frame")
+                }
+                val recovered = _state.value is SenderState.Reconnecting
                 when (val cur = _state.value) {
                     is SenderState.Starting -> {
                         cancelTimeout()
-                        _state.value = SenderState.Casting(t, System.currentTimeMillis(), profile, autoAdjust, audioState)
+                        _state.value = SenderState.Casting(
+                            t, System.currentTimeMillis(), profile, autoAdjust, audioState, receiverLegacy = !receiverSupportsRebuild,
+                            fpsCapped = fpsCap, measuredGameLatencyMs = gameStore.receiver(receiverId)?.latencyP50Ms,
+                            gameIntroAcknowledged = gameStore.introAcknowledged, audioSplit = audioSplit,
+                        )
+                        // 默认档就是游戏：开始即按游戏模式协商（不经过切换停顿）
+                        onGameProfile(atStart = true)
                     }
                     is SenderState.Reconnecting -> {
                         if (reconnectJob == null) control.setPaused(ControlReason.RECONNECTING, false)
                         accumulator.onRecovered()
-                        _state.value = SenderState.Casting(t, castStartedAtOr(cur.since), profile, autoAdjust, audioState)
+                        _state.value = SenderState.Casting(
+                            t, castStartedAtOr(cur.since), profile, autoAdjust, audioState, receiverLegacy = !receiverSupportsRebuild,
+                            hint = hints.current, fpsCapped = fpsCap, measuredGameLatencyMs = gameStore.receiver(receiverId)?.latencyP50Ms,
+                            gameIntroAcknowledged = gameStore.introAcknowledged, audioSplit = audioSplit,
+                        )
                         _events.tryEmit(SenderEvent.Recovered)
                         WscLog.i(TAG, "media recovered after ${System.currentTimeMillis() - cur.since}ms")
                     }
                     else -> Unit
                 }
                 if (castingSince == 0L) castingSince = System.currentTimeMillis()
+                // 断线期间选过需要重建的档位：恢复后补做重建，让低延迟部分也生效
+                if (recovered) pendingRebuildFrom?.let { from ->
+                    pendingRebuildFrom = null
+                    if (QualityProfile.needsMediaRebuild(from, profile)) startSwitch(from, profile, rollback = false)
+                }
             }
             MediaState.DISCONNECTED, MediaState.FAILED -> {
                 if (rtc == null) return
+                // 档位切换中的新连接：失败交给切换超时回退处理，不进入“重连中”
+                if (qualitySwitch != null) return
                 if (castingSince == 0L) {
                     // 首帧前从未连通：不是“断线重连”，保持“正在建立连接”。FAILED 时 ICE restart 重试，用尽后以连接失败结束（E3）
                     if (state == MediaState.FAILED) {
@@ -672,7 +763,7 @@ class SenderController @Inject constructor(
         }
     }
 
-    private fun onRtcStats(s: SenderStatsSnapshot, latencyMs: Int?) {
+    private fun onRtcStats(s: SenderStatsSnapshot, latencyMs: Int?, r: DcMessage.ReceiverStats?) {
         latencyMs?.let(accumulator::addLatency)
         accumulator.addBitrate(s.bitrateKbps)
         accumulator.codec = s.encoder
@@ -681,14 +772,191 @@ class SenderController @Inject constructor(
         updateCasting {
             it.copy(stats = CastingStats(latencyMs, grade, s.bitrateKbps, s.width, s.height, s.fps))
         }
-        val next = autoPolicy.onSample(profile, autoAdjust, NetworkSample(s.availableOutgoingBitrateBps, s.lossPercent, s.rttMs))
-        if (next != null && next != profile) {
-            lastAutoDowngradeFrom = profile
-            _events.tryEmit(SenderEvent.AutoDowngraded(profile))
-            rtc?.setQuality(next)
-            profile = next
-            updateCasting { it.copy(profile = next) }
+        if (qualitySwitch != null || _state.value !is SenderState.Casting) return
+        when (val d = autoPolicy.onSample(profile, autoAdjust, NetworkSample(s.availableOutgoingBitrateBps, s.lossPercent, s.rttMs))) {
+            is AutoQualityDecision.Downgrade -> if (d.to != profile) {
+                lastAutoDowngradeFrom = profile
+                _events.tryEmit(SenderEvent.AutoDowngraded(profile))
+                applyProfile(profile, d.to)
+            }
+            // 游戏档不切档（档内由 WebRTC 拥塞控制 + MAINTAIN_FRAMERATE 降码率 / 分辨率、保帧率），提示位 ⑦（交互稿 G04）
+            AutoQualityDecision.PoorNetworkInGame -> offerHint(GameHint.PoorNetwork)
+            null -> Unit
         }
+        // 网络恢复：还没看的“网络较差”卡片直接丢弃（交互稿 G04 何时可见）
+        if (autoPolicy.goodStreak >= NETWORK_RECOVERED_SECONDS && hints.current?.type == GameHintType.POOR_NETWORK) {
+            hints.invalidate(GameHintType.POOR_NETWORK)
+            publishHints()
+        }
+        // 插上电源：未看的“电量低”卡片丢弃（UX 走查 P2-16）
+        if (++statsTicks % BATTERY_CHECK_SECONDS == 0 && hints.current?.type == GameHintType.LOW_BATTERY && isCharging()) {
+            hints.invalidate(GameHintType.LOW_BATTERY)
+            publishHints()
+        }
+        if (profile.lowLatency) onGameStats(s, latencyMs, r)
+    }
+
+    /** 游戏模式每秒判定：延迟达不到 / 60 帧跟不上（PRD 8.1.3 F）。 */
+    private fun onGameStats(s: SenderStatsSnapshot, latencyMs: Int?, r: DcMessage.ReceiverStats?) {
+        latencyMs?.let(game::addLatency)
+        r?.lowLatency?.let { game.lowLatencyDecoder = it }
+        val sample = GameSample(
+            latencyMs, senderFps = s.fps, receiverFps = r?.fps, receiverDecodeMs = r?.decodeMs, receiverLowLatency = r?.lowLatency,
+            captureFps = s.captureFps, rttMs = s.rttMs, lossPercent = s.lossPercent,
+        )
+        // 旧版接收端不做“达不到”判定：延迟高的原因是版本，已由提示位 ⑤ 说明（PM 走查 P1-4）
+        when (val f = gameMonitor.onSample(sample, expectedFps = capFps ?: profile.fps, checkLatency = receiverSupportsRebuild)) {
+            is GameModeMonitor.Finding.LatencyUnmet -> offerHint(GameHint.LatencyUnmet(f.medianMs, f.cause))
+            GameModeMonitor.Finding.LatencyRecovered -> {
+                hints.invalidate(GameHintType.LATENCY_UNMET)
+                publishHints()
+            }
+            is GameModeMonitor.Finding.FpsLow -> {
+                capFrameRate(if (f.receiverCause) FpsCapReason.RECEIVER else FpsCapReason.SENDER)
+                offerHint(GameHint.FpsDropped(receiverCause = f.receiverCause))
+                // 接收端原因：这台电视下次直接用 30 帧（跑满 60 帧时清除，见 FullRate）
+                if (f.receiverCause) receiverId?.let { gameStore.recordReceiver(it, prefer30Fps = true) }
+            }
+            // 在这台电视上跑满了 60 帧：清除“只能 30 帧”的记忆（PM 走查 P1-6）
+            GameModeMonitor.Finding.FullRate -> receiverId?.let { id ->
+                if (gameStore.receiver(id)?.prefer30Fps == true) gameStore.recordReceiver(id, prefer30Fps = false)
+            }
+            null -> Unit
+        }
+    }
+
+    /** 游戏模式降为 30 帧（过热 / 跟不上 60 帧）；仍保持最低缓冲（PRD 8.1.3 F / H）。 */
+    private fun capFrameRate(reason: FpsCapReason) {
+        if (fpsCap != null || !profile.lowLatency) return
+        fpsCap = reason
+        game.fpsCapReason = reason.name
+        rtc?.setFrameRateCap(CAPPED_FPS, announce = reason != FpsCapReason.REMEMBERED)
+        updateCasting { it.copy(fpsCapped = reason) }
+        WscLog.i(TAG, "game mode capped to $CAPPED_FPS fps: $reason")
+    }
+
+    private fun offerHint(h: GameHint) {
+        if (hints.offer(h)) {
+            game.hints += h.type.name
+            publishHints()
+        }
+    }
+
+    private fun publishHints() {
+        updateCasting { it.copy(hint = hints.current) }
+    }
+
+    /** 进入 / 离开游戏模式时的记账与“电量低”检查（交互稿 G04 ⑨：进入游戏模式时电量 <20% 且未充电）。 */
+    private fun onGameProfile(atStart: Boolean) {
+        val now = System.currentTimeMillis()
+        if (profile.lowLatency) {
+            if (game.enter(now, atStart)) {
+                gameMonitor.reset()
+                if (!receiverSupportsRebuild) offerHint(GameHint.LegacyReceiver)
+                lowBatteryPercent()?.let { offerHint(GameHint.LowBattery(it)) }
+                checkThermalNow()
+            }
+        } else {
+            game.leave(now)
+            gameMonitor.reset()
+            if (fpsCap != null) {
+                fpsCap = null
+                updateCasting { it.copy(fpsCapped = null) }
+            }
+        }
+    }
+
+    private fun isCharging(): Boolean = runCatching {
+        context.getSystemService(android.os.BatteryManager::class.java)?.isCharging == true
+    }.getOrDefault(false)
+
+    /** 进入游戏模式 / 重试 60 帧时手机已经是“严重”温度：直接降帧（温度没有变化就没有回调，PM 走查 P1-3）。 */
+    private fun checkThermalNow() {
+        val status = runCatching { context.getSystemService(android.os.PowerManager::class.java)?.currentThermalStatus }.getOrNull() ?: return
+        if (status >= android.os.PowerManager.THERMAL_STATUS_SEVERE && profile.lowLatency && fpsCap == null) {
+            capFrameRate(FpsCapReason.THERMAL)
+            offerHint(GameHint.Thermal)
+        }
+    }
+
+    private fun lowBatteryPercent(): Int? = runCatching {
+        val bm = context.getSystemService(android.os.BatteryManager::class.java) ?: return null
+        val pct = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        if (pct in 0 until LOW_BATTERY_PERCENT && !bm.isCharging) pct else null
+    }.getOrNull()
+
+    /** 手机温度达到系统“严重”级别：游戏模式降为 30 帧（PRD 8.1.3 H）；更高级别交给系统限频。 */
+    private fun registerThermalListener() {
+        val pm = context.getSystemService(android.os.PowerManager::class.java) ?: return
+        val l = android.os.PowerManager.OnThermalStatusChangedListener { status ->
+            if (status >= android.os.PowerManager.THERMAL_STATUS_SEVERE) {
+                scope.launch {
+                    if (rtc != null && profile.lowLatency && fpsCap == null) {
+                        capFrameRate(FpsCapReason.THERMAL)
+                        offerHint(GameHint.Thermal)
+                    }
+                }
+            }
+        }
+        runCatching { pm.addThermalStatusListener(context.mainExecutor, l) }.onSuccess { thermalListener = l }
+    }
+
+    private fun unregisterThermalListener() {
+        val l = thermalListener ?: return
+        thermalListener = null
+        runCatching { context.getSystemService(android.os.PowerManager::class.java)?.removeThermalStatusListener(l) }
+    }
+
+    /** 新连接建不起来（交互稿 G02“下次生效”）：只改分辨率与帧率，提示“低延迟将在下次投屏生效”。 */
+    /**
+     * 接收端确认新连接首帧已上屏（`REBUILT`）：切换成功。停顿取接收端测得的值（PRD 8.1.3 I）。
+     * 回退成功后才出提示位 ①（回退本身也失败则不出 ①，进入“重连中”，PM 走查 P1-2）。
+     */
+    private fun onRebuiltConfirmed(pauseMs: Long) {
+        val sw = qualitySwitch ?: return
+        WscLog.i(TAG, "quality switch ${sw.from} -> ${sw.to} done: receiver pause ${pauseMs}ms, total ${System.currentTimeMillis() - sw.startedAt}ms${if (sw.rollback) " (rollback)" else ""}")
+        game.onSwitchDone(pauseMs)
+        clearSwitch()
+        audioSplit = sw.to.lowLatency
+        updateCasting { it.copy(audioSplit = audioSplit) }
+        if (sw.rollback) offerHint(GameHint.SwitchFailed(sw.to))
+    }
+
+    private fun onRebuildUnavailable(q: QualityProfile) {
+        val sw = qualitySwitch
+        if (sw == null || sw.to != q) return
+        clearSwitch()
+        profile = q
+        rtc?.setQuality(q, capFps = capFps)
+        updateCasting { it.copy(profile = q) }
+        onGameProfile(atStart = false)
+        if (q.lowLatency) offerHint(GameHint.NextTime)
+    }
+
+    /** 提示位 [知道了]。 */
+    fun dismissHint(type: GameHintType) = scope.launch {
+        hints.dismiss(type)
+        publishHints()
+    }
+
+    /** 提示位上的出路按钮（“切到流畅”等，交互稿 G04）。 */
+    fun hintAction(type: GameHintType) = scope.launch {
+        hints.dismiss(type)
+        publishHints()
+        when (type) {
+            GameHintType.POOR_NETWORK -> setQualityNow(QualityProfile.SMOOTH)
+            GameHintType.AUDIO_LATE -> setQualityNow(QualityProfile.BALANCED)
+            else -> Unit
+        }
+    }
+
+    /** G01 首次说明卡的结果：开启 = 记住并立即切换；取消 = 档位不变（下次选“游戏”还会出现）。 */
+    fun answerGameIntro(enable: Boolean) = scope.launch {
+        updateCasting { it.copy(gameIntroPending = false) }
+        if (!enable) return@launch
+        gameStore.acknowledgeIntro()
+        updateCasting { it.copy(gameIntroAcknowledged = true) }
+        setQualityNow(QualityProfile.GAME)
     }
 
     private inline fun updateCasting(block: (SenderState.Casting) -> SenderState.Casting) {
@@ -698,21 +966,119 @@ class SenderController @Inject constructor(
 
     // —— 投屏中的用户操作（交互稿 07）——
 
-    fun setQuality(q: QualityProfile) = scope.launch {
-        profile = q
+    fun setQuality(q: QualityProfile) = scope.launch { setQualityNow(q) }
+
+    private suspend fun setQualityNow(q: QualityProfile) {
+        // 切换进行中（≤5 秒）不能再切（PRD 8.1.3 D），界面同时禁用分段按钮
+        if (qualitySwitch != null) return
+        if (q == profile) {
+            // 已降为 30 帧时再点一次“游戏”= 重新尝试 60 帧（交互稿 15 状态表）
+            if (q.lowLatency && fpsCap != null) {
+                fpsCap = null
+                gameMonitor.reset()
+                rtc?.setFrameRateCap(null)
+                updateCasting { it.copy(fpsCapped = null) }
+                checkThermalNow()
+            }
+            return
+        }
+        // G01：本机第一次选“游戏”先讲清取舍
+        if (q.lowLatency && !gameStore.introAcknowledged && _state.value is SenderState.Casting) {
+            updateCasting { it.copy(gameIntroPending = true) }
+            return
+        }
         autoPolicy.reset()
-        rtc?.setQuality(q)
-        updateCasting { it.copy(profile = q) }
-        settings.setQuality(q)
+        // 会话中改档只对本次投屏有效，默认画质只在设置里改（产品拍板，PM 走查 P1-7）
+        applyProfile(profile, q)
     }
 
     fun undoAutoDowngrade() = scope.launch {
+        if (qualitySwitch != null) return@launch
         lastAutoDowngradeFrom?.let { prev ->
             lastAutoDowngradeFrom = null
-            profile = prev
-            rtc?.setQuality(prev)
-            updateCasting { it.copy(profile = prev) }
+            applyProfile(profile, prev)
         }
+    }
+
+    /**
+     * 会话中改档（F18，PRD 8.1.3 D）：
+     * - 不需要重建（分辨率 / 帧率 / 码率变化）→ DataChannel SET_QUALITY 即时生效；
+     * - 需要重建（切进 / 切出游戏档：接收端播放缓冲、解码器、音画分组都变）且接收端支持 → 重建媒体连接（[startSwitch]）；
+     * - 接收端版本旧 → 只改分辨率和帧率，提示“对方版本较旧”；
+     * - 断线重连中 → 先改编码参数，媒体恢复后补做重建。
+     */
+    private fun applyProfile(from: QualityProfile, to: QualityProfile) {
+        profile = to
+        if (!to.lowLatency) fpsCap = null
+        if (to.lowLatency && fpsCap == null && gameStore.receiver(receiverId)?.prefer30Fps == true) fpsCap = FpsCapReason.REMEMBERED
+        val session = rtc
+        if (session == null || from == to) {
+            updateCasting { it.copy(profile = to) }
+            return
+        }
+        when (QualitySwitchPolicy.plan(from, to, receiverSupportsRebuild, streaming = _state.value is SenderState.Casting)) {
+            QualityChange.SET_QUALITY -> {
+                session.setQuality(to, capFps = capFps)
+                updateCasting { it.copy(profile = to, fpsCapped = fpsCap) }
+                onGameProfile(atStart = false)
+            }
+            QualityChange.SET_QUALITY_LEGACY -> {
+                // 旧版接收端：只改分辨率与帧率，提示位 ⑤（在 onGameProfile 里）
+                session.setQuality(to, capFps = capFps)
+                updateCasting { it.copy(profile = to, fpsCapped = fpsCap) }
+                onGameProfile(atStart = false)
+            }
+            QualityChange.DEFER_REBUILD -> {
+                session.setQuality(to, capFps = capFps)
+                if (pendingRebuildFrom == null) pendingRebuildFrom = from
+                (_state.value as? SenderState.Reconnecting)?.let { _state.value = it.copy(profile = to) }
+            }
+            QualityChange.REBUILD -> startSwitch(from, to, rollback = false)
+        }
+    }
+
+    /** 重建媒体连接切到 [to]；5 秒内新连接没连通就回到 [from]（回退也失败则按普通断线处理）。 */
+    private fun startSwitch(from: QualityProfile, to: QualityProfile, rollback: Boolean) {
+        val session = rtc ?: return
+        profile = to
+        qualitySwitch = QualitySwitch(from, to, System.currentTimeMillis(), rollback)
+        updateCasting { it.copy(profile = to, switchingTo = to, switchingFrom = from, switchingRollback = rollback, fpsCapped = fpsCap) }
+        // 切出游戏 / 切进游戏的记账在发出切换时进行（时长从这里起算，停顿另计）
+        onGameProfile(atStart = false)
+        session.rebuildMedia(to, capFps)
+        switchTimeout?.cancel()
+        switchTimeout = scope.launch {
+            delay(QualitySwitchPolicy.TIMEOUT_MS)
+            onSwitchTimeout()
+        }
+        WscLog.i(TAG, "quality switch $from -> $to${if (rollback) " (rollback)" else ""}")
+    }
+
+    private suspend fun onSwitchTimeout() {
+        val sw = qualitySwitch ?: return
+        WscLog.w(TAG, "quality switch ${sw.from} -> ${sw.to} timed out (rollback=${sw.rollback})")
+        if (QualitySwitchPolicy.onTimeout(sw.rollback) == SwitchTimeoutAction.ROLLBACK) {
+            // 回到原档位（PRD 8.1.3 D：“切换没有成功，已保持‘均衡’”）
+            switchTimeout = null
+            game.switchFailures++
+            if (!sw.from.lowLatency) fpsCap = null
+            // 提示位 ① 等回退的首帧确认后再出（onRebuiltConfirmed）
+            startSwitch(sw.to, sw.from, rollback = true)
+        } else {
+            // 回退也没连上：如实进入“重连中”，再按当前档位重建一次（重建对接收端任何状态都安全），30 秒窗口照旧
+            clearSwitch()
+            enterReconnecting()
+            audioSplit = profile.lowLatency
+            rtc?.rebuildMedia(profile, capFps)
+            watchMedia()
+        }
+    }
+
+    private fun clearSwitch() {
+        switchTimeout?.cancel()
+        switchTimeout = null
+        qualitySwitch = null
+        updateCasting { it.copy(switchingTo = null, switchingFrom = null, switchingRollback = false) }
     }
 
     fun setAutoAdjust(enabled: Boolean) = scope.launch {
@@ -753,6 +1119,11 @@ class SenderController @Inject constructor(
             reconnectJob = null
             reconnectShowJob?.cancel()
             mediaWatchdog?.cancel()
+            switchTimeout?.cancel()
+            switchTimeout = null
+            qualitySwitch = null
+            unregisterThermalListener()
+            game.leave(System.currentTimeMillis())
             // 停止投屏 = 同时收回控制；会话结束立即停止注入（PRD 风险表）。先取被控制时长写进本机报告（D8）
             val controlledMs = control.controlledDurationMs()
             control.detach()
@@ -800,8 +1171,12 @@ class SenderController @Inject constructor(
                     androidVersion = Build.VERSION.RELEASE.orEmpty(),
                     deviceModel = Build.MODEL.orEmpty(),
                     controlledMs = controlledMs.takeIf { it >= 1_000 },
+                    game = game.report(receiverSupportsRebuild),
                 ),
             )
+            // 记住这台接收端上的游戏模式实测延迟（下次档位说明里显示，交互稿 15 层级 ⑤）
+            val p50 = game.latencyP50()
+            if (p50 != null) receiverId?.let { gameStore.recordReceiver(it, latencyP50Ms = p50) }
         }.onFailure { WscLog.w(TAG, "write report failed", it) }
     }
 
@@ -853,6 +1228,15 @@ class SenderController @Inject constructor(
         lastAutoDowngradeFrom = null
         audioState = AudioState.OFF
         preMediaIceRestarts = 0
+        receiverCaps = emptyList()
+        qualitySwitch = null
+        pendingRebuildFrom = null
+        hints.reset()
+        gameMonitor.reset()
+        fpsCap = null
+        game = GameTracker()
+        audioSplit = false
+        statsTicks = 0
     }
 
     @Suppress("unused")
@@ -864,5 +1248,64 @@ class SenderController @Inject constructor(
         const val PAIR_REPLY_TIMEOUT_MS = 8_000L
         const val FIRST_MEDIA_TIMEOUT_MS = 60_000L
         const val MAX_PRE_MEDIA_ICE_RESTARTS = 2
+
+        /** 游戏模式降帧后的帧率（PRD 8.1.3 F / H）。 */
+        const val CAPPED_FPS = 30
+
+        /** 电量低于该百分比且未充电时，进入游戏模式提示一次（PRD 8.1.3 H）。 */
+        const val LOW_BATTERY_PERCENT = 20
+
+        /** 连续多少秒网络正常算“已恢复”（丢弃未看的“网络较差”卡片）。 */
+        const val NETWORK_RECOVERED_SECONDS = 5
+
+        /** 每隔多少秒检查一次是否插上电源。 */
+        const val BATTERY_CHECK_SECONDS = 10
+    }
+}
+
+/** 游戏模式报告记账（PRD 8.1.3 I）：只在单线程调度器上使用。 */
+private class GameTracker {
+    private var since = 0L
+    private var durationMs = 0L
+    private var enteredAtStart: Boolean? = null
+    private var switches = 0
+    private var maxPauseMs: Long? = null
+    private val latency = SessionStatsAccumulator()
+    var switchFailures = 0
+    var lowLatencyDecoder: Boolean? = null
+    var fpsCapReason: String? = null
+    val hints = linkedSetOf<String>()
+
+    /** @return 是否是本次新进入（之前不在游戏模式）。 */
+    fun enter(now: Long, atStart: Boolean): Boolean {
+        if (since > 0) return false
+        since = now
+        if (enteredAtStart == null) enteredAtStart = atStart
+        return true
+    }
+
+    fun leave(now: Long) {
+        if (since == 0L) return
+        durationMs += now - since
+        since = 0
+    }
+
+    fun onSwitchDone(pauseMs: Long) {
+        switches++
+        maxPauseMs = maxOf(maxPauseMs ?: 0, pauseMs)
+    }
+
+    fun addLatency(ms: Int) = latency.addLatency(ms)
+
+    fun latencyP50(): Int? = latency.percentile(0.5)
+
+    fun report(receiverSupportsGame: Boolean): GameReport? {
+        val start = enteredAtStart ?: return null
+        return GameReport(
+            durationMs = durationMs, enteredAtStart = start, switches = switches, switchFailures = switchFailures,
+            maxSwitchPauseMs = maxPauseMs, latencyHistogram = latency.histogram.toList(), latencyP50Ms = latency.percentile(0.5),
+            latencyP95Ms = latency.percentile(0.95), lowLatencyDecoder = lowLatencyDecoder, fpsCapReason = fpsCapReason,
+            hints = hints.toList(), receiverSupportsGame = receiverSupportsGame,
+        )
     }
 }

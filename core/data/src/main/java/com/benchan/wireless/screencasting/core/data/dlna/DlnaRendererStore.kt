@@ -34,6 +34,12 @@ data class DlnaRendererRecord(
     val quirks: Map<String, String> = emptyMap(),
     val failedFormats: Set<String> = emptySet(),
     val okFormats: Set<String> = emptySet(),
+    /** 上次推送成功（电视开始播放 / 取走照片）的时间；F14 Direct Share 只放 30 天内成功过的设备（PRD 8.1.2 H）。 */
+    val lastSuccessAt: Long? = null,
+    /** 推送成功时这台设备是否只能放音乐（Direct Share 的音箱只匹配音乐）。 */
+    val audioOnly: Boolean = false,
+    /** 本应用接收端的 WSC deviceId（设备描述里的 wsc:id）：长辈向导把它和镜像身份合并成同一台（EMU-F1）。 */
+    val wscId: String? = null,
 )
 
 @Singleton
@@ -54,8 +60,12 @@ class DlnaRendererStore @Inject constructor(@ApplicationContext context: Context
         upsert(udn, name) { it.copy(confirmedAt = it.confirmedAt ?: now, manufacturer = manufacturer, model = model, location = location ?: it.location) }
 
     /** 一次推送开始：更新最近使用与描述地址。 */
-    fun recordUse(udn: String, name: String, manufacturer: String?, model: String?, location: String?, now: Long = System.currentTimeMillis()) =
-        upsert(udn, name) { it.copy(lastUsedAt = now, useCount = it.useCount + 1, manufacturer = manufacturer, model = model, location = location ?: it.location) }
+    fun recordUse(udn: String, name: String, manufacturer: String?, model: String?, location: String?, now: Long = System.currentTimeMillis(), wscId: String? = null) =
+        upsert(udn, name) { it.copy(lastUsedAt = now, useCount = it.useCount + 1, manufacturer = manufacturer, model = model, location = location ?: it.location, wscId = wscId ?: it.wscId) }
+
+    /** 一次推送成功开始播放（F14 Direct Share 排序依据）。 */
+    fun recordSuccess(udn: String, audioOnly: Boolean, now: Long = System.currentTimeMillis()) =
+        update(udn) { it.copy(lastSuccessAt = now, audioOnly = audioOnly) }
 
     fun saveQuirks(udn: String, quirks: Map<String, String>) = update(udn) { it.copy(quirks = quirks) }
 

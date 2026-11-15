@@ -1,11 +1,14 @@
 package com.benchan.wireless.screencasting.core.rtc
 
+import com.benchan.wireless.screencasting.core.rtc.receiver.DecoderLowLatencyKeys
+import com.benchan.wireless.screencasting.core.rtc.stats.LatencyBreakdown
 import com.benchan.wireless.screencasting.core.rtc.stats.LatencyEstimator
 import com.benchan.wireless.screencasting.core.rtc.stats.StatEntry
 import com.benchan.wireless.screencasting.core.rtc.stats.StatsParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,6 +78,62 @@ class RtcPureLogicTest {
         val lat = LatencyEstimator.estimate(30, 10.0, 8, r.jitterBufferMs, r.decodeMs)
         assertNotNull(lat)
         assertTrue(lat!! in 80..110)
+    }
+
+    @Test
+    fun processingDelayAndPacerUseMeasuredDeltas() {
+        val p = StatsParser()
+        fun inb(dec: Long, decTime: Double, proc: Double) = listOf(
+            StatEntry("inbound-rtp", "i", dec * 16_000.0, mapOf("kind" to "video", "framesDecoded" to dec, "totalDecodeTime" to decTime,
+                "totalProcessingDelay" to proc, "jitterBufferDelay" to 0.0, "jitterBufferEmittedCount" to dec.toDouble())),
+        )
+        p.parseReceiver(inb(0, 0.0, 0.0))
+        // 60 帧：解码共 0.3 s（5 ms/帧），处理共 0.9 s（15 ms/帧）
+        val r = p.parseReceiver(inb(60, 0.3, 0.9))!!
+        assertEquals(15.0, r.processingMs!!, 0.001)
+        assertEquals(5.0, r.decodeMs!!, 0.001)
+
+        val s = StatsParser()
+        fun out(sent: Double, delay: Double) = listOf(
+            StatEntry("outbound-rtp", "o", sent * 1000, mapOf("kind" to "video", "packetsSent" to sent, "totalPacketSendDelay" to delay)),
+        )
+        s.parseSender(out(0.0, 0.0))
+        assertEquals(2.0, s.parseSender(out(500.0, 1.0))!!.pacerMs!!, 0.001)
+        // 旧版 / 拿不到字段：不编造
+        assertNull(StatsParser().parseSender(listOf(StatEntry("outbound-rtp", "o", 0.0, mapOf("kind" to "video"))))!!.pacerMs)
+    }
+
+    @Test
+    fun latencyBreakdownPrefersMeasuredSegments() {
+        // 游戏档 60 帧：缓冲 = 处理 − 解码（实测），网络 = RTT/2
+        val b = LatencyEstimator.breakdown(fps = 60, encodeMs = 7.0, rttMs = 6, jitterBufferMs = 40.0, decodeMs = 5.0, processingMs = 12.0, pacerMs = 1.0)!!
+        assertEquals(7.0, b.bufferMs, 0.001)
+        assertEquals(3.0, b.networkMs, 0.001)
+        assertEquals(8.0, b.encodeMs, 0.001)
+        assertEquals(5.0, b.decodeMs, 0.001)
+        assertEquals(setOf(LatencyBreakdown.Segment.ENCODE, LatencyBreakdown.Segment.NETWORK, LatencyBreakdown.Segment.BUFFER, LatencyBreakdown.Segment.DECODE), b.measured)
+        // 采集 / 显示是模型值：半个帧间隔 + 固定开销
+        val frame = 1000.0 / 60
+        assertEquals(frame / 2 + LatencyEstimator.COMPOSITION_MS, b.captureMs, 0.001)
+        assertEquals(frame / 2 + LatencyEstimator.SCANOUT_MS, b.displayMs, 0.001)
+        assertEquals((b.captureMs + 8.0 + 3.0 + 7.0 + 5.0 + b.displayMs).toInt(), b.totalMs)
+        // 没有处理耗时时退回 jitterBufferDelay
+        assertEquals(40.0, LatencyEstimator.breakdown(30, 7.0, 6, 40.0, 5.0)!!.bufferMs, 0.001)
+        // 网络与缓冲都没有实测：不显示数字
+        assertNull(LatencyEstimator.breakdown(30, 7.0, null, null, 5.0))
+        // 缓冲为负（统计口径抖动）时按 0
+        assertEquals(0.0, LatencyEstimator.breakdown(60, null, 4, null, 9.0, processingMs = 8.0)!!.bufferMs, 0.001)
+    }
+
+    @Test
+    fun vendorLowLatencyKeysByCodecPrefix() {
+        assertTrue(DecoderLowLatencyKeys.vendorKeys("c2.qti.avc.decoder").containsKey("vendor.qti-ext-dec-low-latency.enable"))
+        assertTrue(DecoderLowLatencyKeys.vendorKeys("OMX.qcom.video.decoder.avc").containsKey("vendor.qti-ext-dec-low-latency.enable"))
+        assertEquals(mapOf("vendor.low-latency.enable" to 1), DecoderLowLatencyKeys.vendorKeys("OMX.amlogic.avc.decoder.awesome2"))
+        assertEquals(mapOf("vendor.rtc-ext-dec-low-latency.enable" to 1), DecoderLowLatencyKeys.vendorKeys("c2.exynos.h264.decoder"))
+        assertTrue(DecoderLowLatencyKeys.vendorKeys("c2.android.avc.decoder").isEmpty())
+        assertTrue(DecoderLowLatencyKeys.vendorKeys("OMX.MTK.VIDEO.DECODER.AVC").isEmpty())
+        assertTrue(DecoderLowLatencyKeys.vendorKeys(null).isEmpty())
     }
 
     @Test

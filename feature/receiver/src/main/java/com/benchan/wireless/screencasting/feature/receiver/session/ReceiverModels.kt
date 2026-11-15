@@ -6,6 +6,8 @@ import com.benchan.wireless.screencasting.core.data.report.CastProtocol
 import com.benchan.wireless.screencasting.core.protocol.datachannel.AudioState
 import com.benchan.wireless.screencasting.core.protocol.pairing.CastCode
 import com.benchan.wireless.screencasting.core.protocol.quality.LatencyGrade
+import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
+import com.benchan.wireless.screencasting.core.rtc.stats.LatencyBreakdown
 
 /** 待机页信息（交互稿 11）。 */
 data class StandbyInfo(
@@ -56,6 +58,10 @@ data class PlaybackStats(
     val codec: String? = null,
     /** 最近 60 秒延迟（统计浮层折线图）。 */
     val latencyHistory: List<Int> = emptyList(),
+    /** F18：延迟分段（网络 / 缓冲 / 解码 / 显示），null = 没有足够统计。 */
+    val breakdown: LatencyBreakdown? = null,
+    /** F18：低延迟解码器是否生效（null = 未使用低延迟解码器）。 */
+    val lowLatencyDecoder: Boolean? = null,
 )
 
 /** 当前镜像会话（WSC）。 */
@@ -73,6 +79,19 @@ data class MirrorSession(
     val stats: PlaybackStats = PlaybackStats(),
     /** 反向控制（PRD F23，交互稿 R06–R08）。 */
     val control: ReceiverControl = ReceiverControl(),
+    /** 发送端当前画质档位（OFFER / SET_QUALITY / STATS；旧版发送端可能一直为 null）。 */
+    val profile: QualityProfile? = null,
+    /** F18：正在重建媒体连接切换档位（保留最后一帧，显示“正在切换到游戏模式…”）。 */
+    val switching: Boolean = false,
+    /**
+     * F18：本机接收链路确实按游戏模式建立（低缓冲 + 低延迟解码器）。旧版发送端只发 `SET_QUALITY{GAME}`、不重建时为 false，
+     * 界面不显示“游戏模式”标签和目标值，避免名不副实。
+     */
+    val gameMode: Boolean = false,
+    /** F18：发送端已把游戏模式降为 30 帧（STATS.capFps）；变为 true 时右上显示 3 秒“已降为 30 帧”（交互稿 G05）。 */
+    val fpsCapped: Boolean = false,
+    /** F18：发送端是 F18 之前的版本（OFFER 不带档位）：它的“游戏”档在本机没有低延迟优化。 */
+    val senderLegacy: Boolean = false,
 )
 
 /** 接收端看到的反向控制状态（来自发送端 CTL_STATE）。 */
@@ -127,6 +146,8 @@ sealed class ControlNotice(
 
     /** 对方版本没有 ctl 能力（PM 走查 G3）。 */
     data object Unsupported : ControlNotice(NoticeKind.UNSUPPORTED, "对方的局域投屏版本不支持反向控制", "请在对方手机上更新到最新版本", NoticeIcon.REFRESH, NoticeTone.WARNING)
+    /** F24：发送端开着长辈模式（不指向任何设置入口，长辈设置里没有反向控制）。 */
+    data object ElderMode : ControlNotice(NoticeKind.NOT_ENABLED, "对方手机开着长辈模式，不能远程操作", "投屏不受影响", NoticeIcon.INFO, NoticeTone.NEUTRAL)
     data object AdvancedProtection : ControlNotice(NoticeKind.AAPM, "对方手机开启了高级保护模式，无法被控制", "投屏不受影响", NoticeIcon.LOCK, NoticeTone.NEUTRAL)
 
     /** 请求阶段对方已锁屏（PM 走查 G4）。 */

@@ -89,7 +89,7 @@ import com.benchan.wireless.screencasting.core.protocol.quality.QualityProfile
 import com.benchan.wireless.screencasting.core.ui.theme.WscTheme
 
 /** 设置页的跳转目标。 */
-enum class SettingsDestination { TRUSTED, REPORT, DIAGNOSTICS, LOGS, INSTALL_HELP, REMOTE_CONTROL }
+enum class SettingsDestination { TRUSTED, REPORT, DIAGNOSTICS, LOGS, INSTALL_HELP, REMOTE_CONTROL, ELDER }
 
 /**
  * 交互稿 09A：设置。按“发送 → 接收 → 诊断 → 关于”的任务频率排序，接收相关项在 TV 端置顶；
@@ -151,11 +151,19 @@ fun SettingsScreen(
             NavRow("默认模式", if (!receiverMode) "发送端（投屏到别处）" else "接收端（把本机当作屏幕）", modifier = rowFocus("mode")) { lastRow = "mode"; dialog = "mode" }
             // 可信设备对发送端和接收端都有效（双方互相信任），放在“本机”分组，不受“切换为接收端后生效”说明覆盖（R3）
             NavRow("可信设备", "${trusted.size} 台 · 可逐个移除", rowFocus("trusted"), icon = Icons.Rounded.Devices) { lastRow = "trusted"; onNavigate(SettingsDestination.TRUSTED) }
+            // F24 长辈模式（交互稿 E02）：独立分组，只在发送端模式显示；导航行（开启前必须走向导）
+            if (!isTv && !receiverMode) {
+                Group("长辈模式")
+                NavRow("长辈模式", "大字大按钮，一键投到家里的电视。由家人先设置好 · " + if (settings.elderModeEnabled) "已开启" else "关闭") {
+                    lastRow = "elder"; onNavigate(SettingsDestination.ELDER)
+                }
+            }
 
             val sender = @Composable {
                 Group("投屏")
-                NavRow("画质档位", settings.quality.label + if (settings.autoAdjustQuality) " · 网络变差时自动降档" else "") { dialog = "quality" }
-                SwitchRow("自动调节", "网络变差时自动降为“流畅”", settings.autoAdjustQuality, viewModel::setAutoAdjust)
+                // 游戏档不切档（F18，UX 走查 P1-7）：两处文案按默认档位取
+                NavRow("画质档位", qualityRowDetail(settings.quality, settings.autoAdjustQuality)) { dialog = "quality" }
+                SwitchRow("自动调节", autoAdjustDetail(settings.quality), settings.autoAdjustQuality, viewModel::setAutoAdjust)
                 // 声音、说明卡只对手机发送端有意义：TV 上隐藏（UX#20）
                 if (!isTv) {
                     SwitchRow("声音", "只捕获手机播放的声音，不录麦克风", settings.audioEnabled, onChange = { on ->
@@ -168,6 +176,8 @@ fun SettingsScreen(
                         }
                     }
                     SwitchRow("录屏前显示说明卡", "关闭后点设备直接弹出系统录屏授权", !settings.skipCaptureIntro, onChange = { viewModel.setSkipIntro(!it) })
+                    // F14 Direct Share（决策 #34，交互稿 S08 / 09A）：关闭后立即移除全部快捷方式
+                    SwitchRow("在分享菜单显示最近推送的电视", "分享照片和视频时，可以直接点电视的名字", settings.directShareEnabled, viewModel::setDirectShare)
                     // 反向控制（PRD F23，交互稿 09A / R01）：导航行 + 状态值（UX 走查 G12），点按进入 R01 再开关。
                     // B 期起 TV 接收端有控制入口：说明为“电视或平板”（用户决策 D3）
                     val rcServiceOn = remember(resumeTick, settings.remoteControlEnabled) { viewModel.remoteControlServiceOn() }
@@ -269,8 +279,13 @@ fun SettingsScreen(
         "name" -> NameDialog(settings.deviceName, { dialog = null }) { viewModel.setDeviceName(it); dialog = null }
         "mode" -> ChoiceDialog("默认模式", listOf(AppMode.SENDER to "发送端（投屏到别处）", AppMode.RECEIVER to "接收端（把本机当作屏幕）"),
             settings.mode ?: if (isTv) AppMode.RECEIVER else AppMode.SENDER, { dialog = null }) { viewModel.setMode(it); dialog = null }
-        "quality" -> ChoiceDialog("画质档位", QualityProfile.entries.map { it to "${it.label}（${it.summary}）" }, settings.quality, { dialog = null }) {
-            viewModel.setQuality(it); dialog = null
+        "quality" -> ChoiceDialog("画质档位", QualityProfile.entries.map { it to qualityOption(it) }, settings.quality, { dialog = null }) {
+            // F18 G06：本机还没确认过 G01 时，先弹首次说明卡，“开启”后才保存
+            if (it == QualityProfile.GAME && !viewModel.gameIntroAcknowledged()) dialog = "game_intro" else viewModel.setQuality(it).also { dialog = null }
+        }
+        "game_intro" -> com.benchan.wireless.screencasting.core.ui.components.GameIntroDialog { enable ->
+            if (enable) viewModel.acknowledgeGameIntroAndSetGame()
+            dialog = null
         }
         "policy" -> ChoiceDialog(
             "连接策略",
@@ -369,6 +384,21 @@ private fun NameDialog(current: String, onDismiss: () -> Unit, onSave: (String) 
         confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank(), modifier = Modifier.tvFocusRing()) { Text("保存") } },
         dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.tvFocusRing()) { Text("取消") } },
     )
+}
+
+private fun qualityRowDetail(p: QualityProfile, auto: Boolean): String = when {
+    p.lowLatency -> "${p.label} · 720p · 60 帧 · 延迟优先"
+    auto -> "${p.label} · 网络变差时自动降档"
+    else -> p.label
+}
+
+private fun autoAdjustDetail(p: QualityProfile): String =
+    if (p.lowLatency) "游戏模式下只降码率和清晰度，不切档" else "网络变差时自动降为“流畅”"
+
+/** 默认画质选项：每项一句用途说明，“游戏”的说明含代价（交互稿 G06）。 */
+private fun qualityOption(p: QualityProfile): String = when (p) {
+    QualityProfile.GAME -> "${p.label}（720p · 60 帧 · 延迟优先，声音可能稍晚）"
+    else -> "${p.label}（${p.summary}）"
 }
 
 @Composable

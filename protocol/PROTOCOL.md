@@ -18,13 +18,13 @@ WebSocket over TLS 1.3，路径 `/wsc`，首选端口 8443（占用时随机）�
 
 | t | 方向 | p |
 |---|---|---|
-| HELLO | 双向 | `ver, deviceId, name, model, role, caps[], resume, trusted?`；接收端回复另带 `confirmRequired, resumeOk`（`trusted` 见 2.1）。`caps` 取值：`h264`、`h265`、`opus`、`ctl`（反向控制，第 6 节）；未知能力忽略 |
+| HELLO | 双向 | `ver, deviceId, name, model, role, caps[], resume, trusted?`；接收端回复另带 `confirmRequired, resumeOk`（`trusted` 见 2.1）。`caps` 取值：`h264`、`h265`、`opus`、`ctl`（反向控制，第 6 节）、`game`（接收端：支持游戏模式与媒体重建，4.3）；未知能力忽略 |
 | PAIR_REQ | 发→收 | `name, model, method`（PIN / CODE / QR / CONFIRM） |
 | PAIR_PIN | 双向 | `point`：SPAKE2 公开值（SEC1 未压缩点，base64url） |
 | PAIR_CONFIRM | 发→收 | `mac`：发送端确认 MAC |
 | PAIR_OK | 收→发 | `mac?`：接收端确认 MAC（PIN / CODE 方式） |
 | PAIR_QR | 发→收 | `mac` = HMAC-SHA256(n, fpA ‖ fpB ‖ sessionId) |
-| OFFER / ANSWER | 发→收 / 收→发 | `sdp`（OFFER 另带 `iceRestart`） |
+| OFFER / ANSWER | 发→收 / 收→发 | `sdp`；OFFER 另带 `iceRestart`、`profile?`（发送端当前画质档位名）、`rebuild?`（新建了 PeerConnection，见 4.3） |
 | ICE | 双向 | `candidate, sdpMid, sdpMLineIndex`（只允许 host 候选） |
 | BYE | 双向 | `reason`：USER_STOP / PROJECTION_STOPPED / SCREEN_LOCKED / RECONNECT_TIMEOUT / REPLACED / RECEIVER_EXIT / NO_DISPLAY（接收端界面未打开，约 10 秒内没有画面渲染） |
 | ERROR | 双向 | `code, message, min?, max?, attemptsLeft?`；PIN_MISMATCH 非致命，其余致命 |
@@ -70,9 +70,10 @@ WebRTC（Unified Plan、BUNDLE、rtcp-mux），不配置 STUN/TURN，只交换 h
 
 | t | 方向 | 字段 |
 |---|---|---|
-| STATS | 发→收 | 每秒一次：`bitrateKbps, fps, width, height, rttMs?, encodeMs?, latencyMs?, lossPercent, codec?, profile?` |
-| RSTATS | 收→发 | 每秒一次：`jitterBufferMs?, decodeMs?, framesDropped, framesDecoded, fps, decoder?, hardwareDecoder?` |
-| SET_QUALITY | 双向 | `profile`：SMOOTH / BALANCED / HD / GAME |
+| STATS | 发→收 | 每秒一次：`bitrateKbps, fps, width, height, rttMs?, encodeMs?, latencyMs?, lossPercent, codec?, profile?, pacerMs?, capFps?`（`pacerMs` = 每包平均排队发送耗时；`capFps` = 游戏模式下因过热 / 跟不上已降到的帧率，没降时省略） |
+| RSTATS | 收→发 | 每秒一次：`jitterBufferMs?, decodeMs?, framesDropped, framesDecoded, fps, decoder?, hardwareDecoder?, procMs?, lowLatency?`（`procMs` = 每帧收到首包到解码完成的平均耗时；`lowLatency` = 解码器是否开启低延迟特性） |
+| REBUILT | 收→发 | `pauseMs`：`OFFER{rebuild}` 建立的新连接**首帧已上屏**（从收到 OFFER 到首帧的停顿，毫秒）。发送端以此判定档位切换成功，见 4.3 |
+| SET_QUALITY | 双向 | `profile`：SMOOTH / BALANCED / HD / GAME（未知档位：整条忽略）。只改分辨率 / 帧率 / 码率；切进 / 切出 GAME 走 4.3 的媒体重建 |
 | APP_SWITCHED | 发→收 | `visible`：单应用共享时被共享应用是否在前台 |
 | PROTECTED | 发→收 | `suspected`：画面可能受保护（黑帧推断） |
 | AUDIO | 发→收 | `state`：ON / OFF / NO_PERMISSION / SILENT_SUSPECTED |
@@ -103,6 +104,25 @@ WebRTC（Unified Plan、BUNDLE、rtcp-mux），不配置 STUN/TURN，只交换 h
 - 接收端：MOVE 至多每 16 ms 发一条（期间采样放进 `h`）；按住不动时每 250 ms 发一条保活 MOVE；发送缓冲 > 16 KiB 时丢弃 MOVE，DOWN / UP / CANCEL / K 从不丢。
 - 发送端：按下后 1 秒收不到任何事件，在最后位置自动抬起；几何代号不符或状态离开 ACTIVE 时取消进行中的手势。
 
+### 4.3 画质档位与媒体重建（PRD F18 游戏模式）
+
+接收端的播放缓冲（`WebRTC-ForcePlayoutDelay` 字段试验）和解码器在建立 PeerConnectionFactory 时固定，音视频是否同组在 `addTrack` 时固定，
+会话中都不能原地修改。因此：
+
+- **档位随 OFFER 下发**：发送端每条 OFFER 带 `profile`（档位名字符串）。接收端在建立接收链路时据此选择参数：`GAME` → 低缓冲 + 低延迟解码器 + 音频快速追赶；
+  其他值、缺失（旧版发送端）或**未知值**（新版本加的档位）→ 普通参数。`profile` 是字符串而非枚举，未知值不会让整条 OFFER 解码失败。
+- **媒体重建**：会话中切进 / 切出 GAME 时，发送端保留采集、编码源和音视频轨道，**新建 PeerConnection**（新的 ICE ufrag / DTLS 证书，音频按新档位放进同一个或独立的 stream），
+  发送 `OFFER{profile, rebuild:true}`（`iceRestart` 为 false）。接收端收到后**先关闭**当前 PeerConnection（释放硬件解码器），按 `profile` 新建工厂与 PeerConnection，
+  再应答。发送端收到 ANSWER 时才关闭旧 PeerConnection，再应用应答。两条 DataChannel（`wsc`、`wsc-input`）随新连接重建，`wsc` 打开后发送端重发 `CTL_STATE` / `GEOM` 等幂等状态。
+  这一过程不经过重连（不重新 HELLO / 配对 / 授权录屏），信令状态机按普通的“STREAMING 中再次 OFFER”处理（向量 `sender-media-rebuild-while-streaming`、`receiver-media-rebuild-while-streaming`）。
+  双方都按 PeerConnection 代号丢弃旧连接的回调，旧连接的关闭不算断线。
+- **能力协商**：只有接收端 HELLO 的 `caps` 含 `game` 时发送端才会发 `rebuild`。没有时（旧版接收端）会话中切到 GAME 只通过 `SET_QUALITY` 改分辨率与帧率，
+  发送端提示“对方版本较旧”；旧版接收端忽略 OFFER 里的未知字段，行为与以前一致。
+- **切换成功的判定**：接收端在新连接的**首帧上屏**后，在新连接的 `wsc` 通道上回 `REBUILT{pauseMs}`（通道尚未打开时排队，打开后立即发送）。发送端只以收到 `REBUILT` 为切换成功，ICE 连通不算（低端盒子可能连通了却解不出画面）。
+- **超时回退**：发送端 5 秒内没有收到 `REBUILT` 就以同样方式重建回原档位；回退也失败则按普通断线进入重连（ICE 不通时仍以 `rebuild` 重建，任何状态下都安全）。
+  信令在重建途中断开、重连 `resumeOk` 后，发送端直接按当前档位再重建一次，而不是 ICE restart。
+- `rebuild` 只在已认证的会话中出现；接收端没有活动会话时把它当成新会话的首个 OFFER。同档位的重建（发送端的恢复手段）接收端不显示“正在切换”。
+
 ## 5. 重连
 
 信令断开后发送端保留采集会话，按 0.5 / 1 / 2 / 4 / 4… 秒退避（总计 30 秒）重连，发送 `HELLO{resume:true}`（同一 sid），收到 `resumeOk` 后 ICE restart。
@@ -121,7 +141,7 @@ WebRTC（Unified Plan、BUNDLE、rtcp-mux），不配置 STUN/TURN，只交换 h
 
 | state | 含义 |
 |---|---|
-| UNAVAILABLE | 不能被控制：`reason` = SETTING_OFF（设置未开启）/ SERVICE_OFF（无障碍服务未开启，发送端已显示开启步骤）/ AAPM（Android 17 高级保护模式） |
+| UNAVAILABLE | 不能被控制：`reason` = SETTING_OFF（设置未开启）/ SERVICE_OFF（无障碍服务未开启，发送端已显示开启步骤）/ AAPM（Android 17 高级保护模式）/ ELDER_MODE（发送端开着长辈模式，F24；接收端提示“对方手机开着长辈模式，不能远程操作”，不指向任何设置入口；旧版接收端按 UNKNOWN 处理） |
 | IDLE | 可以请求；`reason` 为上一次结束的原因：USER_DENIED / TIMEOUT / CANCELLED / COOLDOWN / REVOKED / RECEIVER_END / LOCKED / SESSION_END |
 | PENDING | 等待发送端本人确认，`remainMs` = 剩余毫秒（30 秒超时 = 拒绝） |
 | ACTIVE | 已授权，正在注入 |

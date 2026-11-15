@@ -427,8 +427,32 @@ class MediaPushService : LifecycleService() {
         }
 
         /** 用户点“推送”时（App 在前台）启动，并告诉服务这次会话的 ID（第 1 轮 PM P0-1）。 */
-        fun start(context: Context, sessionId: String) {
-            context.startForegroundService(Intent(context, MediaPushService::class.java).setAction(ACTION_START).putExtra(EXTRA_SESSION_ID, sessionId))
+        fun start(context: Context, sessionId: String) = start(context, sessionId, emptyList())
+
+        /**
+         * F14（决策 #42）：把分享带来的临时读授权转交给本服务——启动意图带 ClipData + FLAG_GRANT_READ_URI_PERMISSION，
+         * 授权挂在服务的这次启动上，分享页关闭后仍可读，服务停止时由系统收回。转交失败（来源不允许再授权）时不带授权启动，
+         * 由复制策略兜底（技术方案 3.14.3，真机验证见开发进度 Q20）。日志不记录地址。
+         */
+        fun start(context: Context, sessionId: String, grants: List<android.net.Uri>) {
+            val base = Intent(context, MediaPushService::class.java).setAction(ACTION_START).putExtra(EXTRA_SESSION_ID, sessionId)
+            if (grants.isEmpty()) {
+                context.startForegroundService(base)
+                return
+            }
+            val clip = android.content.ClipData.newRawUri("share", grants.first())
+            grants.drop(1).forEach { clip.addItem(android.content.ClipData.Item(it)) }
+            val withGrants = Intent(base).apply {
+                clipData = clip
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            try {
+                context.startForegroundService(withGrants)
+                WscLog.i(TAG, "push service started with ${grants.size} read grant(s)")
+            } catch (e: SecurityException) {
+                WscLog.w(TAG, "read grant transfer refused, starting without grants")
+                context.startForegroundService(base)
+            }
         }
     }
 }

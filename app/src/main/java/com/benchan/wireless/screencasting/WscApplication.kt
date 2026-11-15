@@ -18,6 +18,9 @@ class WscApplication : Application() {
     @Inject
     lateinit var diagnosticLog: DiagnosticLog
 
+    @Inject
+    lateinit var directShare: com.benchan.wireless.screencasting.feature.sender.share.DirectShareShortcuts
+
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) {
@@ -37,6 +40,9 @@ class WscApplication : Application() {
         WscLog.i("App", "start ${BuildConfig.VERSION_NAME} appleCompat=${BuildConfig.AIRPLAY_AVAILABLE}")
         // DLNA 推送：清理上次异常退出留下的转换文件 / 照片缓存（PRD 8.1.1 F2）
         Thread({ DmcCache.cleanup(this) }, "wsc-dmc-cleanup").start()
+        // F14：清理进程被杀 / 重启前留下的分享副本（PRD 8.1.2 D“清理”）；按推送记录维护 Direct Share 快捷方式
+        com.benchan.wireless.screencasting.feature.sender.share.ShareStaging.cleanupStale(this)
+        directShare.start()
     }
 
     private object LogcatSink : LogSink {

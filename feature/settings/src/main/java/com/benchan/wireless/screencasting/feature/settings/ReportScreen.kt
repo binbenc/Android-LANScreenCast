@@ -4,6 +4,8 @@ import com.benchan.wireless.screencasting.core.ui.components.tvFocusRing
 import com.benchan.wireless.screencasting.core.ui.components.tvInitialFocus
 import com.benchan.wireless.screencasting.core.ui.components.tvSafeArea
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -84,6 +86,30 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
                     listOf("0", "100", "150", "250", "320").forEach { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
+            s.gameLatencyP50Ms?.let { p50 ->
+                // F18（交互稿 G06 报告行）：游戏模式延迟与其他档位分开统计；数值 onSurface，色阶只用在圆点和等级字（UX 走查 P2-13）
+                val grade = LatencyGrade.of(p50)
+                val range = (if (range30) "最近 30 天" else "全部") + " · 共 " + ReportCopy.duration(s.gameDurationMs)
+                Row(
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp)).padding(16.dp)
+                        .semantics(mergeDescendants = true) { contentDescription = "游戏模式延迟中位数约 $p50 毫秒，估算，${grade.label}，$range" },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(Icons.Rounded.SportsEsports, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(Modifier.weight(1f)) {
+                        Text("游戏模式延迟（中位数）", style = MaterialTheme.typography.bodyLarge)
+                        Text(range, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("约 $p50\u202Fms", style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"), color = MaterialTheme.colorScheme.onSurface)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Box(Modifier.size(8.dp).background(ext.latency(grade), androidx.compose.foundation.shape.CircleShape))
+                            Text(grade.label, style = MaterialTheme.typography.labelMedium, color = ext.latency(grade))
+                        }
+                    }
+                }
+            }
             if (s.byProtocol.isNotEmpty()) {
                 // 协议统计（交互稿 14-H：加“DLNA 推送”一类；推送不显示延迟）
                 Text("协议", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
@@ -156,5 +182,18 @@ private fun Metric(title: String, value: String, unit: String, sub: String, subC
             Text(" $unit", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 6.dp))
         }
         Text(sub, style = MaterialTheme.typography.bodySmall, color = subColor ?: MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** 报告页文案（纯函数）。 */
+internal object ReportCopy {
+    /** “3 小时”/“25 分钟”/“不到 1 分钟”。 */
+    fun duration(ms: Long): String {
+        val min = ms / 60_000
+        return when {
+            min >= 60 -> if (min % 60 == 0L || min >= 600) "${min / 60} 小时" else "${min / 60} 小时 ${min % 60} 分钟"
+            min >= 1 -> "$min 分钟"
+            else -> "不到 1 分钟"
+        }
     }
 }

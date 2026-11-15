@@ -55,6 +55,7 @@ import com.benchan.wireless.screencasting.feature.sender.ui.push.beginPushTo
 import com.benchan.wireless.screencasting.feature.sender.ui.push.guardMirror
 import com.benchan.wireless.screencasting.feature.sender.ui.push.beginPush
 import com.benchan.wireless.screencasting.feature.sender.ui.push.rememberPushFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private enum class SubRoute { NONE, CAST_CODE, SCANNER }
@@ -83,6 +84,9 @@ fun SenderScreen(
     onQuickCastConsumed: () -> Unit = {},
     deepLink: String? = null,
     onDeepLinkConsumed: () -> Unit = {},
+    entry: SenderEntry? = null,
+    onEntryConsumed: () -> Unit = {},
+    listTopCard: (@Composable () -> Unit)? = null,
     viewModel: SenderViewModel = hiltViewModel(),
     pushVm: PushViewModel = hiltViewModel(),
 ) {
@@ -136,6 +140,24 @@ fun SenderScreen(
         if (s is SenderState.Idle || s is SenderState.Ended) push.guardMirror(pushVm) { go() }
         // 处理完立即复位（复位会重启本 effect，所以 Snackbar 放到独立作用域），保证每次点图块都能再次触发（B3）
         onQuickCastConsumed()
+    }
+    // F14：从分享页 / Direct Share 桌面快捷方式进来（一次性事件）
+    var mirrorHint by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(entry) {
+        val e = entry ?: return@LaunchedEffect
+        onEntryConsumed()
+        when (e) {
+            SenderEntry.OpenPushRemote -> if (pushVm.session.value != null) push.remoteOpen = true
+            SenderEntry.MirrorHint -> mirrorHint = true
+            is SenderEntry.PushTo -> {
+                val row = kotlinx.coroutines.withTimeoutOrNull(5_000) {
+                    viewModel.devices.first { d -> (d.recent + d.nearby + d.dlna).any { it.device.dlna?.udn == e.udn } }
+                        .let { d -> (d.recent + d.nearby + d.dlna).first { it.device.dlna?.udn == e.udn } }
+                }
+                val target = row?.let { pushVm.targetFor(it.device, viewModel.searchStartedAt) }
+                if (target != null) push.beginPushTo(target, pushVm) else snackbarScope.launch { snackbar.showSnackbar("没有找到这台电视，请确认电视已开机、和手机连的是同一个路由器") }
+            }
+        }
     }
     LaunchedEffect(deepLink) {
         if (deepLink != null) {
@@ -270,9 +292,10 @@ fun SenderScreen(
                 sub = SubRoute.NONE
             }
             is SenderState.Connecting -> sub = SubRoute.NONE
-            is SenderState.Casting -> if (lockTipPending) {
+            is SenderState.Casting -> if (lockTipPending || mirrorHint) {
+                mirrorHint = false
+                if (lockTipPending) snackbarScope.launch { snackbar.showSnackbar(SenderCopy.LOCK_SCREEN_TIP) }
                 lockTipPending = false
-                snackbarScope.launch { snackbar.showSnackbar(SenderCopy.LOCK_SCREEN_TIP) }
             }
             is SenderState.Ended -> {
                 lockTipPending = false
@@ -328,6 +351,10 @@ fun SenderScreen(
                     onOpenPush = { push.remoteOpen = true },
                     onUnencryptedInfo = { push.unencryptedInfo = true },
                     scrollToDlna = scrollToDlna,
+                    topCard = {
+                        if (mirrorHint) MirrorHintCard { mirrorHint = false }
+                        listTopCard?.invoke()
+                    },
                 )
             }
             if (!pushFull) when (val s = state) {
@@ -343,6 +370,7 @@ fun SenderScreen(
                         control = controlUi,
                         onRevokeControl = viewModel::revokeControl,
                         onContinueControl = viewModel::continueControl,
+                        game = GameActions(viewModel::answerGameIntro, viewModel::dismissGameHint, viewModel::gameHintAction, onOpenInstallHelp),
                         onOpenAppSettings = { openAppDetailsSettings(context) },
                         showNotificationTip = !notificationGranted && !notificationTipDismissed,
                         notificationNeedsSettings = notificationPermanentlyDenied,
@@ -476,8 +504,10 @@ private fun ListContent(
     onOpenPush: () -> Unit,
     onUnencryptedInfo: () -> Unit,
     scrollToDlna: Int,
+    topCard: @Composable () -> Unit = {},
 ) {
     DeviceListScreen(
+        topCard = topCard,
         ui = devices,
         searchStartedAt = { viewModel.searchStartedAt },
         onDevice = onDevice,
