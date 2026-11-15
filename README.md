@@ -10,6 +10,21 @@ One APK works as both **sender** and **receiver**: phones and tablets send by de
 
 > **Status: pre-release.** The features below are implemented and covered by unit tests and emulator runs, but **none of them has been verified on real devices yet**. Feature status and the on-device test list are in [`docs/dev/开发进度.md`](docs/dev/开发进度.md) (Chinese).
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/assets/screenshots/02-tv-receiver.png" alt="TV receiver waiting for a cast, with QR code and cast code" width="720">
+</p>
+
+<p align="center">
+  <img src="docs/assets/screenshots/01-device-list.png" alt="Phone: discovered TVs with mirror and push actions" width="200">
+  <img src="docs/assets/screenshots/03-casting-game-mode.png" alt="Phone: mirroring in Game mode with live latency" width="200">
+  <img src="docs/assets/screenshots/04-elder-mode.png" alt="Elder mode home with large buttons" width="200">
+  <img src="docs/assets/screenshots/05-settings-dark.png" alt="Settings in dark mode" width="200">
+</p>
+
+<p align="center"><sub>TV receiver · device list · mirroring in Game mode · elder mode · dark theme (UI currently in Chinese; captured on emulators)</sub></p>
+
 ## Features
 
 **Screen mirroring**

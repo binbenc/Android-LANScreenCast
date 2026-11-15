@@ -10,6 +10,21 @@
 
 > **当前状态：预发布。** 下面列出的功能都已实现，有单元测试和模拟器验证，但**还没有在任何真机上验证过**。各功能的状态和真机测试清单见 [`docs/dev/开发进度.md`](docs/dev/开发进度.md)。
 
+## 效果图
+
+<p align="center">
+  <img src="docs/assets/screenshots/02-tv-receiver.png" alt="电视端等待投屏，显示二维码和投屏码" width="720">
+</p>
+
+<p align="center">
+  <img src="docs/assets/screenshots/01-device-list.png" alt="手机端：发现的电视，可镜像或推送" width="200">
+  <img src="docs/assets/screenshots/03-casting-game-mode.png" alt="手机端：游戏模式投屏中，实时显示延迟" width="200">
+  <img src="docs/assets/screenshots/04-elder-mode.png" alt="长辈模式首页：大按钮" width="200">
+  <img src="docs/assets/screenshots/05-settings-dark.png" alt="深色模式下的设置页" width="200">
+</p>
+
+<p align="center"><sub>电视接收端 · 设备列表 · 游戏模式投屏 · 长辈模式 · 深色模式（模拟器截图）</sub></p>
+
 ## 功能
 
 **屏幕镜像**
