@@ -30,7 +30,7 @@ jobs:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/setup-gradle@v4   # also validates the Gradle wrapper
+      - uses: gradle/actions/setup-gradle@v6   # also validates the Gradle wrapper
 
       - name: Test, lint and assemble
         run: ./gradlew -Pwsc.airplay=false test lint assembleDebug --stacktrace
@@ -59,7 +59,7 @@ jobs:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Install NDK and CMake
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}" > /dev/null
