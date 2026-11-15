@@ -19,6 +19,7 @@ $G assembleRelease               # R8-optimized release APKs (unsigned)
 $G test                          # all JVM unit tests (JVM modules: `test`; Android modules: testDebugUnitTest/testReleaseUnitTest)
 $G lint                          # Android lint for every module (abortOnError = true)
 $G installDebug                  # install on a connected device
+adb shell setprop debug.wsc.force_tv 1   # debug builds only: treat a phone/emulator as a TV (receiver default, TV UI); 0 to undo, restart the app
 
 # Single module / class / method
 $G :core:protocol:test                                   # pure-Kotlin JVM module
