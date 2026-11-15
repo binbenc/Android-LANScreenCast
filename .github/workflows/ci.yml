@@ -68,7 +68,7 @@ jobs:
         id: native-key
         run: echo "key=native-deps-${NDK_VERSION}-$(git submodule status | sha256sum | cut -c1-16)-${{ hashFiles('protocol-impl/airplay/scripts/build-native-deps.sh') }}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: protocol-impl/airplay/native-deps
           key: ${{ steps.native-key.outputs.key }}
