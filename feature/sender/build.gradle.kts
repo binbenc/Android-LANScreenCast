@@ -14,6 +14,10 @@ dependencies {
     implementation(projects.core.rtc)
     // 反向控制（PRD F23）：授权编排、无障碍注入、确认页
     implementation(projects.feature.control)
+    // DLNA 推送（F13）：推送引擎、文件服务、转换；锁屏媒体控件与音量键调电视音量（Media3 MediaSession）
+    implementation(projects.protocol.dlna)
+    implementation(libs.androidx.media3.common)
+    implementation(libs.androidx.media3.session)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

@@ -91,6 +91,8 @@ dependencies {
     implementation(projects.feature.settings)
     implementation(projects.feature.control)
     implementation(projects.protocol.airplayApi)
+    // 启动时清理 DLNA 推送的转换残留（PRD 8.1.1 F2）
+    implementation(projects.protocol.dlna)
     if (airplayEnabled) {
         implementation(projects.protocol.airplay)
     }

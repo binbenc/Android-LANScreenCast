@@ -15,12 +15,21 @@ data class ReportSummary(
     val topDevices: List<DeviceUsage>,
     /** 最近被反向控制的投屏（新 → 旧，最多 5 条）：“本次被××控制 mm:ss”。 */
     val recentControl: List<ControlUsage> = emptyList(),
+    /** 协议统计（交互稿 14-H：只在协议统计里加 DLNA 推送一类）。 */
+    val byProtocol: Map<CastProtocol, Int> = emptyMap(),
+    /** DLNA 推送（PRD 8.1.1 G）：成功率与首次播放耗时 P50。 */
+    val pushTotal: Int = 0,
+    val pushSucceeded: Int = 0,
+    val pushFirstPlayP50Ms: Long? = null,
 ) {
+    val pushSuccessRatePercent: Int? get() = if (pushTotal == 0) null else (pushSucceeded * 100 + pushTotal / 2) / pushTotal
+
     val successRatePercent: Int? get() = if (total == 0) null else (succeeded * 100 + total / 2) / total
 
     companion object {
         fun from(records: List<SessionRecord>, sinceMillis: Long? = null): ReportSummary {
             val list = if (sinceMillis == null) records else records.filter { it.startedAt >= sinceMillis }
+            val pushes = list.filter { it.protocol == CastProtocol.DLNA_PUSH }
             val merged = IntArray(SessionStatsAccumulator.BUCKETS)
             list.forEach { r -> r.latencyHistogram.forEachIndexed { i, c -> if (i < merged.size) merged[i] += c } }
             val hist = merged.toList()
@@ -42,6 +51,10 @@ data class ReportSummary(
                 topDevices = devices,
                 recentControl = list.filter { (it.controlledMs ?: 0) > 0 }.sortedByDescending { it.endedAt }.take(5)
                     .map { ControlUsage(it.peerName, it.controlledMs ?: 0, it.endedAt) },
+                byProtocol = list.groupingBy { it.protocol }.eachCount(),
+                pushTotal = pushes.size,
+                pushSucceeded = pushes.count { it.success },
+                pushFirstPlayP50Ms = pushes.mapNotNull { it.firstFrameMs }.sorted().let { if (it.isEmpty()) null else it[(it.size - 1) / 2] },
             )
         }
     }

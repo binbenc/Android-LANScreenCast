@@ -3,6 +3,7 @@ package com.benchan.wireless.screencasting.protocol.dlna
 import android.content.Context
 import android.os.Build
 import com.benchan.wireless.screencasting.core.common.WscLog
+import com.benchan.wireless.screencasting.core.data.dlna.LocalDlnaIdentity
 import com.benchan.wireless.screencasting.core.data.report.CastProtocol
 import com.benchan.wireless.screencasting.core.data.report.SessionRecord
 import com.benchan.wireless.screencasting.core.data.report.SessionReportStore
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,6 +35,8 @@ data class DlnaPlayback(
     val startedAt: Long,
     /** DIDL-Lite 里声明的 MIME（可能缺失）；只有 video/... 才能确定是视频。 */
     val mimeType: String? = null,
+    /** 推送的是图片时的地址（播放页直接显示，第 1 轮 EMU-2）。 */
+    val imageUri: String? = null,
 ) {
     /** 能确定是视频（MIME 缺失时返回 false：宁可不强制结束）。 */
     val isKnownVideo: Boolean get() = mimeType?.lowercase()?.startsWith("video/") == true
@@ -50,6 +52,7 @@ class DlnaManager @Inject constructor(
     private val network: NetworkMonitor,
     private val multicastLock: MulticastLockHolder,
     private val reports: SessionReportStore,
+    private val identity: LocalDlnaIdentity,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
@@ -75,11 +78,7 @@ class DlnaManager @Inject constructor(
     private var sessionStartedAt = 0L
     private var trackTitle: String? = null
 
-    val udn: String by lazy {
-        val f = File(context.noBackupFilesDir, "dlna_udn")
-        runCatching { f.readText().trim() }.getOrNull()?.takeIf { it.isNotBlank() }
-            ?: UUID.randomUUID().toString().also { runCatching { f.writeText(it) } }
-    }
+    val udn: String get() = identity.udn
 
     init {
         scope.launch {
@@ -93,7 +92,10 @@ class DlnaManager @Inject constructor(
                         sessionStartedAt = System.currentTimeMillis()
                         trackTitle = snap.metadata?.title
                     }
-                    _playback.value = DlnaPlayback(snap.metadata?.title, lastControlPoint, snap.state, prev?.startedAt ?: sessionStartedAt, snap.metadata?.mimeType)
+                    _playback.value = DlnaPlayback(
+                        snap.metadata?.title, lastControlPoint, snap.state, prev?.startedAt ?: sessionStartedAt, snap.metadata?.mimeType,
+                        imageUri = if (snap.isImage) snap.uri else null,
+                    )
                 } else if (prev != null) {
                     _playback.value = null
                     recordSession(snap.error)

@@ -1,6 +1,7 @@
 package com.benchan.wireless.screencasting.core.discovery
 
 import com.benchan.wireless.screencasting.core.discovery.mdns.WscTxt
+import com.benchan.wireless.screencasting.core.discovery.ssdp.SsdpHit
 import com.benchan.wireless.screencasting.core.discovery.ssdp.SsdpSearcher
 import com.benchan.wireless.screencasting.core.net.ssdp.SsdpMessage
 import com.benchan.wireless.screencasting.core.net.ssdp.SsdpPacket
@@ -29,7 +30,9 @@ class DiscoveryParsingTest {
             "HTTP/1.1 200 OK\r\nST: urn:schemas-upnp-org:device:MediaRenderer:1\r\nUSN: uuid:u1::urn:x\r\n" +
                 "LOCATION: http://192.168.1.9:49152/d.xml\r\nX-WSC-PORT: 8443\r\nX-WSC-ID: dev-1\r\nX-WSC-NAME: %E5%AE%A2%E5%8E%85\r\n\r\n",
         )!!
-        val d = SsdpSearcher.parse(SsdpPacket(msg, InetAddress.getByName("192.168.1.9"), 1900), now = 5)!!
+        val hit = SsdpSearcher.parse(SsdpPacket(msg, InetAddress.getByName("192.168.1.9"), 1900), now = 5) as SsdpHit.Wsc
+        val d = hit.device
+        assertEquals("http://192.168.1.9:49152/d.xml", hit.location)
         assertEquals("dev-1", d.deviceId)
         assertEquals(8443, d.port)
         assertEquals("客厅", d.name)
@@ -42,9 +45,16 @@ class DiscoveryParsingTest {
             "HTTP/1.1 200 OK\r\nST: urn:schemas-upnp-org:device:MediaRenderer:1\r\nUSN: uuid:tv::urn:x\r\n" +
                 "SERVER: Linux UPnP/1.0 卧室电视\r\nLOCATION: http://192.168.1.10:1234/d.xml\r\n\r\n",
         )!!
-        val d = SsdpSearcher.parse(SsdpPacket(msg, InetAddress.getByName("192.168.1.10"), 1900))!!
-        assertEquals(DeviceProtocol.DLNA_ONLY, d.protocol)
-        assertEquals("dlna:tv", d.deviceId)
+        val d = SsdpSearcher.parse(SsdpPacket(msg, InetAddress.getByName("192.168.1.10"), 1900)) as SsdpHit.Renderer
+        assertEquals("tv", d.uuid)
+        assertEquals("http://192.168.1.10:1234/d.xml", d.location)
+        // 名字要等设备描述，不再用 SERVER 头（SERVER 末尾常是 DLNADOC/1.50 之类）
+        assertEquals("Linux UPnP/1.0 卧室电视", d.server)
+        // AVTransport 搜索的响应也算；无关设备忽略
+        val avt = SsdpMessage.parse("HTTP/1.1 200 OK\r\nST: urn:schemas-upnp-org:service:AVTransport:1\r\nUSN: uuid:tv2::x\r\nLOCATION: http://192.168.1.11/d.xml\r\n\r\n")!!
+        assertTrue(SsdpSearcher.parse(SsdpPacket(avt, InetAddress.getByName("192.168.1.11"), 1900)) is SsdpHit.Renderer)
+        val router = SsdpMessage.parse("HTTP/1.1 200 OK\r\nST: urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\nUSN: uuid:gw::x\r\nLOCATION: http://192.168.1.1/d.xml\r\n\r\n")!!
+        assertNull(SsdpSearcher.parse(SsdpPacket(router, InetAddress.getByName("192.168.1.1"), 1900)))
     }
 
     @Test

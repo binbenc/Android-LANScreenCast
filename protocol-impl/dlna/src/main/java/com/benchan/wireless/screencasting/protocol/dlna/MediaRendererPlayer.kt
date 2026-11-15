@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.protocol.dlna
 
+import com.benchan.wireless.screencasting.protocol.upnp.MediaMetadata
+
 import kotlinx.coroutines.flow.StateFlow
 
 /** AVTransport TransportState（技术方案 3.7：ExoPlayer 状态映射）。 */
@@ -14,6 +16,8 @@ data class PlayerSnapshot(
     val volume: Int = 50,
     val muted: Boolean = false,
     val error: Boolean = false,
+    /** 推送的是图片：不经过 ExoPlayer，由播放页直接显示（第 1 轮 EMU-2）。 */
+    val isImage: Boolean = false,
 )
 
 /** DMR 背后的播放器（Media3 ExoPlayer 实现见 [ExoMediaRendererPlayer]；单测用假实现）。 */

@@ -147,7 +147,7 @@ fun InstallHelpScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
             Text("方法二：U 盘", style = MaterialTheme.typography.titleMedium)
             Text("把安装包拷到 U 盘，插到电视上，用电视的“文件管理”打开安装。部分电视需要先在系统设置里允许“安装未知来源应用”。", style = MaterialTheme.typography.bodyMedium)
             Text("电视实在装不了？", style = MaterialTheme.typography.titleMedium)
-            Text("很多电视自带 DLNA 接收：在视频 App 里点“投屏”按钮可以直接推送到电视（本应用推送到电视自带接收端的功能在下个版本提供）。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+            Text("很多电视自带 DLNA 接收：不用安装本应用，也可以在设备列表的“电视自带投屏”分组里直接推送手机里的视频、照片和音乐（不能镜像屏幕）。", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
         }
     }
 }

@@ -65,8 +65,6 @@ internal object SenderCopy {
         else -> null
     }
 
-    /** 列表中置灰的 DLNA 设备被点击时的说明。 */
-    fun dlnaOnlyDevice(name: String): String = "$name 只支持 DLNA 推送，暂不能镜像屏幕。可以在视频 App 里点“投屏”按钮推送到它"
 
     const val NOTIFICATION_TIP = "允许通知后，可以在通知栏停止投屏"
     const val NOTIFICATION_ALLOW = "允许通知"

@@ -2,6 +2,8 @@ package com.benchan.wireless.screencasting.feature.settings
 
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -256,7 +258,7 @@ fun SettingsScreen(
             }
 
             Group("关于")
-            InfoRow(Icons.Rounded.PrivacyTip, "隐私", "本应用不访问互联网，不上报任何数据；加密始终开启")
+            InfoRow(Icons.Rounded.PrivacyTip, "隐私", "本应用不访问互联网，不上报任何数据；屏幕镜像始终加密")
             InfoRow(Icons.Rounded.Info, "开源许可", "GPL‑3.0 · 版本 $versionName")
         }
     }
@@ -431,10 +433,16 @@ fun TrustedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hilt
     var confirm by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().navigationBarsPadding().tvSafeArea()) {
         SettingsTopBar("可信设备", onBack, initialFocus = list.isEmpty())
-        if (list.isEmpty()) {
-            Text("还没有配对过的设备。第一次连接时输入 PIN、投屏码或扫码后会出现在这里。", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val pushed by viewModel.pushedTvs.collectAsStateWithLifecycle()
+        var forgetTv by remember { mutableStateOf<String?>(null) }
+        // 两组都空才显示空态，文案覆盖两类（第 1 轮 UX P1-10）
+        if (list.isEmpty() && pushed.isEmpty()) {
+            Text("还没有配对或推送过的设备。第一次镜像时输入 PIN、投屏码或扫码，或第一次推送到电视后会出现在这里。", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Column(Modifier.verticalScroll(rememberScrollState())) {
+            if (list.isNotEmpty() && pushed.isNotEmpty()) {
+                Text("已配对的设备", Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp).semantics { heading() }, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            }
             list.forEachIndexed { i, d ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -450,6 +458,35 @@ fun TrustedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hilt
                 }
                 HorizontalDivider()
             }
+            // 推送过的电视（交互稿 P02 / Q14-B）：放在“已配对的设备”之后；忘记后下次推送重新出现确认卡
+            if (pushed.isNotEmpty()) {
+                Text("推送过的电视", Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp).semantics { heading() }, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                pushed.forEach { tv ->
+                    val model = listOfNotNull(tv.manufacturer, tv.model).joinToString(" · ")
+                    val last = if (tv.lastUsedAt > 0) "上次推送 ${relativeAgo(tv.lastUsedAt)}" else "已确认，尚未推送"
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
+                            Text(tv.name, style = MaterialTheme.typography.bodyLarge)
+                            if (model.isNotBlank()) Text(model, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(last, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        TextButton(
+                            onClick = { forgetTv = tv.udn },
+                            modifier = Modifier.tvFocusRing().semantics { contentDescription = "忘记 ${tv.name}" },
+                        ) { Text("忘记") }
+                    }
+                    HorizontalDivider()
+                }
+            }
+        }
+        forgetTv?.let { udn ->
+            AlertDialog(
+                onDismissRequest = { forgetTv = null },
+                title = { Text("忘记这台电视？") },
+                text = { Text("下次推送到这台电视时，会再次请你确认是不是面前的这台。") },
+                confirmButton = { TextButton(onClick = { viewModel.forgetPushedTv(udn); forgetTv = null }, modifier = Modifier.tvFocusRing()) { Text("忘记") } },
+                dismissButton = { TextButton(onClick = { forgetTv = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
+            )
         }
     }
     confirm?.let { id ->
@@ -460,5 +497,17 @@ fun TrustedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hilt
             confirmButton = { TextButton(onClick = { viewModel.removeTrusted(id); confirm = null }, modifier = Modifier.tvFocusRing()) { Text("移除") } },
             dismissButton = { TextButton(onClick = { confirm = null }, modifier = Modifier.tvInitialFocus().tvFocusRing()) { Text("取消") } },
         )
+    }
+}
+
+/** “刚刚 / n 分钟前 / n 小时前 / 昨天 / n 天前”。 */
+internal fun relativeAgo(at: Long, now: Long = System.currentTimeMillis()): String {
+    val d = (now - at).coerceAtLeast(0) / 1000
+    return when {
+        d < 60 -> "刚刚"
+        d < 3_600 -> "${d / 60} 分钟前"
+        d < 86_400 -> "${d / 3_600} 小时前"
+        d < 172_800 -> "昨天"
+        else -> "${d / 86_400} 天前"
     }
 }

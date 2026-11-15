@@ -2,6 +2,7 @@ package com.benchan.wireless.screencasting
 
 import android.app.Application
 import android.util.Log
+import com.benchan.wireless.screencasting.protocol.dlna.dmc.DmcCache
 import com.benchan.wireless.screencasting.core.common.LogLevel
 import com.benchan.wireless.screencasting.core.common.LogSink
 import com.benchan.wireless.screencasting.core.common.WscLog
@@ -19,9 +20,23 @@ class WscApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        if (BuildConfig.DEBUG) WscLog.addSink(LogcatSink)
+        if (BuildConfig.DEBUG) {
+            WscLog.addSink(LogcatSink)
+            // 仅 debug：主线程网络直接崩溃（系统默认已对网络如此，这里显式写出并记录磁盘读写与慢调用，防止回归，第 2 轮复测）
+            android.os.StrictMode.setThreadPolicy(
+                android.os.StrictMode.ThreadPolicy.Builder()
+                    .detectNetwork().detectCustomSlowCalls().detectDiskWrites()
+                    .penaltyLog().penaltyDeathOnNetwork()
+                    .build(),
+            )
+            android.os.StrictMode.setVmPolicy(
+                android.os.StrictMode.VmPolicy.Builder().detectLeakedClosableObjects().penaltyLog().build(),
+            )
+        }
         WscLog.addSink(diagnosticLog)
         WscLog.i("App", "start ${BuildConfig.VERSION_NAME} appleCompat=${BuildConfig.AIRPLAY_AVAILABLE}")
+        // DLNA 推送：清理上次异常退出留下的转换文件 / 照片缓存（PRD 8.1.1 F2）
+        Thread({ DmcCache.cleanup(this) }, "wsc-dmc-cleanup").start()
     }
 
     private object LogcatSink : LogSink {

@@ -58,7 +58,7 @@ fun OnboardingScreen(defaultMode: AppMode, onStart: (AppMode) -> Unit, onInstall
         Text("局域网直连 · GPL‑3.0 开源，代码可审计", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
         Promise(Icons.Rounded.DoNotDisturbOn, "没有广告，永久免费", "不接入任何广告、统计、崩溃上报 SDK")
         Promise(Icons.Rounded.PersonOff, "不需要账号", "打开即用，不索要手机号")
-        Promise(Icons.Rounded.CloudOff, "不连接互联网", "画面只在你家的局域网内加密传输")
+        Promise(Icons.Rounded.CloudOff, "不连接互联网", "画面只在你家的局域网内传输，屏幕镜像全程加密")
         Text("这台设备用来", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         ModeCard(mode == AppMode.SENDER, Icons.Rounded.ScreenShare, "投屏到别处", "发送端" + if (defaultMode == AppMode.SENDER) " · 本机推荐" else "") { mode = AppMode.SENDER }
         ModeCard(mode == AppMode.RECEIVER, Icons.Rounded.Tv, "接收投屏", "把本机当作屏幕" + if (defaultMode == AppMode.RECEIVER) " · 本机推荐" else "") { mode = AppMode.RECEIVER }

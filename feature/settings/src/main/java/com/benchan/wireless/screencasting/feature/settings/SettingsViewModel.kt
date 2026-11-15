@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,6 +43,7 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repo: SettingsRepository,
     private val trustedStore: TrustedDeviceStore,
+    private val dlnaStore: com.benchan.wireless.screencasting.core.data.dlna.DlnaRendererStore,
     private val reports: SessionReportStore,
     private val log: DiagnosticLog,
     private val diagnostics: NetworkDiagnostics,
@@ -54,6 +56,13 @@ class SettingsViewModel @Inject constructor(
 
     val settings: StateFlow<AppSettings?> = repo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val trusted: StateFlow<List<TrustedDevice>> = trustedStore.devices
+
+    /** 推送过（或确认过）的 DLNA 电视（交互稿 P02 / Q14-B：可逐台忘记）。 */
+    val pushedTvs: StateFlow<List<com.benchan.wireless.screencasting.core.data.dlna.DlnaRendererRecord>> =
+        dlnaStore.records.map { list -> list.filter { it.confirmedAt != null || it.lastUsedAt > 0 } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun forgetPushedTv(udn: String) = dlnaStore.forget(udn)
     val lan: StateFlow<com.benchan.wireless.screencasting.core.net.LanInfo?> = network.lan
 
     /** 构建开关关闭时为 false，设置页隐藏“兼容 Apple 设备”（技术方案 3.8）。 */
@@ -126,7 +135,8 @@ class SettingsViewModel @Inject constructor(
                     "${fmt.format(Date(r.startedAt))} ${r.protocol.exportLabel()} ${r.role} peer=${r.peerName} path=${r.discoveryPath} " +
                         "firstFrame=${r.firstFrameMs}ms ok=${r.success} p50=${r.latencyP50Ms} p95=${r.latencyP95Ms} " +
                         "bitrate=${r.avgBitrateKbps}kbps drops=${r.framesDropped} disconnects=${r.disconnects}/${r.autoRecovered} codec=${r.codec} end=${r.endReason}" +
-                        (r.controlledMs?.let { " controlled=${it / 1000}s" } ?: ""),
+                        (r.controlledMs?.let { " controlled=${it / 1000}s" } ?: "") +
+                        (r.push?.let { " " + PushExport.line(it) } ?: ""),
                 )
             }
             appendLine()
@@ -134,7 +144,7 @@ class SettingsViewModel @Inject constructor(
             append(log.readAll())
         }
         // 对端设备名可能是“小张的 iPhone”之类的个人信息：导出前脱敏，同一导出内一致映射（N8）
-        val names = reports.records.value.map { it.peerName } + trustedStore.devices.value.map { it.name }
+        val names = reports.records.value.map { it.peerName } + trustedStore.devices.value.map { it.name } + dlnaStore.records.value.map { it.name }
         LogAnonymizer.anonymize(raw, names, localName = repo.current().deviceName)
     }
 
@@ -191,5 +201,22 @@ internal object LogAnonymizer {
             n = n / 26 - 1
         } while (n >= 0)
         return sb.toString()
+    }
+}
+
+/**
+ * DLNA 推送报告的导出字段（PRD 8.1.1 G，第 1 轮 PM P1-6）。只含报告里本来就有的字段：
+ * 没有文件名、路径、标题、网址、令牌（报告本身就不存这些）。
+ */
+internal object PushExport {
+    fun line(p: com.benchan.wireless.screencasting.core.data.report.PushReport): String = buildString {
+        append("push[type=${p.contentType} src=${p.source} mime=${p.mimeTypes.joinToString("|")} size=${p.sizeBucket} items=${p.itemCount}")
+        append(" switches=${p.switchCount} autoNext=${p.autoAdvanceCount} tv=${p.tvManufacturer}/${p.tvModel} server=${p.tvServer}")
+        append(" upnp=${p.upnpErrorCode} http=${p.httpStatus} fallbacks=${p.fallbacks.joinToString("|")} sync=${p.syncMode} ranges=${p.rangeRequests}")
+        p.transcode?.let { t ->
+            append(" transcode[offered=${t.offered} at=${t.offeredAt} choice=${t.choice} src=${t.sourceContainer}/${t.sourceVideoCodec}/${t.sourceAudioCodec}")
+            append(" res=${t.sourceResolution} hdr=${t.hdr} out=${t.output} ms=${t.elapsedMs} result=${t.result} hot=${t.thermalPauses} err=${t.errorCode}]")
+        }
+        append("]")
     }
 }

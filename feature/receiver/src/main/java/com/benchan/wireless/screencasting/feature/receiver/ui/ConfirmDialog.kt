@@ -63,7 +63,7 @@ internal fun ConfirmDialog(request: ConfirmRequest, onRespond: (Boolean) -> Unit
     val remaining = ((request.deadlineAt - now) / 1000).coerceAtLeast(0)
     val protocolLabel = when (request.protocol) {
         CastProtocol.WSC -> "屏幕镜像"
-        CastProtocol.DLNA -> "视频推送（DLNA）"
+        CastProtocol.DLNA, CastProtocol.DLNA_PUSH -> "视频推送（DLNA）"
         CastProtocol.AIRPLAY -> "兼容 Apple 设备"
     }
     ModalScrim {

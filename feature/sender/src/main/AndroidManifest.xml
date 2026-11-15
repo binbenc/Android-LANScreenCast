@@ -3,6 +3,9 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <!-- DLNA 推送（F13，决策 #32）：推送期间文件服务保活；Android 15+ 转换视频时叠加 mediaProcessing（PRD 8.1.1 F2） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 内录声音（AudioPlaybackCapture 系统要求），不打开麦克风；首次开启声音时才申请 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -19,6 +22,12 @@
             android:name=".service.ScreenCastService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+
+        <service
+            android:name=".push.MediaPushService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="mediaPlayback|mediaProcessing" />
 
         <service
             android:name=".tile.CastTileService"

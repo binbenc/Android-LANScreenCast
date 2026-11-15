@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.protocol.dlna
 
+import com.benchan.wireless.screencasting.protocol.upnp.Xml
+
 /** UPnP 服务类型与路径。 */
 enum class DlnaService(val id: String, val type: String, val path: String) {
     AV_TRANSPORT("urn:upnp-org:serviceId:AVTransport", "urn:schemas-upnp-org:service:AVTransport:1", "avt"),
@@ -12,19 +14,6 @@ enum class DlnaService(val id: String, val type: String, val path: String) {
 
     companion object {
         fun byPath(p: String): DlnaService? = entries.firstOrNull { it.path == p }
-    }
-}
-
-object Xml {
-    fun escape(s: String): String = buildString(s.length) {
-        for (c in s) when (c) {
-            '&' -> append("&amp;")
-            '<' -> append("&lt;")
-            '>' -> append("&gt;")
-            '"' -> append("&quot;")
-            '\'' -> append("&apos;")
-            else -> append(c)
-        }
     }
 }
 

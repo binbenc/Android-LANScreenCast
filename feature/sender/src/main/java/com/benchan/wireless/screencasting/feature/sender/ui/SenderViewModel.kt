@@ -30,27 +30,44 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.benchan.wireless.screencasting.core.data.dlna.DlnaRendererStore
+import com.benchan.wireless.screencasting.feature.sender.ui.push.PushCopy
+import com.benchan.wireless.screencasting.protocol.dlna.dmc.DmcController
 import com.benchan.wireless.screencasting.feature.control.ControlEvent
 import com.benchan.wireless.screencasting.feature.control.ControlUi
 import com.benchan.wireless.screencasting.feature.control.SenderControlCoordinator
 import javax.inject.Inject
 
-/** 列表中的一行（交互稿 03）。 */
+/** 列表中的一行（交互稿 03 / P01）。 */
 data class DeviceRow(
     val device: DiscoveredDevice,
     val trusted: Boolean,
     val recent: RecentDevice?,
+    /** 上次推送到这台（DLNA，交互稿 P01“最近使用”含推送过的电视）。 */
+    val pushedAt: Long? = null,
+    /** 正在推送到这台。 */
+    val pushing: Boolean = false,
+    /** 同一台电视上有多个 DLNA 接收端：副标题加厂商 / 型号区分（T8）。 */
+    val disambiguation: String? = null,
 ) {
-    val enabled: Boolean get() = device.protocol == DeviceProtocol.WSC
+    /** WSC 行可镜像；DLNA 行（V1 起）可推送。 */
+    val enabled: Boolean get() = device.canMirror || device.canPush
+    val dlnaOnly: Boolean get() = device.protocol == DeviceProtocol.DLNA_ONLY
 }
+
+/** 推送中的列表顶部横幅（交互稿 P01）。 */
+data class PushBanner(val targetName: String, val status: String)
 
 data class DeviceListUi(
     val recent: List<DeviceRow> = emptyList(),
     val nearby: List<DeviceRow> = emptyList(),
+    /** “电视自带投屏 · 只能推送”（交互稿 P01）。 */
+    val dlna: List<DeviceRow> = emptyList(),
     val searching: Boolean = false,
     val lan: LanInfo? = null,
+    val pushing: PushBanner? = null,
 ) {
-    val count: Int get() = recent.size + nearby.size
+    val count: Int get() = recent.size + nearby.size + dlna.size
 }
 
 @HiltViewModel
@@ -62,6 +79,8 @@ class SenderViewModel @Inject constructor(
     private val settingsRepo: SettingsRepository,
     private val network: NetworkMonitor,
     private val control: SenderControlCoordinator,
+    private val dlnaStore: DlnaRendererStore,
+    private val dmc: DmcController,
 ) : ViewModel() {
     /** 反向控制状态（交互稿 R04）。 */
     val controlUi: StateFlow<ControlUi> = control.ui
@@ -73,24 +92,47 @@ class SenderViewModel @Inject constructor(
     val lan: StateFlow<LanInfo?> = network.lan
 
     val devices: StateFlow<DeviceListUi> = combine(
-        discovery.devices, recentStore.devices, trusted.devices, discovery.searching, network.lan,
-    ) { found, recent, trustedList, searching, lan ->
-        val trustedFps = trustedList.map { it.fingerprintHex }.toSet()
-        val trustedIds = trustedList.map { it.deviceId }.toSet()
-        val recentById = recent.associateBy { it.deviceId }
-        val rows = found.map { d ->
+        combine(discovery.devices, recentStore.devices, trusted.devices, discovery.searching, network.lan) { a, b, c, d, e -> Base(a, b, c, d, e) },
+        dlnaStore.records,
+        dmc.session,
+    ) { base, pushed, push ->
+        val trustedFps = base.trusted.map { it.fingerprintHex }.toSet()
+        val trustedIds = base.trusted.map { it.deviceId }.toSet()
+        val recentById = base.recent.associateBy { it.deviceId }
+        val pushedByUdn = pushed.associateBy { it.udn }
+        val activePush = push?.takeIf { it.isActive }
+        val dlnaHosts = base.found.filter { it.protocol == DeviceProtocol.DLNA_ONLY }.groupBy { it.host }
+        val rows = base.found.map { d ->
             val r = recentById[d.deviceId]
-            DeviceRow(d, d.deviceId in trustedIds || (d.fingerprintHex ?: r?.fingerprint) in trustedFps, r)
+            val udn = d.dlna?.udn
+            val sameHost = dlnaHosts[d.host].orEmpty().size > 1 && d.protocol == DeviceProtocol.DLNA_ONLY
+            DeviceRow(
+                d, d.deviceId in trustedIds || (d.fingerprintHex ?: r?.fingerprint) in trustedFps, r,
+                pushedAt = udn?.let { pushedByUdn[it]?.lastUsedAt }?.takeIf { it > 0 },
+                pushing = udn != null && activePush?.target?.udn == udn,
+                disambiguation = if (sameHost) listOfNotNull(d.dlna?.description?.manufacturer, d.dlna?.description?.modelName).joinToString(" ").ifBlank { null } else null,
+            )
         }
-        // 排序：最近使用（按时间）→ 可信 → 新设备 → 不可用（交互稿 03）
-        val (recentRows, others) = rows.partition { it.recent != null && it.enabled }
+        // 分组（交互稿 P01）：最近使用（含推送过的 DLNA 电视，按时间）→ 附近设备（本应用接收端）→ 电视自带投屏；每台只出现在一个组
+        val (recentRows, others) = rows.partition { (it.recent != null && it.device.canMirror) || (it.dlnaOnly && it.pushedAt != null) }
+        val (dlnaRows, wscRows) = others.partition { it.dlnaOnly }
         DeviceListUi(
-            recent = recentRows.sortedByDescending { it.recent?.lastUsedAt ?: 0 },
-            nearby = others.sortedWith(compareBy({ !it.enabled }, { !it.trusted }, { it.device.name })),
-            searching = searching,
-            lan = lan,
+            recent = recentRows.sortedByDescending { maxOf(it.recent?.lastUsedAt ?: 0, it.pushedAt ?: 0) },
+            nearby = wscRows.sortedWith(compareBy({ !it.enabled }, { !it.trusted }, { it.device.name })),
+            dlna = dlnaRows.sortedWith(compareBy({ it.device.host }, { it.device.name })),
+            searching = base.searching,
+            lan = base.lan,
+            pushing = activePush?.let { PushBanner(it.target.name, PushCopy.bannerStatus(it)) },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DeviceListUi())
+
+    private data class Base(
+        val found: List<DiscoveredDevice>,
+        val recent: List<RecentDevice>,
+        val trusted: List<com.benchan.wireless.screencasting.core.security.trust.TrustedDevice>,
+        val searching: Boolean,
+        val lan: LanInfo?,
+    )
 
     val searchStartedAt: Long get() = discovery.startedAt
 

@@ -1,5 +1,9 @@
 package com.benchan.wireless.screencasting.protocol.dlna
 
+import com.benchan.wireless.screencasting.protocol.upnp.Soap
+import com.benchan.wireless.screencasting.protocol.upnp.SoapException
+import com.benchan.wireless.screencasting.protocol.upnp.UpnpError
+
 import com.benchan.wireless.screencasting.core.common.WscLog
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod

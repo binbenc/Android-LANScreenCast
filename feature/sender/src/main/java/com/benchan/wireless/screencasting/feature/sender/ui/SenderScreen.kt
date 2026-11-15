@@ -47,6 +47,14 @@ import com.benchan.wireless.screencasting.feature.sender.service.ScreenCastServi
 import com.benchan.wireless.screencasting.feature.sender.session.EndReason
 import com.benchan.wireless.screencasting.feature.sender.session.SenderEvent
 import com.benchan.wireless.screencasting.feature.sender.session.SenderState
+import com.benchan.wireless.screencasting.feature.sender.ui.push.PushFlowCallbacks
+import com.benchan.wireless.screencasting.feature.sender.ui.push.PushFullScreen
+import com.benchan.wireless.screencasting.feature.sender.ui.push.PushOverlays
+import com.benchan.wireless.screencasting.feature.sender.ui.push.PushViewModel
+import com.benchan.wireless.screencasting.feature.sender.ui.push.beginPushTo
+import com.benchan.wireless.screencasting.feature.sender.ui.push.guardMirror
+import com.benchan.wireless.screencasting.feature.sender.ui.push.beginPush
+import com.benchan.wireless.screencasting.feature.sender.ui.push.rememberPushFlow
 import kotlinx.coroutines.launch
 
 private enum class SubRoute { NONE, CAST_CODE, SCANNER }
@@ -76,6 +84,7 @@ fun SenderScreen(
     deepLink: String? = null,
     onDeepLinkConsumed: () -> Unit = {},
     viewModel: SenderViewModel = hiltViewModel(),
+    pushVm: PushViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current
@@ -91,11 +100,26 @@ fun SenderScreen(
     var introDismissed by remember { mutableStateOf(false) }
     // 跳过说明卡时，进入投屏后补一次“锁屏会停止投屏”提示（D6）
     var lockTipPending by remember { mutableStateOf(false) }
+    // 08B “改用推送”找不到可推送的本应用接收端时：滚动到“电视自带投屏”分组
+    var scrollToDlna by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // DLNA 推送流程（交互稿第 13 章 P01–P15）
+    val push = rememberPushFlow()
+    val pushCb = remember {
+        PushFlowCallbacks(
+            discoveryStartedAt = { viewModel.searchStartedAt },
+            connectMirror = viewModel::connect,
+            rowForWscId = { id -> viewModel.devices.value.let { d -> (d.recent + d.nearby).firstOrNull { it.device.deviceId == id } } },
+            restartDiscovery = viewModel::restartDiscovery,
+            openDiagnostics = onOpenDiagnostics,
+            openInstallHelp = onOpenInstallHelp,
+        )
+    }
 
     fun hasPermission(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
 
     // 发现：在列表页可见时运行（离开即释放 MulticastLock）
-    val listVisible = sub == SubRoute.NONE && (state is SenderState.Idle || state is SenderState.Ended || state is SenderState.Connecting)
+    val listVisible = sub == SubRoute.NONE && !push.remoteOpen && !push.url &&
+        (state is SenderState.Idle || state is SenderState.Ended || state is SenderState.Connecting)
     DisposableEffect(listVisible) {
         if (listVisible) viewModel.startDiscovery() else viewModel.stopDiscovery()
         onDispose { viewModel.stopDiscovery() }
@@ -104,16 +128,22 @@ fun SenderScreen(
     LaunchedEffect(quickCast) {
         if (!quickCast) return@LaunchedEffect
         val s = viewModel.state.value
-        val ok = if (s is SenderState.Idle || s is SenderState.Ended) viewModel.quickConnectRecent() else true
+        // 推送中先确认结束推送（P15，第 1 轮 PM P0-3）
+        val go = {
+            val ok = viewModel.quickConnectRecent()
+            if (!ok) snackbarScope.launch { snackbar.showSnackbar("还没有最近使用的设备，请先从列表选择") }
+        }
+        if (s is SenderState.Idle || s is SenderState.Ended) push.guardMirror(pushVm) { go() }
         // 处理完立即复位（复位会重启本 effect，所以 Snackbar 放到独立作用域），保证每次点图块都能再次触发（B3）
         onQuickCastConsumed()
-        if (!ok) snackbarScope.launch { snackbar.showSnackbar("还没有最近使用的设备，请先从列表选择") }
     }
     LaunchedEffect(deepLink) {
         if (deepLink != null) {
-            val ok = viewModel.connectQr(deepLink)
+            val link = deepLink
             onDeepLinkConsumed()
-            if (!ok) snackbarScope.launch { snackbar.showSnackbar("无法识别的连接链接") }
+            push.guardMirror(pushVm) {
+                if (!viewModel.connectQr(link)) snackbarScope.launch { snackbar.showSnackbar("无法识别的连接链接") }
+            }
         }
     }
 
@@ -286,14 +316,21 @@ fun SenderScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
+            val pushFull = (state is SenderState.Idle || state is SenderState.Ended) && PushFullScreen(push, pushVm, pushCb, snackbar, snackbarScope)
             val list = @Composable {
                 ListContent(
                     viewModel, devices, ::openScanner, { sub = SubRoute.CAST_CODE }, { manualIp = true },
-                    onDisabledDevice = { row -> snackbarScope.launch { snackbar.showSnackbar(SenderCopy.dlnaOnlyDevice(row.device.name)) } },
+                    onDisabledDevice = { _ -> snackbarScope.launch { snackbar.showSnackbar("这台设备暂时不能连接") } },
                     onOpenSettings, onOpenDiagnostics, onOpenInstallHelp,
+                    onDevice = { row -> push.guardMirror(pushVm) { viewModel.connect(row) } },
+                    onPush = { row -> push.beginPush(row, pushVm, pushCb) },
+                    onDlnaDetail = { row -> pushVm.targetFor(row.device, viewModel.searchStartedAt)?.let { push.detail = it } },
+                    onOpenPush = { push.remoteOpen = true },
+                    onUnencryptedInfo = { push.unencryptedInfo = true },
+                    scrollToDlna = scrollToDlna,
                 )
             }
-            when (val s = state) {
+            if (!pushFull) when (val s = state) {
                 // 连接中整页替换列表（不再叠在列表上被点穿重复连接，B4）
                 is SenderState.Connecting -> WaitingScreen("正在连接 ${s.target.name}…", "加密通道建立中", null, viewModel::cancel)
                 is SenderState.AwaitingPin -> PinEntryScreen(s, viewModel::submitPin, viewModel::cancel)
@@ -327,10 +364,18 @@ fun SenderScreen(
                             // 重连失败后“重新连接”跳过说明卡，直达系统授权（交互稿 Q11）
                             val t = s.target
                             viewModel.acknowledge()
-                            if (t != null) {
+                            if (t != null) push.guardMirror(pushVm) {
                                 viewModel.setSkipIntroOnce()
                                 viewModel.reconnectTo(t)
                             }
+                        },
+                        onUsePush = {
+                            // 对方是本应用接收端且发现了它的 DLNA → 直接为它打开内容面板；否则回列表并滚到“电视自带投屏”
+                            val id = s.target?.deviceId
+                            viewModel.acknowledge()
+                            val row = devices.let { d -> (d.recent + d.nearby).firstOrNull { it.device.deviceId == id && it.device.canPush } }
+                            val target = row?.let { pushVm.targetFor(it.device, viewModel.searchStartedAt) }
+                            if (target != null) push.beginPushTo(target, pushVm) else scrollToDlna++
                         },
                         onBack = viewModel::acknowledge,
                         onDiagnostics = { viewModel.acknowledge(); onOpenDiagnostics() },
@@ -339,8 +384,26 @@ fun SenderScreen(
                     list()
                 }
                 else -> when (sub) {
-                    SubRoute.CAST_CODE -> CastCodeScreen(lan, viewModel::connectCastCode, { manualIp = true }, { sub = SubRoute.NONE })
-                    SubRoute.SCANNER -> QrScannerScreen(onResult = { text -> viewModel.connectQr(text).also { if (it) sub = SubRoute.NONE } }, onBack = { sub = SubRoute.NONE })
+                    SubRoute.CAST_CODE -> CastCodeScreen(
+                        lan,
+                        { code ->
+                            if (pushVm.session.value?.isActive == true) {
+                                push.guardMirror(pushVm) { viewModel.connectCastCode(code) }
+                                true
+                            } else viewModel.connectCastCode(code)
+                        },
+                        { manualIp = true }, { sub = SubRoute.NONE },
+                    )
+                    SubRoute.SCANNER -> QrScannerScreen(
+                        onResult = { text ->
+                            if (pushVm.session.value?.isActive == true) {
+                                sub = SubRoute.NONE
+                                push.guardMirror(pushVm) { viewModel.connectQr(text) }
+                                true
+                            } else viewModel.connectQr(text).also { if (it) sub = SubRoute.NONE }
+                        },
+                        onBack = { sub = SubRoute.NONE },
+                    )
                     SubRoute.NONE -> list()
                 }
             }
@@ -383,8 +446,16 @@ fun SenderScreen(
         )
     }
 
+    PushOverlays(push, pushVm, pushCb, snackbar, snackbarScope)
+
     if (manualIp) {
-        ManualIpDialog(onDismiss = { manualIp = false }) { text -> viewModel.connectManual(text).also { if (it) manualIp = false } }
+        ManualIpDialog(onDismiss = { manualIp = false }) { text ->
+            if (pushVm.session.value?.isActive == true) {
+                manualIp = false
+                push.guardMirror(pushVm) { viewModel.connectManual(text) }
+                true
+            } else viewModel.connectManual(text).also { if (it) manualIp = false }
+        }
     }
 }
 
@@ -399,11 +470,22 @@ private fun ListContent(
     onSettings: () -> Unit,
     onDiagnostics: () -> Unit,
     onInstallHelp: () -> Unit,
+    onDevice: (DeviceRow) -> Unit,
+    onPush: (DeviceRow) -> Unit,
+    onDlnaDetail: (DeviceRow) -> Unit,
+    onOpenPush: () -> Unit,
+    onUnencryptedInfo: () -> Unit,
+    scrollToDlna: Int,
 ) {
     DeviceListScreen(
         ui = devices,
         searchStartedAt = { viewModel.searchStartedAt },
-        onDevice = viewModel::connect,
+        onDevice = onDevice,
+        onPush = onPush,
+        onDlnaDetail = onDlnaDetail,
+        onOpenPush = onOpenPush,
+        onUnencryptedInfo = onUnencryptedInfo,
+        scrollToDlna = scrollToDlna,
         onDisabledDevice = onDisabledDevice,
         onForget = { viewModel.forgetDevice(it.device.deviceId) },
         onRefresh = viewModel::restartDiscovery,

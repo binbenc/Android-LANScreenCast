@@ -43,6 +43,7 @@ import androidx.compose.material.icons.rounded.VideocamOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -145,7 +146,7 @@ internal fun CaptureIntroSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(Icons.Rounded.LockClock, null, tint = WscTheme.extended.onWarningContainer)
-                Text("锁屏会停止投屏。镜像期间手机会保持亮屏；看剧建议用视频 App 的“投屏”按钮推送。", style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer)
+                Text("锁屏会停止投屏。镜像期间手机会保持亮屏；看剧建议改用推送（设备列表里的“推送”），手机可以锁屏。", style = MaterialTheme.typography.bodySmall, color = WscTheme.extended.onWarningContainer)
             }
             // FlowRow：200% 字号时按钮换到下一行而不是被挤压（C11）
             FlowRow(
@@ -256,7 +257,7 @@ internal fun CastingScreen(
                 Text("被共享的应用已切到后台，电视显示占位画面", style = MaterialTheme.typography.bodySmall, color = ext.warning)
             }
             if (state.protectedSuspected) {
-                Text("当前画面可能受保护（黑屏），建议改用视频 App 的“投屏”按钮推送", style = MaterialTheme.typography.bodySmall, color = ext.warning, textAlign = TextAlign.Center)
+                Text("当前画面可能受保护（黑屏），建议改用推送（设备列表里的“推送”）", style = MaterialTheme.typography.bodySmall, color = ext.warning, textAlign = TextAlign.Center)
             }
         }
         if (control.controlled) ControlCard(control, onRevokeControl, onContinueControl)
@@ -491,6 +492,8 @@ internal fun EndedScreen(
     onReconnect: () -> Unit,
     onBack: () -> Unit,
     onDiagnostics: () -> Unit,
+    /** 08B / 录屏被拒页的 [改用推送]（交互稿 13 章“与其他章节的关系”，第 1 轮 PM P1-9）。 */
+    onUsePush: (() -> Unit)? = null,
 ) {
     val c = MaterialTheme.colorScheme
     val name = state.target?.name ?: "电视"
@@ -501,11 +504,11 @@ internal fun EndedScreen(
             "重新连接", "系统要求重新允许一次录屏（Android 14 起）",
         )
         EndReason.SCREEN_LOCKED -> Copy(
-            "锁屏已停止投屏", "手机锁屏后，系统会自动停止录屏（Android 15 起）。解锁后点一下即可重新投屏。\n\n看剧建议用视频 App 的“投屏”按钮推送，手机可以锁屏。",
+            "锁屏已停止投屏", "手机锁屏后，系统会自动停止录屏（Android 15 起）。解锁后点一下即可重新投屏。\n\n看剧建议改用推送，手机可以锁屏。",
             "重新投屏", "需要重新允许一次录屏",
         )
         EndReason.PROJECTION_STOPPED -> Copy("录屏已停止", "录屏被系统或状态栏停止了。", "重新投屏", "需要重新允许一次录屏")
-        EndReason.CAPTURE_DENIED -> Copy("需要允许录屏才能镜像", "系统弹窗中选择“开始”后，电视才能看到手机画面。", "重试", "看剧时也可以改用视频 App 的“投屏”按钮推送（下个版本支持从本应用推送）")
+        EndReason.CAPTURE_DENIED -> Copy("需要允许录屏才能镜像", "系统弹窗中选择“开始”后，电视才能看到手机画面。", "重试", "看剧时也可以改用推送，手机可以锁屏")
         EndReason.VERSION_UNSUPPORTED -> Copy("对方版本过旧", "请升级 $name 上的接收端后再试。", null, null)
         else -> Copy("连接已断开", state.detail ?: "", "重新连接", null)
     }
@@ -534,6 +537,9 @@ internal fun EndedScreen(
                 Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(8.dp)); Text(copy.primary)
             }
             copy.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, textAlign = TextAlign.Center) }
+        }
+        if (onUsePush != null && (state.reason == EndReason.SCREEN_LOCKED || state.reason == EndReason.CAPTURE_DENIED)) {
+            FilledTonalButton(onClick = onUsePush, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("改用推送") }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
             OutlinedButton(onClick = onBack) { Text("返回设备列表") }

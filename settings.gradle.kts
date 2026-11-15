@@ -47,10 +47,12 @@ include(":feature:control")
 
 // 仓库根目录的 protocol/ 是与 TS 端共享的协议文档与测试向量（非 Gradle），
 // Gradle 路径 :protocol:* 映射到 protocol-impl/ 目录（技术方案第 5 节）。
+include(":protocol:upnp")
 include(":protocol:dlna")
 include(":protocol:airplay-api")
 include(":protocol:airplay")
 project(":protocol").projectDir = file("protocol-impl")
+project(":protocol:upnp").projectDir = file("protocol-impl/upnp")
 project(":protocol:dlna").projectDir = file("protocol-impl/dlna")
 project(":protocol:airplay-api").projectDir = file("protocol-impl/airplay-api")
 project(":protocol:airplay").projectDir = file("protocol-impl/airplay")

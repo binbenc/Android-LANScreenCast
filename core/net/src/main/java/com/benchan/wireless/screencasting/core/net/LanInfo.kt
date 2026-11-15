@@ -1,5 +1,6 @@
 package com.benchan.wireless.screencasting.core.net
 
+import com.benchan.wireless.screencasting.core.common.net.LanAddress
 import java.net.Inet4Address
 import java.net.InetAddress
 
@@ -47,23 +48,9 @@ object InetUtils {
      * 零外联检查（PRD 8.5）：局域网地址 = RFC1918 私有地址、链路本地、回环或组播。
      * 用于在诊断日志里标记意外的公网目的地址。
      */
-    fun isLanAddress(a: InetAddress): Boolean =
-        a.isSiteLocalAddress || a.isLinkLocalAddress || a.isLoopbackAddress || a.isMulticastAddress ||
-            (a is Inet4Address && (a.address[0].toInt() and 0xFF) == 100 && ((a.address[1].toInt() and 0xC0) == 64)) // 100.64/10 CGNAT
+    fun isLanAddress(a: InetAddress): Boolean = LanAddress.isLan(a)
 
-    fun parseIpv4(text: String): Inet4Address? {
-        val parts = text.trim().split('.')
-        if (parts.size != 4) return null
-        val bytes = ByteArray(4)
-        for (i in 0 until 4) {
-            val p = parts[i]
-            if (p.isEmpty() || p.length > 3 || !p.all { it.isDigit() }) return null
-            val v = p.toInt()
-            if (v > 255) return null
-            bytes[i] = v.toByte()
-        }
-        return InetAddress.getByAddress(bytes) as Inet4Address
-    }
+    fun parseIpv4(text: String): Inet4Address? = LanAddress.parseIpv4(text)
 
     /** 解析“IP:端口”或“IP”（端口缺省时返回 [defaultPort]）。 */
     fun parseHostPort(text: String, defaultPort: Int): Pair<String, Int>? {

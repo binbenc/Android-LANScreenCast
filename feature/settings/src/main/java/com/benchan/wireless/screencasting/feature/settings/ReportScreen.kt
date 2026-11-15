@@ -84,6 +84,28 @@ fun ReportScreen(onBack: () -> Unit, onExport: () -> Unit, viewModel: SettingsVi
                     listOf("0", "100", "150", "250", "320").forEach { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
+            if (s.byProtocol.isNotEmpty()) {
+                // 协议统计（交互稿 14-H：加“DLNA 推送”一类；推送不显示延迟）
+                Text("协议", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                s.byProtocol.entries.sortedByDescending { it.value }.forEach { (p, n) ->
+                    val label = when (p) {
+                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.WSC -> "屏幕镜像"
+                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.DLNA -> "DLNA 接收"
+                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.AIRPLAY -> "兼容 Apple 设备（非官方）"
+                        com.benchan.wireless.screencasting.core.data.report.CastProtocol.DLNA_PUSH -> "DLNA 推送"
+                    }
+                    val extra = if (p == com.benchan.wireless.screencasting.core.data.report.CastProtocol.DLNA_PUSH) {
+                        listOfNotNull(
+                            s.pushSuccessRatePercent?.let { "成功率 $it%" },
+                            s.pushFirstPlayP50Ms?.let { "首次播放 P50 ${"%.1f".format(it / 1000.0)} 秒" },
+                        ).joinToString(" · ").let { if (it.isEmpty()) "" else " · $it" }
+                    } else ""
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                        Text("$n 次$extra", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
             if (s.topDevices.isNotEmpty()) {
                 Text("常用设备", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 s.topDevices.forEach { d ->

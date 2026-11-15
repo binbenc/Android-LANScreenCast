@@ -2,6 +2,16 @@
 
 package com.benchan.wireless.screencasting.feature.sender.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
+import com.benchan.wireless.screencasting.feature.sender.ui.push.PushCopy
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -86,6 +96,12 @@ internal fun DeviceListScreen(
     onDevice: (DeviceRow) -> Unit,
     onDisabledDevice: (DeviceRow) -> Unit,
     onForget: (DeviceRow) -> Unit,
+    onPush: (DeviceRow) -> Unit = {},
+    onDlnaDetail: (DeviceRow) -> Unit = {},
+    onOpenPush: () -> Unit = {},
+    onUnencryptedInfo: () -> Unit = {},
+    /** 每次加 1：滚动到“电视自带投屏”分组（08B“改用推送”、空态入口）。 */
+    scrollToDlna: Int = 0,
     onRefresh: () -> Unit,
     onScan: () -> Unit,
     onCastCode: () -> Unit,
@@ -123,10 +139,19 @@ internal fun DeviceListScreen(
         if (ui.lan == null) {
             NoLanCard(onDiagnostics)
         }
+        ui.pushing?.let { PushingBanner(it, onOpenPush) }
         if (showDiagnostics) {
             NotFoundContent(ui.lan, elapsed, onScan, onCastCode, onDiagnostics, onInstallHelp, Modifier.weight(1f))
         } else {
-            LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)) {
+            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+            LaunchedEffect(scrollToDlna) {
+                if (scrollToDlna > 0 && ui.dlna.isNotEmpty()) {
+                    // 头部计数 1 行 + 最近使用（标题 + 行）+ 附近设备（标题 + 行）
+                    val idx = 1 + (if (ui.recent.isNotEmpty()) 1 + ui.recent.size else 0) + (if (ui.nearby.isNotEmpty()) 1 + ui.nearby.size else 0)
+                    listState.animateScrollToItem(idx)
+                }
+            }
+            LazyColumn(Modifier.weight(1f), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp)) {
                 item {
                     Text(
                         if (ui.count == 0) "正在搜索同一网段的设备 · 已发现 0" else "已发现 ${ui.count} 台 · ${if (ui.searching) "仍在搜索" else "搜索已暂停"}",
@@ -136,18 +161,34 @@ internal fun DeviceListScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                // 每行的点击：DLNA 行 = 推送（推送中的那台 = 回遥控页）；WSC 行 = 镜像，行尾“推送”按钮另算（交互稿 P01）
+                val click: (DeviceRow) -> Unit = { row ->
+                    when {
+                        row.pushing -> onOpenPush()
+                        row.dlnaOnly -> onPush(row)
+                        row.enabled -> onDevice(row)
+                        else -> onDisabledDevice(row)
+                    }
+                }
+                val longClick: (DeviceRow) -> Unit = { row -> if (row.dlnaOnly) onDlnaDetail(row) else menuRow = row }
                 if (ui.recent.isNotEmpty()) {
                     item { SectionTitle("最近使用") }
                     items(ui.recent, key = { "r-" + it.device.deviceId }) { row ->
-                        DeviceRowItem(row, onClick = { onDevice(row) }, onLongClick = { menuRow = row })
+                        DeviceRowItem(row, onClick = { click(row) }, onLongClick = { longClick(row) }, onPush = { onPush(row) })
                     }
                 }
-                item { SectionTitle("附近设备") }
+                if (ui.nearby.isNotEmpty() || ui.count == 0) item { SectionTitle("附近设备") }
                 if (ui.nearby.isEmpty() && ui.count == 0) {
                     items(3) { SkeletonRow() }
                 } else {
                     items(ui.nearby, key = { "n-" + it.device.deviceId }) { row ->
-                        DeviceRowItem(row, onClick = { if (row.enabled) onDevice(row) else onDisabledDevice(row) }, onLongClick = { menuRow = row })
+                        DeviceRowItem(row, onClick = { click(row) }, onLongClick = { longClick(row) }, onPush = { onPush(row) })
+                    }
+                }
+                if (ui.dlna.isNotEmpty()) {
+                    item { DlnaSectionTitle(onUnencryptedInfo) }
+                    items(ui.dlna, key = { "d-" + it.device.deviceId }) { row ->
+                        DeviceRowItem(row, onClick = { click(row) }, onLongClick = { longClick(row) }, onPush = { onPush(row) })
                     }
                 }
                 item {
@@ -188,12 +229,18 @@ private fun SectionTitle(text: String) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -> Unit, onPush: () -> Unit) {
     val c = MaterialTheme.colorScheme
     val d = row.device
-    val dlna = d.protocol == DeviceProtocol.DLNA_ONLY
+    val dlna = row.dlnaOnly
+    val audioOnly = d.dlna?.audioOnly == true
+    // 本应用接收端同时发现了 DLNA：整行仍是镜像，行尾另有“推送”按钮（交互稿 P01，D13-1）
+    val wscPush = !dlna && d.canPush
     val subtitle = when {
-        dlna -> "只支持推送视频 · 暂不能镜像"
+        dlna && row.pushedAt != null && !row.pushing -> "推送 · 上次 ${relativeTime(row.pushedAt)}"
+        dlna -> PushCopy.dlnaSubtitle(audioOnly, row.pushing, row.disambiguation)
+        row.pushing -> "正在推送"
+        wscPush -> "镜像 · 也可推送"
         row.recent != null -> "屏幕镜像 · 上次 ${relativeTime(row.recent.lastUsedAt)}"
         row.trusted -> "屏幕镜像 · ${d.host}"
         else -> "屏幕镜像 · 首次连接需输入 PIN"
@@ -202,31 +249,93 @@ private fun DeviceRowItem(row: DeviceRow, onClick: () -> Unit, onLongClick: () -
         Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onClickLabel = if (dlna) "查看原因" else "连接")
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onClickLabel = if (dlna) "推送" else "开始镜像", onLongClickLabel = "设备详情")
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .semantics(mergeDescendants = true) {},
+            .semantics {
+                if (wscPush) customActions = listOf(CustomAccessibilityAction("推送") { onPush(); true })
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        DeviceAvatar(if (dlna) Icons.Rounded.PlayCircleOutline else Icons.Rounded.Tv, enabled = !dlna)
-        Column(Modifier.weight(1f)) {
+        DeviceAvatar(
+            when {
+                dlna && audioOnly -> Icons.Rounded.MusicNote
+                dlna -> Icons.Rounded.PlayCircleOutline
+                else -> Icons.Rounded.Tv
+            },
+        )
+        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    d.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    color = if (dlna) c.onSurfaceVariant else c.onSurface, modifier = Modifier.weight(1f, fill = false),
+                    d.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    color = c.onSurface, modifier = Modifier.weight(1f, fill = false),
                 )
                 when {
-                    dlna -> Unit
+                    dlna -> if (row.pushedAt == null) NewDeviceBadge()
                     row.trusted -> TrustedBadge()
                     else -> NewDeviceBadge()
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(if (dlna) Icons.Rounded.PlayCircleOutline else Icons.Rounded.ScreenShare, null, Modifier.size(14.dp), tint = c.onSurfaceVariant)
+                if (dlna) ProtocolTag("DLNA") else Icon(Icons.Rounded.ScreenShare, null, Modifier.size(14.dp), tint = c.onSurfaceVariant)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
             }
         }
-        if (!dlna) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = c.onSurfaceVariant)
+        if (wscPush) {
+            // 视觉 32 dp 高、触控 48 dp（第 1 轮 UX P2-30）
+            OutlinedButton(
+                onClick = onPush,
+                modifier = Modifier.minimumInteractiveComponentSize().height(32.dp).semantics { contentDescription = "推送到 ${d.name}" },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+            ) {
+                Icon(Icons.Rounded.PlayArrow, null, Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("推送")
+            }
+        } else {
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = c.onSurfaceVariant)
+        }
+    }
+}
+
+/** “电视自带投屏 · 只能推送”分组标题 + “ⓘ 不加密”（交互稿 P01）。 */
+@Composable
+private fun DlnaSectionTitle(onInfo: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    FlowRow(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp)) {
+        Text(
+            "电视自带投屏 · 只能推送",
+            Modifier.padding(top = 12.dp, bottom = 4.dp, end = 8.dp).semantics { heading() },
+            style = MaterialTheme.typography.titleSmall, color = c.primary,
+        )
+        Row(
+            Modifier.heightIn(min = 48.dp).clickable(onClick = onInfo).padding(horizontal = 8.dp)
+                .semantics(mergeDescendants = true) { contentDescription = "电视自带投屏不加密，了解详情" },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.Info, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
+            Spacer(Modifier.width(4.dp))
+            Text("不加密", style = MaterialTheme.typography.labelMedium, color = c.onSurfaceVariant)
+        }
+    }
+}
+
+/** 推送中的列表顶部横幅（交互稿 P01）。 */
+@Composable
+private fun PushingBanner(b: PushBanner, onOpen: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    Row(
+        Modifier.padding(horizontal = 16.dp, vertical = 4.dp).fillMaxWidth()
+            .background(c.primaryContainer, RoundedCornerShape(16.dp)).clickable(onClickLabel = "回到遥控页", onClick = onOpen).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(Icons.Rounded.PlayCircleOutline, null, tint = c.onPrimaryContainer)
+        Column(Modifier.weight(1f)) {
+            Text("正在推送到 ${b.targetName}", style = MaterialTheme.typography.titleSmall, color = c.onPrimaryContainer)
+            Text(b.status, style = MaterialTheme.typography.bodySmall, color = c.onPrimaryContainer)
+        }
+        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = c.onPrimaryContainer)
     }
 }
 
@@ -255,6 +364,7 @@ private fun FallbackCard(onScan: () -> Unit, onCastCode: () -> Unit, onManualIp:
     ) {
         Text("没看到你的电视？", style = MaterialTheme.typography.titleMedium)
         Text("路由器可能拦截了自动发现。可以直接连接：", style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+        Text("电视自带投屏需要路由器允许设备互相发现", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         // FlowRow：200% 字号 / 窄屏时按钮自动换行（C11）
         FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onScan) {
@@ -326,6 +436,12 @@ private fun NotFoundContent(
                 FilledTonalButton(onClick = onCastCode) { Text("输入投屏码") }
             }
         }
+        item {
+            Text(
+                "电视自带投屏需要路由器允许设备互相发现", Modifier.padding(horizontal = 16.dp),
+                style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
+            )
+        }
         item { TextButton(onClick = onDiagnostics) { Text("完整网络诊断（组播检测）") } }
         item {
             FlowRow(itemVerticalAlignment = Alignment.CenterVertically) {
@@ -369,7 +485,7 @@ private fun EncryptedFooter() {
     ) {
         Icon(Icons.Rounded.Lock, null, Modifier.size(14.dp), tint = c.tertiary)
         Spacer(Modifier.width(4.dp))
-        Text("所有连接均端到端加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+        Text("屏幕镜像全程加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
     }
 }
 
@@ -391,7 +507,7 @@ private fun BottomBar(onScan: () -> Unit, onCastCode: () -> Unit, onManualIp: ()
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Lock, null, Modifier.size(14.dp), tint = c.tertiary)
             Spacer(Modifier.width(4.dp))
-            Text("所有连接均端到端加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            Text("屏幕镜像全程加密", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
         }
     }
 }

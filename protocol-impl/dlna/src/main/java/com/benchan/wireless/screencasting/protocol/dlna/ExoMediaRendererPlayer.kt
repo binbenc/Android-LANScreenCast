@@ -1,5 +1,7 @@
 package com.benchan.wireless.screencasting.protocol.dlna
 
+import com.benchan.wireless.screencasting.protocol.upnp.MediaMetadata
+
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -49,6 +51,7 @@ class ExoMediaRendererPlayer(private val context: Context) : MediaRendererPlayer
     }
 
     private fun sync(p: Player) {
+        if (_snapshot.value.isImage) return
         val state = when {
             p.playbackState == Player.STATE_IDLE && p.mediaItemCount == 0 -> TransportState.NO_MEDIA_PRESENT
             p.playbackState == Player.STATE_IDLE || p.playbackState == Player.STATE_ENDED -> TransportState.STOPPED
@@ -61,8 +64,14 @@ class ExoMediaRendererPlayer(private val context: Context) : MediaRendererPlayer
     }
 
     override suspend fun load(uri: String, metadataXml: String, metadata: MediaMetadata?) = onMain {
-        val p = ensurePlayer()
         val mime = metadata?.mimeType?.lowercase()
+        if (isImage(uri, mime, metadata?.upnpClass)) {
+            // 图片（照片推送）：停掉视频播放，交给播放页直接显示；状态报 PLAYING（多数控制点据此认为“已显示”）
+            exoPlayer?.let { it.stop(); it.clearMediaItems() }
+            _snapshot.update { it.copy(uri = uri, metadataXml = metadataXml, metadata = metadata, error = false, state = TransportState.PLAYING, durationMs = 0, isImage = true) }
+            return@onMain
+        }
+        val p = ensurePlayer()
         val item = MediaItem.Builder().setUri(uri).apply {
             when {
                 mime == null -> Unit
@@ -70,15 +79,15 @@ class ExoMediaRendererPlayer(private val context: Context) : MediaRendererPlayer
                 mime.contains("dash") -> setMimeType(MimeTypes.APPLICATION_MPD)
             }
         }.build()
-        _snapshot.update { it.copy(uri = uri, metadataXml = metadataXml, metadata = metadata, error = false, state = TransportState.TRANSITIONING) }
+        _snapshot.update { it.copy(uri = uri, metadataXml = metadataXml, metadata = metadata, error = false, state = TransportState.TRANSITIONING, isImage = false) }
         p.setMediaItem(item)
         p.prepare()
         // 规范要求等 Play 才播放，但不少国内 App 不发 Play；准备好后默认播放，收到 Pause 再暂停
         p.playWhenReady = true
     }
 
-    override suspend fun play() = onMain { ensurePlayer().play() }
-    override suspend fun pause() = onMain { exoPlayer?.pause(); Unit }
+    override suspend fun play() = onMain { if (!_snapshot.value.isImage) ensurePlayer().play() }
+    override suspend fun pause() = onMain { if (!_snapshot.value.isImage) exoPlayer?.pause(); Unit }
     override suspend fun stop() = onMain {
         exoPlayer?.let {
             it.stop()
@@ -113,5 +122,11 @@ class ExoMediaRendererPlayer(private val context: Context) : MediaRendererPlayer
 
     private companion object {
         const val TAG = "ExoDmr"
+
+        /** DIDL 的 MIME / upnp:class 或地址扩展名表明是图片。 */
+        fun isImage(uri: String, mime: String?, upnpClass: String?): Boolean =
+            mime?.startsWith("image/") == true || upnpClass?.contains("imageItem", ignoreCase = true) == true ||
+                (mime == null && com.benchan.wireless.screencasting.protocol.upnp.MediaMime.extensionOfUrl(uri)
+                    ?.let(com.benchan.wireless.screencasting.protocol.upnp.MediaMime::fromExtension)?.startsWith("image/") == true)
     }
 }
