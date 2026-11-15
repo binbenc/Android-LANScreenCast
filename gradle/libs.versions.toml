@@ -24,7 +24,7 @@ serialization = "1.9.0"
 
 # 网络与安全
 webrtc = "150.7871.04"       # M0 预编译包（webrtc-sdk/android，BSD-3）；M1 换自建 fork（技术方案 3.1）
-okhttp = "5.4.0"
+okhttp = "5.5.1"
 javaWebsocket = "1.6.0"
 ktor = "3.6.0"
 bouncycastle = "1.83"
