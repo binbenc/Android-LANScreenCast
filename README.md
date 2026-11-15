@@ -51,7 +51,7 @@ Install LAN Screen Cast on both devices and connect them to the same Wi‑Fi. Op
 Yes, for media. Most smart TVs and TV boxes have a built-in DLNA/UPnP renderer, and the app can push videos, photos, music and video URLs to them. Full screen mirroring needs the app on the receiving device.
 
 **Can an iPhone or iPad cast to an Android TV with this app?**
-Yes. Turn on "Compatible with Apple devices (unofficial)" in the receiver's settings. The iPhone or iPad can then use its built-in Screen Mirroring. This feature is unofficial and not endorsed by Apple.
+Yes. Turn on "Compatible with Apple devices (unofficial)" in the receiver's settings. The iPhone or iPad can then use its built-in Screen Mirroring. Under the hood it is an unofficial, open-source implementation of an AirPlay-compatible mirroring receiver, based on UxPlay. It is not endorsed by Apple.
 
 **Does it work as a DLNA receiver for video apps?**
 Yes. The receiver advertises itself as a DLNA media renderer, so video apps with a "cast" or "TV" button can find it.
@@ -131,4 +131,4 @@ Third-party components keep their own licenses:
 
 Details are in [`protocol-impl/airplay/src/main/cpp/third_party/README.md`](protocol-impl/airplay/src/main/cpp/third_party/README.md) and [`core/rtc/THIRD_PARTY.md`](core/rtc/THIRD_PARTY.md).
 
-This project is not affiliated with or endorsed by Apple Inc. All trademarks belong to their respective owners.
+This project is not affiliated with or endorsed by Apple Inc. AirPlay, iPhone and iPad are trademarks of Apple Inc. All trademarks belong to their respective owners.

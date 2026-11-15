@@ -51,7 +51,7 @@
 可以推送媒体。大多数智能电视和电视盒子自带 DLNA/UPnP 接收功能，本应用可以把视频、照片、音乐和视频网址推过去。完整的屏幕镜像需要接收端也装本应用。
 
 **iPhone、iPad 能用它投到安卓电视吗？**
-能。在接收端设置里打开“兼容 Apple 设备（非官方）”，iPhone、iPad 就能用系统自带的“屏幕镜像”连接。该功能为非官方实现，未获 Apple 认可。
+能。在接收端设置里打开“兼容 Apple 设备（非官方）”，iPhone、iPad 就能用系统自带的“屏幕镜像”连接。底层是基于 UxPlay 的非官方开源实现，兼容 AirPlay 屏幕镜像协议，未获 Apple 认可。
 
 **能当视频 App 的 DLNA 投屏接收端吗？**
 能。接收端会以 DLNA 媒体渲染器的身份广播自己，视频 App 里的“投屏”或“TV”按钮可以搜到它。
@@ -129,4 +129,4 @@ docs/             PRD、技术方案、交互稿、开发进度
 
 详见 [`protocol-impl/airplay/src/main/cpp/third_party/README.md`](protocol-impl/airplay/src/main/cpp/third_party/README.md) 和 [`core/rtc/THIRD_PARTY.md`](core/rtc/THIRD_PARTY.md)。
 
-本项目与 Apple Inc. 无关，也未获其认可。所有商标归各自所有者所有。
+本项目与 Apple Inc. 无关，也未获其认可。AirPlay、iPhone、iPad 是 Apple Inc. 的商标。所有商标归各自所有者所有。
