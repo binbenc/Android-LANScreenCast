@@ -1,8 +1,8 @@
 [versions]
 # 构建工具链（与技术方案 3.10.2 一致）
-agp = "9.4.1"
-kotlin = "2.2.10"            # 与 AGP 9.4.1 内置 KGP 一致；升级时 compose / serialization / jvm 插件同步
-ksp = "2.3.12"
+agp = "9.5.1"
+kotlin = "2.4.21"            # 与 AGP 9.4.1 内置 KGP 一致；升级时 compose / serialization / jvm 插件同步
+ksp = "2.3.13"
 hilt = "2.60.1"
 androidxHilt = "1.3.0"
 
@@ -19,8 +19,8 @@ datastore = "1.1.7"
 camerax = "1.5.3"
 
 # Kotlin / 协议
-coroutines = "1.10.2"
-serialization = "1.9.0"
+coroutines = "1.11.0"
+serialization = "1.13.0"
 
 # 网络与安全
 webrtc = "150.7871.04"       # M0 预编译包（webrtc-sdk/android，BSD-3）；M1 换自建 fork（技术方案 3.1）
