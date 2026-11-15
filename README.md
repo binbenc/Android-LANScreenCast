@@ -50,7 +50,7 @@ See [`docs/PRIVACY.md`](docs/PRIVACY.md).
 You need the Android SDK (compileSdk 37). Gradle provisions the JDK through its toolchain support. The default build includes the Apple-compatible receiver, which also requires NDK `27.0.12077973`, CMake `3.22.1` and the git submodules.
 
 ```bash
-git clone <repo-url> && cd WirelessScreenCasting
+git clone https://github.com/binbenc/Android-LANScreenCast.git && cd Android-LANScreenCast
 git submodule update --init --depth 1 protocol-impl/airplay/src/main/cpp/third_party
 
 ./gradlew assembleDebug          # debug APKs per ABI + universal (app/build/outputs/apk/debug)
@@ -94,7 +94,7 @@ Issues and pull requests are welcome. Please follow these project rules:
 
 ## License
 
-[GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html).
+[GPL-3.0](LICENSE).
 
 Third-party components keep their own licenses:
 

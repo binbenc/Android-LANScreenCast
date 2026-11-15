@@ -50,7 +50,7 @@
 需要 Android SDK（compileSdk 37），JDK 由 Gradle 工具链自动下载。默认构建包含“兼容 Apple 设备”模块，所以还需要 NDK `27.0.12077973`、CMake `3.22.1` 和 git 子模块。
 
 ```bash
-git clone <仓库地址> && cd WirelessScreenCasting
+git clone https://github.com/binbenc/Android-LANScreenCast.git && cd Android-LANScreenCast
 git submodule update --init --depth 1 protocol-impl/airplay/src/main/cpp/third_party
 
 ./gradlew assembleDebug          # 按 ABI 拆分的 debug APK 和 universal 包（app/build/outputs/apk/debug）
@@ -92,7 +92,7 @@ docs/             PRD、技术方案、交互稿、开发进度
 
 ## 许可证
 
-[GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html)。
+[GPL-3.0](LICENSE)。
 
 第三方组件沿用各自的许可证：
 
